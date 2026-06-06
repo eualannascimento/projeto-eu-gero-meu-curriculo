@@ -100,11 +100,21 @@ const EuGeroValidation = (function () {
     return { valid: issues.length === 0, issues };
   }
 
+  function validateActiveSections(state, sections) {
+    const issues = [];
+    (sections || []).forEach((section) => {
+      const result = validateSection(state, section);
+      issues.push(...result.issues);
+    });
+    return { valid: issues.length === 0, issues };
+  }
+
   return {
     validateEmail,
     validateUrl,
     validateField,
     validateSection,
+    validateActiveSections,
     isEmpty
   };
 })();

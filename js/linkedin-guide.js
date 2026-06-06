@@ -1,5 +1,5 @@
 /**
- * Guia LinkedIn — textos prontos por campo.
+ * Guia LinkedIn - textos prontos por campo.
  */
 const EuGeroLinkedInGuide = (function () {
   function isEmpty(val) {

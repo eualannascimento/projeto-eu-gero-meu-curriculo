@@ -87,7 +87,7 @@ const EuGeroPreview = (function () {
 
   function renderLanguages(items, showSkeleton) {
     if (hasListData(items, ['language'])) {
-      const html = items.filter(l => l.language).map(l => `<div class="cv-item"><strong>${escapeHtml(l.language)}</strong> — ${escapeHtml(l.level || '')}</div>`).join('');
+      const html = items.filter(l => l.language).map(l => `<div class="cv-item"><strong>${escapeHtml(l.language)}</strong> - ${escapeHtml(l.level || '')}</div>`).join('');
       return renderSection('Idiomas', html);
     }
     return showSkeleton ? renderSkeletonSection('Idiomas') : '';
@@ -145,7 +145,7 @@ const EuGeroPreview = (function () {
     }
     if (isSectionEnabled(enabledSet, 'volunteering')) {
       content += renderGenericList('Voluntariado', state.volunteering, ['organization'], v => `
-        <article class="cv-item"><strong>${escapeHtml(v.role || 'Função')}</strong> — ${escapeHtml(v.organization)}<span class="cv-period">${escapeHtml(formatPeriod(v.startDate, v.endDate, v.endCurrent))}</span></article>
+        <article class="cv-item"><strong>${escapeHtml(v.role || 'Função')}</strong> - ${escapeHtml(v.organization)}<span class="cv-period">${escapeHtml(formatPeriod(v.startDate, v.endDate, v.endCurrent))}</span></article>
       `, true);
     }
     if (isSectionEnabled(enabledSet, 'publications')) {
@@ -155,12 +155,12 @@ const EuGeroPreview = (function () {
     }
     if (isSectionEnabled(enabledSet, 'awards')) {
       content += renderGenericList('Prêmios e Honrarias', state.awards, ['title'], a => `
-        <article class="cv-item"><strong>${escapeHtml(a.title)}</strong> — ${escapeHtml(a.issuer || '')}</article>
+        <article class="cv-item"><strong>${escapeHtml(a.title)}</strong> - ${escapeHtml(a.issuer || '')}</article>
       `, true);
     }
     if (isSectionEnabled(enabledSet, 'organizations')) {
       content += renderGenericList('Organizações', state.organizations, ['name'], o => `
-        <article class="cv-item"><strong>${escapeHtml(o.name)}</strong> — ${escapeHtml(o.role || '')}</article>
+        <article class="cv-item"><strong>${escapeHtml(o.name)}</strong> - ${escapeHtml(o.role || '')}</article>
       `, true);
     }
     if (isSectionEnabled(enabledSet, 'courses')) {
@@ -203,7 +203,7 @@ const EuGeroPreview = (function () {
             <div class="cv-sidebar-section">
               <h3>Idiomas</h3>
               ${state.languages?.length
-                ? state.languages.map(l => `<p>${escapeHtml(l.language)} — ${escapeHtml(l.level)}</p>`).join('')
+                ? state.languages.map(l => `<p>${escapeHtml(l.language)} - ${escapeHtml(l.level)}</p>`).join('')
                 : '<p class="cv-muted">Seus idiomas</p>'}
             </div>
           ` : ''}

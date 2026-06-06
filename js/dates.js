@@ -38,8 +38,8 @@ const EuGeroDates = (function () {
 
   function serializeDate(month, year) {
     if (!year) return '';
-    const m = month ? month.padStart(2, '0') : '01';
-    return `${year}-${m}`;
+    if (!month) return String(year);
+    return `${year}-${month.padStart(2, '0')}`;
   }
 
   function formatDisplayDate(value, isCurrent) {

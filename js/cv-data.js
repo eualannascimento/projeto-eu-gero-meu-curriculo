@@ -1,5 +1,5 @@
 /**
- * Modelo de dados do currículo — fonte única para preview e exportação.
+ * Modelo de dados do curriculo - fonte unica para preview e exportacao.
  */
 const EuGeroCvData = (function () {
   const { getActiveSections, getSkillsFromState } = EuGeroConfig;
@@ -94,7 +94,7 @@ const EuGeroCvData = (function () {
       if (items.length) {
         pushSection('languages', 'Idiomas', items.map(l => ({
           type: 'line',
-          text: `${l.language}${l.level ? ` — ${l.level}` : ''}`
+          text: `${l.language}${l.level ? ` - ${l.level}` : ''}`
         })));
       }
     }

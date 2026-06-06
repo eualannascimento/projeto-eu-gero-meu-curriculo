@@ -18,7 +18,22 @@
 
   const els = {};
   const REVIEW_PREVIEW_BASE_WIDTH = 340;
-  const LIBS_WARN_KEY = 'eugero-libs-warned';
+
+  const PAGE_TITLES = {
+    home: 'Eu Gero Meu Curriculo - Inicio',
+    start: 'Eu Gero Meu Curriculo - Configuracao',
+    wizard: 'Eu Gero Meu Curriculo - Preenchimento',
+    review: 'Eu Gero Meu Curriculo - Revisao',
+    guide: 'Eu Gero Meu Curriculo - Guia LinkedIn'
+  };
+
+  const MAIN_HEADING_SELECTORS = {
+    home: '.home-title',
+    start: '#screen-start .start-block h2',
+    wizard: '#wizard-progress',
+    review: '.review-summary h2',
+    guide: '.guide-header h2'
+  };
 
   function init() {
     cacheElements();
@@ -40,7 +55,6 @@
     });
 
     render();
-    probeLibrariesOnce();
   }
 
   function cacheElements() {
@@ -153,21 +167,6 @@
 
   function goToGuide() {
     navigateTo('guide');
-  }
-
-  async function probeLibrariesOnce() {
-    if (typeof EuGeroLibs === 'undefined') return;
-    try {
-      const caps = await EuGeroLibs.probeAll();
-      if (sessionStorage.getItem(LIBS_WARN_KEY)) return;
-      const msgs = EuGeroLibs.missingMessages(caps);
-      if (msgs.length) {
-        showToast(msgs.join(' '), { duration: 7000 });
-        sessionStorage.setItem(LIBS_WARN_KEY, '1');
-      }
-    } catch (e) {
-      /* ignore probe errors */
-    }
   }
 
   function bindGlobalEvents() {
@@ -382,7 +381,7 @@
   }
 
   function nextStep() {
-    validateCurrentStep();
+    if (!validateCurrentStep()) return;
     const sections = activeSections();
     if (state.currentStep < sections.length - 1) {
       goToStep(state.currentStep + 1);
@@ -402,8 +401,20 @@
     }
   }
 
+  function focusMainHeading(view) {
+    requestAnimationFrame(() => {
+      const selector = MAIN_HEADING_SELECTORS[view];
+      if (!selector) return;
+      const el = document.querySelector(selector);
+      if (!el) return;
+      if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+      el.focus({ preventScroll: false });
+    });
+  }
+
   function render() {
     showView(currentView);
+    document.title = PAGE_TITLES[currentView] || 'Eu Gero Meu Curriculo';
     updateTemplateIndicators();
     document.querySelectorAll('.template-card').forEach((card) => {
       card.classList.toggle('selected', card.dataset.template === state.template);
@@ -421,6 +432,8 @@
     } else if (currentView === 'guide') {
       EuGeroLinkedInGuide.renderGuide(els.guideContent, state);
     }
+
+    focusMainHeading(currentView);
   }
 
   function renderSectionChecklist() {
@@ -584,18 +597,12 @@
     input.closest('.field-group')?.appendChild(err);
   }
 
-  function validateCurrentStep() {
-    const sections = activeSections();
-    const section = sections[state.currentStep];
-    if (!section) return true;
+  function markValidationIssues(scope, issues, sectionId) {
+    const section = SECTIONS.find((s) => s.id === sectionId);
+    if (!section || !scope) return;
 
-    const scope = els.wizardSteps;
-    if (!scope) return true;
-
-    clearFieldValidation(scope);
-    const result = EuGeroValidation.validateSection(state, section);
-
-    result.issues.forEach((issue) => {
+    issues.forEach((issue) => {
+      if (issue.sectionId !== sectionId) return;
       let input;
       if (issue.itemIndex != null) {
         const card = scope.querySelector(`.list-item-card[data-index="${issue.itemIndex}"]`);
@@ -611,15 +618,56 @@
         setFieldInvalid(input, errorId, issue.message);
       }
     });
+  }
+
+  function focusFirstInvalidField(scope) {
+    const firstInvalid = scope?.querySelector('.field-invalid');
+    if (!firstInvalid) return;
+    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    firstInvalid.focus?.();
+  }
+
+  function validateCurrentStep() {
+    const sections = activeSections();
+    const section = sections[state.currentStep];
+    if (!section) return true;
+
+    const scope = els.wizardSteps;
+    if (!scope) return true;
+
+    clearFieldValidation(scope);
+    const result = EuGeroValidation.validateSection(state, section);
+    markValidationIssues(scope, result.issues, section.id);
 
     if (!result.valid) {
       showToast('Revise os campos destacados antes de continuar.', { duration: 4000 });
-      const firstInvalid = scope.querySelector('.field-invalid');
-      firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      firstInvalid?.focus?.();
+      focusFirstInvalidField(scope);
       return false;
     }
     return true;
+  }
+
+  function validateForExport() {
+    const sections = activeSections();
+    const result = EuGeroValidation.validateActiveSections(state, sections);
+    if (result.valid) return true;
+
+    const first = result.issues[0];
+    const stepIndex = sections.findIndex((s) => s.id === first.sectionId);
+    showToast('Complete os campos obrigatorios antes de exportar.', { duration: 5000, error: true });
+
+    if (stepIndex >= 0) {
+      state.currentStep = stepIndex;
+      navigateTo('wizard', sections[stepIndex].id);
+      requestAnimationFrame(() => {
+        const scope = els.wizardSteps;
+        if (!scope) return;
+        clearFieldValidation(scope);
+        markValidationIssues(scope, result.issues, sections[stepIndex].id);
+        focusFirstInvalidField(scope);
+      });
+    }
+    return false;
   }
 
   function renderField(section, field, options = {}) {
@@ -703,6 +751,15 @@
         debouncedUpdatePreviews();
         saveState();
       });
+      if (field.type === 'email' || field.type === 'url') {
+        input.addEventListener('blur', () => {
+          const result = EuGeroValidation.validateField(input.value, field);
+          clearFieldValidation(wrap);
+          if (!result.ok) {
+            setFieldInvalid(input, fieldErrorId(section, field, options.index), result.message);
+          }
+        });
+      }
     }
 
     wrap.insertAdjacentHTML('beforeend', renderFieldTip(field));
@@ -1037,7 +1094,6 @@
   function removeListItem(sectionId, index) {
     const items = state[sectionId];
     if (!items || index < 0 || index >= items.length) return;
-    if (!confirm('Remover este item?')) return;
 
     const removed = { ...items[index] };
     const removedIndex = index;
@@ -1047,10 +1103,6 @@
     const card = container?.querySelector(`.list-item-card[data-index="${index}"]`);
     card?.remove();
     reindexListCards(sectionId);
-
-    if (items.length === 0) {
-      appendListItem(sectionId);
-    }
 
     saveState();
     debouncedUpdatePreviews();
@@ -1198,6 +1250,21 @@
 
   async function handleExport(type, btn) {
     if (!btn) return;
+    if (!validateForExport()) return;
+
+    if (typeof EuGeroLibs !== 'undefined' && type !== 'txt') {
+      try {
+        const caps = await EuGeroLibs.probeAll();
+        const msgs = EuGeroLibs.missingMessages(caps, type);
+        if (msgs.length) {
+          showToast(msgs.join(' '), { duration: 7000, error: true });
+          return;
+        }
+      } catch (e) {
+        /* continue and let export report error */
+      }
+    }
+
     btn.disabled = true;
     btn.classList.add('is-loading');
     try {

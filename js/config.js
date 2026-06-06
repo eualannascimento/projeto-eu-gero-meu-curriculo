@@ -37,7 +37,7 @@ const EuGeroConfig = (function () {
     {
       id: 'personal',
       title: 'Dados Pessoais',
-      description: 'Nome, contato e cargo desejado — base do currículo.',
+      description: 'Nome, contato e cargo desejado - base do currículo.',
       linkedinHint: 'Perfil → foto de capa → seção de introdução no topo do perfil',
       fields: [
         { key: 'fullName', label: 'Nome completo', type: 'text', required: true, minLength: 3, tip: 'Use seu nome como aparece em documentos oficiais. Evite apelidos.' },
@@ -100,7 +100,7 @@ const EuGeroConfig = (function () {
       list: true,
       itemFields: [
         { key: 'language', label: 'Idioma', type: 'text', required: true, minLength: 2, tip: 'Ex: Inglês, Espanhol, Francês' },
-        { key: 'level', label: 'Nível de proficiência', type: 'select', options: ['Básico', 'Intermediário', 'Avançado', 'Fluente', 'Nativo'], required: true, minLength: 3, tip: 'Seja honesto — recrutadores podem testar em entrevistas.' }
+        { key: 'level', label: 'Nível de proficiência', type: 'select', options: ['Básico', 'Intermediário', 'Avançado', 'Fluente', 'Nativo'], required: true, minLength: 3, tip: 'Seja honesto - recrutadores podem testar em entrevistas.' }
       ]
     },
     {

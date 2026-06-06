@@ -1,6 +1,6 @@
 /**
- * Smoke tests — executar com: node tests/smoke-test.js
- * Testa módulos puros sem DOM.
+ * Smoke tests - executar com: node tests/smoke-test.js
+ * Testa modulos puros sem DOM.
  */
 
 const fs = require('fs');
@@ -37,7 +37,7 @@ function assert(condition, message) {
   }
 }
 
-console.log('\n=== Eu Gero — Smoke Tests ===\n');
+console.log('\n=== Eu Gero - Smoke Tests ===\n');
 
 // --- Scoring ---
 console.log('Pontuação por campo:');
@@ -235,12 +235,79 @@ assert(!EuGeroValidation.validateEmail('invalido').ok, 'E-mail invalido rejeitad
 assert(EuGeroValidation.validateEmail('a@b.co').ok, 'E-mail valido aceito');
 assert(!EuGeroValidation.validateUrl('ftp://x').ok || EuGeroValidation.validateUrl('https://linkedin.com/in/x').ok, 'URL http(s) valida');
 
+const activeSections = EuGeroConfig.getActiveSections(filledState.enabledSections);
+const exportReadyState = {
+  ...filledState,
+  summary: 'Profissional com experiencia em desenvolvimento de software, foco em entregar valor e resultados mensuraveis para equipes multidisciplinares.',
+  skillsText: 'JavaScript; React; Node.js',
+  skills: [{ name: 'JavaScript' }, { name: 'React' }, { name: 'Node.js' }],
+  experiences: [{
+    company: 'Tech Co',
+    title: 'Desenvolvedora',
+    startDate: '2020',
+    endDate: '2023',
+    endCurrent: false,
+    description: 'Implementei features web e liderei melhorias de performance com impacto mensuravel na operacao.'
+  }],
+  education: [{
+    institution: 'Universidade Exemplo',
+    degree: 'Ciencia da Computacao',
+    startDate: '2016',
+    endDate: '2020',
+    endCurrent: false
+  }]
+};
+const exportValidation = EuGeroValidation.validateActiveSections(exportReadyState, activeSections);
+assert(exportValidation.valid, 'Estado preenchido passa validacao de export');
+
+const invalidExportState = {
+  ...filledState,
+  personal: { ...filledState.personal, email: 'email-invalido' }
+};
+const invalidExport = EuGeroValidation.validateActiveSections(invalidExportState, activeSections);
+assert(!invalidExport.valid, 'E-mail invalido bloqueia export');
+assert(invalidExport.issues.some((i) => i.fieldKey === 'email'), 'Issue aponta campo de e-mail');
+
+assert(
+  !EuGeroValidation.validateField('email-invalido', { type: 'email', label: 'E-mail', required: true }).ok,
+  'Validacao blur de e-mail (validateField)'
+);
+assert(
+  !EuGeroValidation.validateField('ftp://site.com', { type: 'url', label: 'URL', required: false }).ok,
+  'Validacao blur de URL (validateField)'
+);
+
 // --- Datas ---
 console.log('\nDatas estruturadas:');
 
 assert(EuGeroDates.serializeDate('03', '2020') === '2020-03', 'Serializa mes/ano');
+assert(EuGeroDates.serializeDate('', '2020') === '2020', 'Ano sem mes nao forca janeiro');
+assert(EuGeroDates.formatDisplayDate('2020', false) === '2020', 'Exibe apenas ano quando mes ausente');
 assert(EuGeroDates.formatDisplayDate('2020-03', false) === 'Mar 2020', 'Formata exibicao Mar 2020');
 assert(EuGeroDates.formatPeriod('2020-03', '', true) === 'Mar 2020 - Atual', 'Periodo com ate hoje');
+assert(EuGeroDates.parseStoredDate('2020').month === '', 'Parse ano isolado sem mes');
+
+// --- Separadores (hifen, nao travessao) ---
+console.log('\nSeparadores de texto:');
+
+const langState = {
+  ...filledState,
+  enabledSections: EuGeroConfig.normalizeEnabledSections([...filledState.enabledSections, 'languages']),
+  languages: [{ language: 'Ingles', level: 'Avancado' }]
+};
+const langSections = EuGeroConfig.getActiveSections(langState.enabledSections);
+const langDoc = EuGeroCvData.build(langState, langSections);
+const langLine = langDoc.sections.find((s) => s.id === 'languages')?.blocks[0]?.text || '';
+assert(langLine.includes(' - '), 'Idiomas usa hifen como separador');
+assert(!langLine.includes('\u2014'), 'Idiomas nao usa travessao');
+
+const exportSrc = fs.readFileSync(path.join(__dirname, '..', 'js/export.js'), 'utf8');
+const previewSrc = fs.readFileSync(path.join(__dirname, '..', 'js/preview.js'), 'utf8');
+assert(!exportSrc.includes('\u2014'), 'export.js sem travessao');
+assert(!previewSrc.includes('\u2014'), 'preview.js sem travessao');
+
+const promptNoData = EuGeroPrompts.buildGeneralPrompt(filledState, false);
+assert(!promptNoData.includes('\u2014'), 'Prompts copiados sem travessao');
 
 // --- Router ---
 console.log('\nRoteamento hash:');

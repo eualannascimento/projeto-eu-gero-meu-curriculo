@@ -1,5 +1,5 @@
 /**
- * Geração de prompts para IA externa — módulo puro testável.
+ * Geracao de prompts para IA externa - modulo puro testavel.
  */
 const EuGeroPrompts = (function () {
   const SECTION_PROMPTS = {
@@ -150,7 +150,7 @@ LinkedIn: ${p.linkedinUrl || '(não preenchido)'}`;
     if (includeData) {
       prompt += '\n\n--- MEUS DADOS ATUAIS ---\n\n' + formatStateData(state);
     } else {
-      prompt += '\n\n(Não incluí meus dados pessoais — forneça sugestões genéricas baseadas nas informações que eu fornecer em seguida.)';
+      prompt += '\n\n(Não incluí meus dados pessoais - forneça sugestões genéricas baseadas nas informações que eu fornecer em seguida.)';
     }
     return prompt;
   }
@@ -161,7 +161,7 @@ LinkedIn: ${p.linkedinUrl || '(não preenchido)'}`;
     if (includeData) {
       prompt += '\n\n--- MEUS DADOS DESTA SEÇÃO ---\n\n' + formatSectionData(sectionId, state);
     } else {
-      prompt += '\n\n(Não incluí meus dados — aguardo fornecer as informações necessárias.)';
+      prompt += '\n\n(Não incluí meus dados - aguardo fornecer as informações necessárias.)';
     }
     return prompt;
   }

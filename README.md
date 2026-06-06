@@ -10,7 +10,7 @@ Plataforma web estatica, 100% gratuita e sem servidor, para criar curriculos de 
 - **Preview ao vivo** com linha de corte de 1 pagina A4 e alerta de overflow
 - **Pontuacao por qualidade** (Fraco / Bom / Otimo) - textos curtos e bons nao sao punidos
 - **Revisao** com galeria comparativa de todos os templates
-- **Exportacao** PDF (QR Code do LinkedIn), Word (.docx) e TXT
+- **Exportacao** PDF (QR Code do LinkedIn), Word (.docx) e TXT - validacao obrigatoria antes de exportar
 - **Backup JSON** - exportar e importar rascunhos
 - **Guia LinkedIn** e prompts para IA (copiar/colar manual)
 - **Roteamento por hash** (`#/wizard/experiences`) com suporte a Voltar/Avancar do navegador
@@ -53,10 +53,10 @@ js/
   linkedin-guide.js Guia LinkedIn
   router.js         Hash routing
   a11y.js           Modais acessiveis (Esc, focus trap)
-  libs.js           Deteccao de bibliotecas CDN
+  libs.js           Deteccao de bibliotecas (vendor/CDN)
   sample-data.js    Dados de exemplo
   app.js            Orquestracao
-vendor/             (opcional) jsPDF e qrcode locais para offline
+vendor/             jsPDF, docx.esm.js (Word offline) e qrcode opcional
 tests/smoke-test.js
 ```
 
@@ -68,10 +68,18 @@ tests/smoke-test.js
 | Google Fonts | Parcial | Fallback system-ui se CDN falhar |
 | **jsPDF** (PDF) | Sim, se cache/CDN ok | Copie para `vendor/jspdf.umd.min.js` para offline total |
 | **qrcode** (QR no PDF) | Sim, se cache/CDN ok | Copie para `vendor/qrcode.min.js` |
-| **docx.js** (Word) | Nao na 1a exportacao | Import dinamico do CDN; TXT/PDF funcionam sem Word |
+| **docx.js** (Word) | Sim com `vendor/docx.esm.js` | Fallback para CDN se o arquivo local falhar |
 | Prompts IA | N/A | Copia manual - nenhuma API e chamada |
 
-Se jsPDF ou qrcode nao carregarem, a app exibe toast explicativo e mantem exportacao TXT (e Word se docx estiver disponivel).
+Avisos de biblioteca ausente aparecem **somente ao exportar**, nao no carregamento. TXT exporta sem dependencias externas.
+
+### Datas (mes/ano)
+
+Campos de data aceitam mes e ano ou **somente ano** (ex.: `2020`). Ano sem mes e exibido como `2020`, sem forcar janeiro.
+
+### Validacao antes de exportar
+
+Na revisao, PDF/Word/TXT exigem que todos os campos obrigatorios das secoes ativas estejam validos. Pendencias bloqueiam o export, exibem toast e levam ao wizard com foco no primeiro campo invalido.
 
 ## Testes
 
@@ -79,7 +87,7 @@ Se jsPDF ou qrcode nao carregarem, a app exibe toast explicativo e mantem export
 node tests/smoke-test.js
 ```
 
-Cobre: scoring, validacao, datas, router, page fit, JSON, prompts, CvData, templates ATS e dados de exemplo.
+Cobre: scoring, validacao (incl. export), datas ano-only, router, page fit, JSON, prompts, CvData, separadores, templates ATS e dados de exemplo.
 
 ## Deploy (GitHub Pages)
 

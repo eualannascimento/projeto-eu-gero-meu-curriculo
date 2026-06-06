@@ -194,7 +194,7 @@ const EuGeroExport = (function () {
           pdf.setFont('helvetica', 'bold');
           pdf.setFontSize(9);
           pdf.setTextColor(...accent);
-          const titleLine = block.subtitle ? `${block.title}  —  ${block.subtitle}` : block.title;
+          const titleLine = block.subtitle ? `${block.title} - ${block.subtitle}` : block.title;
           pdf.text(titleLine, margin, y);
           y += 4;
           if (block.period) {
@@ -275,7 +275,7 @@ const EuGeroExport = (function () {
 
       sidebarBlock('Contato', cvDoc.sidebar.contact.length ? cvDoc.sidebar.contact : ['']);
       sidebarBlock('Habilidades', cvDoc.sidebar.skills);
-      sidebarBlock('Idiomas', cvDoc.sidebar.languages.map(l => `${l.language} — ${l.level}`));
+      sidebarBlock('Idiomas', cvDoc.sidebar.languages.map(l => `${l.language} - ${l.level}`));
     };
 
     const mainSections = EuGeroCvData.getMainSections(cvDoc, templateId);
@@ -498,7 +498,9 @@ const EuGeroExport = (function () {
 
   async function exportDocx(state, templateId) {
     try {
-      const docx = await import('https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm');
+      const docx = typeof EuGeroLibs !== 'undefined'
+        ? await EuGeroLibs.loadDocx()
+        : await import('https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm');
       if (typeof EuGeroLibs !== 'undefined') EuGeroLibs.markDocxAvailable?.();
       const meta = EuGeroConfig.getTemplateMeta(templateId);
       const enabledSections = EuGeroConfig.getActiveSections(state.enabledSections);
@@ -520,7 +522,7 @@ const EuGeroExport = (function () {
       return { ok: true };
     } catch (e) {
       console.error('Erro ao exportar Word:', e);
-      return { ok: false, error: 'Word indisponivel: exige internet na primeira exportacao (CDN docx.js).' };
+      return { ok: false, error: 'Word indisponivel: verifique vendor/docx.esm.js ou conexao com CDN.' };
     }
   }
 
@@ -639,7 +641,7 @@ const EuGeroExport = (function () {
 
     sidebarSection('Contato', cvDoc.sidebar.contact);
     sidebarSection('Habilidades', cvDoc.sidebar.skills);
-    sidebarSection('Idiomas', cvDoc.sidebar.languages.map(l => `${l.language} — ${l.level}`));
+    sidebarSection('Idiomas', cvDoc.sidebar.languages.map(l => `${l.language} - ${l.level}`));
 
     const mainChildren = [];
     EuGeroCvData.getMainSections(cvDoc, templateId).forEach(section => {
