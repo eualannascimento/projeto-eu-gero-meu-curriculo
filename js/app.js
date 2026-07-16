@@ -5,9 +5,7 @@
   'use strict';
 
   const {
-    SECTIONS, TEMPLATES, ACTION_VERBS, createEmptyListItem,
-    getActiveSections, normalizeEnabledSections, isSectionMandatory, skillsToText, SHORT_LABELS,
-    TEMPLATE_IDS, getTemplateMeta
+    TEMPLATES, getActiveSections, normalizeEnabledSections, TEMPLATE_IDS
   } = EuGeroConfig;
 
   let state = EuGeroStorage.load();
@@ -30,7 +28,8 @@
       activeSections,
       saveState,
       showToast,
-      showPrompt,
+      showPrompt: (type, sectionId, trigger) => EuGeroPromptModal.show(type, sectionId, trigger),
+      openModal,
       navigateTo,
       goToStart,
       goToStep,
@@ -49,6 +48,7 @@
     EuGeroStartScreen.init(ctx);
     EuGeroWizardScreen.init(ctx);
     EuGeroReviewScreen.init(ctx);
+    EuGeroPromptModal.init(ctx);
   }
 
   function init() {
@@ -248,14 +248,14 @@
     document.getElementById('btn-import-start')?.addEventListener('click', () => els.fileImport?.click());
     els.fileImport?.addEventListener('change', handleImport);
 
-    document.getElementById('btn-prompt-general')?.addEventListener('click', (e) => showPrompt('general', null, e.currentTarget));
-    document.getElementById('btn-prompt-general-review')?.addEventListener('click', (e) => showPrompt('general', null, e.currentTarget));
-    document.getElementById('btn-prompt-translation')?.addEventListener('click', (e) => showPrompt('translation', null, e.currentTarget));
-    document.getElementById('btn-prompt-translation-guide')?.addEventListener('click', (e) => showPrompt('translation', null, e.currentTarget));
-    document.getElementById('btn-copy-prompt')?.addEventListener('click', copyPrompt);
+    document.getElementById('btn-prompt-general')?.addEventListener('click', (e) => EuGeroPromptModal.show('general', null, e.currentTarget));
+    document.getElementById('btn-prompt-general-review')?.addEventListener('click', (e) => EuGeroPromptModal.show('general', null, e.currentTarget));
+    document.getElementById('btn-prompt-translation')?.addEventListener('click', (e) => EuGeroPromptModal.show('translation', null, e.currentTarget));
+    document.getElementById('btn-prompt-translation-guide')?.addEventListener('click', (e) => EuGeroPromptModal.show('translation', null, e.currentTarget));
+    document.getElementById('btn-copy-prompt')?.addEventListener('click', EuGeroPromptModal.copyPrompt);
     els.includeDataCheckbox?.addEventListener('change', () => {
-      refreshPromptText();
-      updatePrivacyWarning();
+      EuGeroPromptModal.refreshPromptText();
+      EuGeroPromptModal.updatePrivacyWarning();
     });
 
     document.querySelectorAll('.modal-close').forEach((btn) => {
@@ -296,7 +296,7 @@
     });
     document.getElementById('btn-mobile-prompt')?.addEventListener('click', (e) => {
       closeModal(els.modalMobileMenu);
-      showPrompt('general', null, e.currentTarget);
+      EuGeroPromptModal.show('general', null, e.currentTarget);
     });
 
     window.addEventListener('resize', debounce(scaleReviewPreviews, 150));
@@ -575,64 +575,6 @@
     e.target.value = '';
   }
 
-  let promptContext = { type: 'general', sectionId: null };
-
-  function showPrompt(type, sectionId, trigger) {
-    promptContext = { type, sectionId: sectionId || null };
-    refreshPromptText();
-    updatePrivacyWarning();
-    openModal(els.modalPrompt, trigger);
-  }
-
-  function refreshPromptText() {
-    const includeData = els.includeDataCheckbox?.checked ?? true;
-    let prompt = '';
-    if (promptContext.type === 'general') prompt = EuGeroPrompts.buildGeneralPrompt(state, includeData);
-    else if (promptContext.type === 'section') prompt = EuGeroPrompts.buildSectionPrompt(promptContext.sectionId, state, includeData);
-    else if (promptContext.type === 'translation') prompt = EuGeroPrompts.buildTranslationPrompt(state, includeData);
-    if (els.promptText) els.promptText.value = prompt;
-    updatePrivacyWarning();
-  }
-
-  function updatePrivacyWarning() {
-    const warning = els.privacyPromptWarning || document.getElementById('privacy-prompt-warning');
-    if (!warning) return;
-    const includeData = els.includeDataCheckbox?.checked ?? true;
-    const hasData = EuGeroPrompts.containsPersonalData(els.promptText?.value || '');
-    warning.hidden = !(includeData && hasData);
-  }
-
-  async function copyPrompt() {
-    const ok = await copyToClipboard(els.promptText?.value || '');
-    if (ok) showToast('Prompt copiado!');
-    else showToast('Nao foi possivel copiar. Selecione o texto manualmente.', { error: true });
-  }
-
-  async function copyToClipboard(text) {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch (e) {
-      /* fallback below */
-    }
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.setAttribute('readonly', '');
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      return ok;
-    } catch (e) {
-      return false;
-    }
-  }
-
   function syncBodyScrollLock() {
     const modalOpen = !!document.querySelector('.modal:not([hidden])');
     const overlayOpen = els.previewOverlay && !els.previewOverlay.hidden;
@@ -739,7 +681,7 @@
     render,
     saveState,
     showToast,
-    copyToClipboard,
+    copyToClipboard: (text) => EuGeroPromptModal.copyToClipboard(text),
     validateCurrentStep: () => EuGeroWizardScreen.validateCurrentStep(),
     appendListItem: (sectionId) => EuGeroWizardScreen.appendListItem(sectionId),
     removeListItem: (sectionId, index) => EuGeroWizardScreen.removeListItem(sectionId, index),
