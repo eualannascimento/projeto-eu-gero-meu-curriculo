@@ -12,7 +12,6 @@
 
   let state = EuGeroStorage.load();
   let currentView = 'home';
-  let reviewGalleryIndex = 0;
   let suppressHash = false;
   let saveTimer = null;
   let toastTimer = null;
@@ -21,9 +20,39 @@
   const A4_BASE_WIDTH = 370;
   const LIBS_WARN_KEY = 'eugero-libs-warned';
 
+  // Contexto compartilhado com os módulos de tela (js/screens/*).
+  // getState é função porque `state` é reatribuído (import, personagens, limpar).
+  function buildScreenContext() {
+    return {
+      els,
+      getState: () => state,
+      replaceState: (next) => { state = next; },
+      activeSections,
+      saveState,
+      showToast,
+      showPrompt,
+      navigateTo,
+      goToStart,
+      goToStep,
+      goToWizard,
+      updateTemplateIndicators,
+      switchTemplate,
+      scaleReviewPreviews,
+      debouncedUpdatePreviews: (...args) => debouncedUpdatePreviews(...args),
+      escapeHtml,
+      escapeAttr
+    };
+  }
+
+  function initScreens() {
+    const ctx = buildScreenContext();
+    EuGeroReviewScreen.init(ctx);
+  }
+
   function init() {
     cacheElements();
     ensureToastStructure();
+    initScreens();
     bindGlobalEvents();
 
     const initialRoute = EuGeroRouter.getInitialRoute();
@@ -151,20 +180,8 @@
   }
 
   function goToReview() {
-    const idx = TEMPLATE_IDS.indexOf(state.template);
-    reviewGalleryIndex = idx >= 0 ? idx : 0;
+    EuGeroReviewScreen.syncGalleryToTemplate();
     navigateTo('review');
-  }
-
-  function galleryStep(dir) {
-    // Navegar ja aplica o modelo (sem precisar de "Usar este").
-    const total = TEMPLATE_IDS.length;
-    reviewGalleryIndex = ((reviewGalleryIndex + dir) % total + total) % total;
-    state.template = TEMPLATE_IDS[reviewGalleryIndex];
-    saveState();
-    updateTemplateIndicators();
-    debouncedUpdatePreviews();
-    renderReviewGallery();
   }
 
   function goToGuide() {
@@ -205,10 +222,10 @@
     document.getElementById('btn-next')?.addEventListener('click', nextStep);
     document.getElementById('btn-finish')?.addEventListener('click', goToReview);
     document.getElementById('btn-back-wizard')?.addEventListener('click', () => goToWizard());
-    document.getElementById('btn-gal-prev')?.addEventListener('click', () => galleryStep(-1));
-    document.getElementById('btn-gal-next')?.addEventListener('click', () => galleryStep(1));
-    document.getElementById('btn-export-pdf')?.addEventListener('click', printCv);
-    document.getElementById('btn-export-docx')?.addEventListener('click', (e) => handleExport('docx', e.currentTarget));
+    document.getElementById('btn-gal-prev')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(-1));
+    document.getElementById('btn-gal-next')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(1));
+    document.getElementById('btn-export-pdf')?.addEventListener('click', EuGeroReviewScreen.printCv);
+    document.getElementById('btn-export-docx')?.addEventListener('click', (e) => EuGeroReviewScreen.handleExport('docx', e.currentTarget));
     document.getElementById('btn-guide')?.addEventListener('click', goToGuide);
     document.getElementById('btn-back-review')?.addEventListener('click', goToReview);
     document.getElementById('btn-back-start')?.addEventListener('click', goToStart);
@@ -623,7 +640,7 @@
       renderWizardStep();
       debouncedUpdatePreviews();
     } else if (currentView === 'review') {
-      renderReview();
+      EuGeroReviewScreen.renderReview();
     } else if (currentView === 'guide') {
       EuGeroLinkedInGuide.renderGuide(els.guideContent, state);
     }
@@ -1393,150 +1410,6 @@
     scoreEl.title = `Nota: ${EuGeroScoring.getLabelText(score)}`;
   }
 
-  function renderReview() {
-    const sections = activeSections();
-    const results = EuGeroScoring.scoreState(state, sections, ACTION_VERBS);
-    const pageFit = EuGeroScoring.scorePageFit(state, sections);
-    const aggregate = EuGeroScoring.aggregateScore(results, pageFit);
-
-    const pct = aggregate.overall;
-    let scoreLabel = 'Em progresso';
-    let scoreMsg = 'Vamos reforçar alguns pontos para dar mais peso ao seu currículo.';
-    if (pct >= 80) {
-      scoreLabel = 'Ótimo';
-      scoreMsg = 'Seu currículo está forte e bem estruturado. Pronto para enviar!';
-    } else if (pct >= 55) {
-      scoreLabel = 'Bom';
-      scoreMsg = 'Está bom! Uns pequenos ajustes deixam ele ainda mais forte.';
-    }
-
-    const muted = 'color-mix(in srgb, var(--color-text) 55%, transparent)';
-    let html = `
-      <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-        <div>
-          <div style="font-family: var(--font-heading); font-weight: 600; font-size: 44px; line-height: 1; color: var(--color-accent-700);">${escapeHtml(scoreLabel)}</div>
-          <div style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: ${muted}; margin-top: 4px;">Qualidade geral</div>
-        </div>
-        <div style="flex: 1; min-width: 240px;">
-          <div style="height: 8px; background: var(--color-neutral-200); position: relative; overflow: hidden; margin-bottom: 12px;">
-            <div style="position: absolute; inset: 0 auto 0 0; width: ${pct}%; background: var(--color-accent);"></div>
-          </div>
-          <p style="font-size: 14px; line-height: 1.5; color: color-mix(in srgb, var(--color-text) 78%, transparent); margin: 0;">${escapeHtml(scoreMsg)}</p>
-        </div>
-      </div>`;
-
-    if (aggregate.weakFields.length > 0) {
-      html += `
-        <div style="margin-top: 18px; border-top: 1px solid var(--color-divider); padding-top: 16px;">
-          <p style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: ${muted}; margin: 0 0 10px;">Sugestões para melhorar</p>
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            ${aggregate.weakFields.map((f) => {
-              const stepIndex = sections.findIndex((s) => s.id === f.sectionId);
-              return `<button type="button" class="link-btn" data-step="${stepIndex}" style="display: flex; align-items: center; gap: 10px; text-align: left; background: none; border: 0; padding: 4px 0; cursor: pointer; color: inherit; font-size: 14px;"><span style="color: var(--color-accent);">→</span>Reforce: ${escapeHtml(f.displayName)}</button>`;
-            }).join('')}
-          </div>
-        </div>`;
-    }
-
-    els.reviewContent.innerHTML = html;
-
-    els.reviewContent.querySelectorAll('.link-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        goToWizard(parseInt(btn.dataset.step, 10));
-      });
-    });
-
-    renderReviewGallery();
-  }
-
-  function renderReviewGallery() {
-    const sections = activeSections();
-    const total = TEMPLATE_IDS.length;
-    reviewGalleryIndex = ((reviewGalleryIndex % total) + total) % total;
-    const galId = TEMPLATE_IDS[reviewGalleryIndex];
-    const galMeta = TEMPLATES[galId];
-    const isSelected = state.template === galId;
-
-    const preview = document.getElementById('review-gallery-preview');
-    if (preview) EuGeroPreview.updatePreview(preview, state, galId, sections);
-    const frame = document.getElementById('review-gallery-frame');
-    if (frame) frame.style.outline = isSelected ? '2px solid var(--color-accent)' : '2px solid transparent';
-    const labelEl = document.getElementById('review-gallery-label');
-    if (labelEl) labelEl.textContent = galMeta.name;
-    const counterEl = document.getElementById('review-gallery-counter');
-    if (counterEl) counterEl.textContent = `${reviewGalleryIndex + 1} de ${total}`;
-  }
-
-  /**
-   * PDF identico a previa: renderiza o mesmo HTML da previa em tamanho A4
-   * e abre a impressao do navegador (Salvar como PDF).
-   */
-  function printCv() {
-    const el = document.getElementById('print-cv');
-    if (!el) return;
-    el.innerHTML = EuGeroPreview.render(state, state.template, activeSections());
-    el.className = `preview-content template-${state.template} cv-margin-${state.margin || 'padrao'} cv-density-${state.density || 'normal'}`;
-    showToast('Na janela de impressão, escolha "Salvar como PDF".', { duration: 4000 });
-    setTimeout(() => window.print(), 150);
-  }
-
-  async function handleExport(type, btn) {
-    if (!btn) return;
-    btn.disabled = true;
-    btn.classList.add('is-loading');
-    try {
-      let result;
-      if (type === 'pdf') result = await EuGeroExport.exportPdf(state, state.template);
-      else if (type === 'docx') result = await EuGeroExport.exportDoc(state);
-      else result = EuGeroExport.exportTxt(state);
-
-      if (result?.ok) {
-        showToast('Exportado com sucesso!');
-      } else {
-        showToast(result?.error || 'Falha na exportacao.', { error: true });
-      }
-    } catch (err) {
-      showToast('Falha na exportacao.', { error: true });
-    } finally {
-      btn.disabled = false;
-      btn.classList.remove('is-loading');
-    }
-  }
-
-  function renderReviewTemplateGallery() {
-    if (!els.reviewTemplateGallery) return;
-    const sections = activeSections();
-
-    els.reviewTemplateGallery.innerHTML = TEMPLATE_IDS.map((id) => {
-      const t = TEMPLATES[id];
-      const selected = state.template === id;
-      const atsBadge = t.atsFriendly
-        ? '<span class="badge badge-ats">ATS</span>'
-        : '<span class="badge badge-ats-warn">Atencao ATS</span>';
-      return `
-        <button type="button" class="review-template-card${selected ? ' selected' : ''}" data-template="${t.id}" aria-pressed="${selected}">
-          <span class="review-template-name">${escapeHtml(t.name)} ${atsBadge}</span>
-          <div class="review-template-preview-wrap">
-            <div class="review-template-preview" data-preview-template="${t.id}"></div>
-          </div>
-        </button>
-      `;
-    }).join('');
-
-    els.reviewTemplateGallery.querySelectorAll('[data-preview-template]').forEach((container) => {
-      EuGeroPreview.updatePreview(container, state, container.dataset.previewTemplate, sections);
-    });
-
-    els.reviewTemplateGallery.querySelectorAll('.review-template-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        switchTemplate(card.dataset.template);
-        renderReview();
-      });
-    });
-
-    requestAnimationFrame(scaleReviewPreviews);
-  }
-
   let a4Observer = null;
 
   function observeA4Wraps() {
@@ -1794,7 +1667,7 @@
     appendListItem,
     removeListItem,
     reorderListItem,
-    handleExport,
+    handleExport: (type, btn) => EuGeroReviewScreen.handleExport(type, btn),
     debouncedUpdatePreviews
   };
 
