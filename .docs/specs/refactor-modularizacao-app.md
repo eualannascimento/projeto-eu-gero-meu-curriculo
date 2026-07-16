@@ -1,6 +1,6 @@
 # Refactor: Modularização do app.js
 
-**Status:** Rascunho (aguardando aprovação - nenhum código deve ser escrito antes disso)
+**Status:** Aprovado
 **Data:** 2026-07-16
 
 ## 1. Resumo e Objetivo
@@ -25,6 +25,7 @@ Extrações candidatas (uma por commit):
 * `js/screens/start.js`: tela inicial, seleção de template e personagens.
 * `js/screens/wizard.js`: renderização de campos, timeline/fichas, chips de skills.
 * `js/screens/review.js`: revisão, galeria de templates e exportação.
+* `js/screens/prompt-modal.js`: modal de prompts IA, aviso de privacidade e cópia (necessário para cumprir o CA02).
 * `js/app.js` restante: estado, roteamento entre telas e persistência.
 
 ## 5. Critérios de Aceite (verificáveis por teste)
