@@ -4,7 +4,17 @@
 const EuGeroPreview = (function () {
   const { getSkillsFromState, getActiveSections, SECTION_LABELS } = EuGeroConfig;
 
-  const escapeHtml = EuGeroUtils.escapeHtml;
+  const { escapeHtml, escapeAttr } = EuGeroUtils;
+
+  function renderLinkedinLink(url) {
+    return `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`;
+  }
+
+  function buildContactParts(personal) {
+    const parts = [personal.email, personal.phone, personal.location].filter(Boolean).map(escapeHtml);
+    if (personal.linkedinUrl) parts.push(renderLinkedinLink(personal.linkedinUrl));
+    return parts;
+  }
 
   function formatPeriod(start, end, isCurrent) {
     if (typeof EuGeroDates !== 'undefined') {
@@ -193,7 +203,7 @@ const EuGeroPreview = (function () {
           <div class="cv-sidebar-section">
             <h3>Contato</h3>
             ${contactLines.map(c => `<p>${escapeHtml(c)}</p>`).join('')}
-            ${personal.linkedinUrl ? `<p class="cv-link">${escapeHtml(personal.linkedinUrl)}</p>` : ''}
+            ${personal.linkedinUrl ? `<p class="cv-link">${renderLinkedinLink(personal.linkedinUrl)}</p>` : ''}
           </div>
           ${showSkillsBlock ? `
             <div class="cv-sidebar-section">
@@ -217,7 +227,7 @@ const EuGeroPreview = (function () {
 
   function renderCenteredLayout(state, enabledSections, templateId, mode) {
     const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
-    const contacts = [personal.email, personal.phone, personal.location, personal.linkedinUrl].filter(Boolean);
+    const contacts = buildContactParts(personal);
     const extraClass = templateId === 'elegant' ? ' cv-elegant' : '';
 
     return `
@@ -225,7 +235,7 @@ const EuGeroPreview = (function () {
         <header class="cv-header-classic">
           <h1 class="cv-name">${escapeHtml(personal.fullName) || 'Seu Nome'}</h1>
           <p class="cv-headline">${escapeHtml(personal.headline) || 'Título profissional'}</p>
-          <p class="cv-contacts">${contacts.length ? contacts.map(c => escapeHtml(c)).join(' · ') : 'e-mail · telefone · cidade'}</p>
+          <p class="cv-contacts">${contacts.length ? contacts.join(' · ') : 'e-mail · telefone · cidade'}</p>
         </header>
         <div class="cv-body">${content}</div>
       </div>
@@ -250,14 +260,14 @@ const EuGeroPreview = (function () {
 
   function renderLeftLayout(state, enabledSections, templateId, mode) {
     const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
-    const contacts = [personal.email, personal.phone, personal.location, personal.linkedinUrl].filter(Boolean);
+    const contacts = buildContactParts(personal);
 
     return `
       <div class="cv cv-minimal template-${templateId || 'minimal'}">
         <header class="cv-header-left">
           <h1 class="cv-name">${escapeHtml(personal.fullName) || 'Seu Nome'}</h1>
           <p class="cv-headline">${escapeHtml(personal.headline) || 'Título profissional'}</p>
-          <p class="cv-contacts">${contacts.length ? contacts.map(c => escapeHtml(c)).join(' · ') : 'contato@email.com · cidade'}</p>
+          <p class="cv-contacts">${contacts.length ? contacts.join(' · ') : 'contato@email.com · cidade'}</p>
         </header>
         <div class="cv-body">${content}</div>
       </div>
@@ -272,7 +282,7 @@ const EuGeroPreview = (function () {
 
   function renderCreativeLayout(state, enabledSections, templateId, mode) {
     const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
-    const contacts = [personal.email, personal.phone, personal.location, personal.linkedinUrl].filter(Boolean);
+    const contacts = buildContactParts(personal);
     return `
       <div class="cv cv-creative template-${templateId || 'creative'}">
         <header class="cv-creative-header">
@@ -280,7 +290,7 @@ const EuGeroPreview = (function () {
           <div class="cv-creative-id">
             <h1 class="cv-name">${escapeHtml(personal.fullName) || 'Seu Nome'}</h1>
             <p class="cv-headline">${escapeHtml(personal.headline) || 'Título profissional'}</p>
-            <p class="cv-contacts">${contacts.length ? contacts.map(c => escapeHtml(c)).join(' · ') : 'e-mail · telefone · cidade'}</p>
+            <p class="cv-contacts">${contacts.length ? contacts.join(' · ') : 'e-mail · telefone · cidade'}</p>
           </div>
         </header>
         <div class="cv-body">${content}</div>
