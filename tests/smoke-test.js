@@ -483,7 +483,11 @@ assert(printCvUsesExportMode, 'printCv() chama EuGeroPreview.render com modo "ex
 // --- P0.4: tipografia unificada entre previa e PDF, sem fator de conversão ---
 console.log('\nTipografia unificada (previa = PDF):');
 
-const cssCode = fs.readFileSync(path.join(__dirname, '..', 'css/style.css'), 'utf8');
+const cssDir = path.join(__dirname, '..', 'css');
+const cssCode = fs.readdirSync(cssDir)
+  .filter((f) => f.endsWith('.css'))
+  .map((f) => fs.readFileSync(path.join(cssDir, f), 'utf8'))
+  .join('\n');
 assert(!cssCode.includes('calc(210mm *'), 'CSS não usa mais fator de conversão calc(210mm * X / 370) entre previa e impressão');
 assert(!appJsCode.includes('A4_BASE_WIDTH = 370'), 'app.js não usa mais 370px arbitrário como base da página A4');
 
