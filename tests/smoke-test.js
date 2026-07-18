@@ -14,6 +14,7 @@ function loadScript(relativePath) {
 }
 
 // Carregar módulos na ordem correta
+loadScript('js/utils.js');
 loadScript('js/config.js');
 loadScript('js/dates.js');
 loadScript('js/scoring.js');
@@ -517,10 +518,35 @@ const progressWithFilledExperiences = EuGeroScoring.calculateProgress(progressSt
 assert(progressWithFilledExperiences > progressWithEmptyExperiences, 'Preencher a experiência aumenta o progresso em relação à seção vazia');
 assert(progressWithFilledExperiences === 100, 'Todos os campos obrigatórios preenchidos resulta em 100%');
 
-// --- Summary ---
-console.log(`\n=== Resultado: ${passed} passou, ${failed} falhou ===\n`);
+// --- Utilitários compartilhados (EuGeroUtils) ---
+console.log('\nUtilitários compartilhados:');
 
-if (failed > 0) {
-  process.exit(1);
+assert(
+  EuGeroUtils.escapeHtml(`<b>"a" & 'b'</b>`) === '&lt;b&gt;&quot;a&quot; &amp; &#39;b&#39;&lt;/b&gt;',
+  'escapeHtml escapa &, <, >, " e \''
+);
+assert(
+  EuGeroUtils.escapeAttr('<b>"a" & b</b>') === '&lt;b&gt;&quot;a&quot; &amp; b&lt;/b&gt;',
+  'escapeAttr escapa &, ", < e >'
+);
+
+let debounceCalls = 0;
+const debounced = EuGeroUtils.debounce(() => { debounceCalls++; }, 10);
+debounced();
+debounced();
+debounced();
+
+setTimeout(() => {
+  assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
+  finishTests();
+}, 30);
+
+function finishTests() {
+  // --- Summary ---
+  console.log(`\n=== Resultado: ${passed} passou, ${failed} falhou ===\n`);
+
+  if (failed > 0) {
+    process.exit(1);
+  }
 }
 
