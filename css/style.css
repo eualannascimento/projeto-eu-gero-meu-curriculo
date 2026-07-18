@@ -403,15 +403,24 @@ textarea.cv-input { min-height: 104px; resize: vertical; line-height: 1.5; }
   /* ---- Menos scroll no celular, mantendo o design ---- */
   /* (As regras da home vivem no bloco "Home mobile compacta" no fim do arquivo.) */
 
-  /* Selecao de personagem: galeria 3 colunas x 2 linhas */
+  /* Selecao de personagem: galeria 3 colunas x 2 linhas, cartoes do mesmo tamanho */
   #screen-characters h2 { font-size: 26px !important; }
   #screen-characters h2 + p { font-size: 13.5px !important; margin-bottom: 14px !important; }
   #screen-characters .character-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  #screen-characters .character-card { padding: 12px 6px 10px; gap: 5px; }
+  #screen-characters .character-card { padding: 12px 6px 10px; gap: 4px; }
   #screen-characters .character-avatar { width: 40px; height: 40px; font-size: 16px; }
   #screen-characters .character-kicker { display: none; }
-  #screen-characters .character-name { font-size: 12.5px; line-height: 1.15; }
-  #screen-characters .character-role { display: none; }
+  #screen-characters .character-name {
+    font-size: 11.5px;
+    line-height: 1.15;
+    min-height: calc(1.15em * 2);
+  }
+  #screen-characters .character-role {
+    font-size: 9.5px;
+    line-height: 1.3;
+    min-height: calc(1.3em * 2);
+    -webkit-line-clamp: 2;
+  }
   #screen-characters .character-cta { display: none; }
 
   /* Start: espacamentos levemente menores; nota auxiliar sai */
@@ -1524,6 +1533,9 @@ body.modal-open {
   font-size: 20px;
   text-transform: uppercase;
   line-height: 1.05;
+  min-height: calc(1.05em * 2);
+  display: flex;
+  align-items: center;
 }
 
 .character-role {
@@ -1531,6 +1543,11 @@ body.modal-open {
   line-height: 1.45;
   color: color-mix(in srgb, var(--color-text) 72%, transparent);
   flex: 1;
+  min-height: calc(1.45em * 2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .character-cta {
