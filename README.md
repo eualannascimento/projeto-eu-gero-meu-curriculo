@@ -40,7 +40,12 @@ python3 -m http.server 8080
 
 ```
 index.html
-css/style.css
+css/
+  base.css          Tokens, header, botoes, cards, formularios, home antiga
+  layout.css        Telas, layout do wizard, timeline, campos e listas
+  templates.css     Preview A4 e os 20 templates de curriculo
+  print-preview.css Impressao, chips, controles de pagina, review, modais, toast
+  responsive.css    Media queries, acessibilidade e ajustes mobile
 js/
   config.js         Secoes, campos, 20 templates, flags ATS
   dates.js          Mes/ano e formatacao de periodos

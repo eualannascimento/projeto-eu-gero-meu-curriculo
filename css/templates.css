@@ -1,0 +1,527 @@
+/* Preview panel — folha A4 */
+.preview-panel-sticky {
+  position: relative;
+  min-height: 0;
+  overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--color-border);
+}
+
+.preview-paper-wrap {
+  padding: 0.625rem;
+  background: #e2e8f0;
+  overflow: auto;
+  flex: 1;
+}
+
+/* Unidades fisicas (mm/pt) em vez de px: previa e impressao usam exatamente
+   o mesmo calculo tipografico, sem fator de conversao entre as duas (P0.4).
+   Guardrails: fonte nunca abaixo de 10pt, entrelinha nunca abaixo de 1.2,
+   margens nunca abaixo de 12mm. */
+.preview-content.preview-paper,
+.preview-content {
+  background: #fff;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.1);
+  min-height: 297mm;
+  padding: var(--doc-padding, 16mm);
+  font-size: var(--doc-font-size, 10.5pt);
+  line-height: var(--doc-line-height, 1.35);
+  color: #1a1a2e;
+}
+
+.preview-content.condensed-mode {
+  --doc-padding: 12mm;
+  --doc-font-size: 10pt;
+  --doc-line-height: 1.2;
+}
+
+/* Margens (do modelo): padding real da pagina, sempre >= 12mm */
+.preview-content.cv-margin-estreita { --doc-padding: 12mm; }
+.preview-content.cv-margin-padrao { --doc-padding: 16mm; }
+.preview-content.cv-margin-confortavel { --doc-padding: 20mm; }
+/* Espacamento (do modelo): densidade do texto, sempre >= 10pt e >= 1.2 de entrelinha */
+.preview-content.cv-density-normal { --doc-font-size: 10.5pt; --doc-line-height: 1.35; }
+.preview-content.cv-density-condensado { --doc-font-size: 10pt; --doc-line-height: 1.2; }
+
+.onboarding-tips {
+  margin: 0.75rem 0 0.75rem;
+  padding: 0.875rem 1rem 0.875rem 0.5rem;
+  background: rgba(89, 128, 166, 0.05);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 8px;
+  list-style: none;
+}
+.onboarding-tips li {
+  margin-bottom: 0.5rem;
+  font-size: 0.8125rem;
+  position: relative;
+  padding-left: 1.5rem;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+.onboarding-tips li:last-child {
+  margin-bottom: 0;
+}
+.onboarding-tips li::before {
+  content: "💡";
+  position: absolute;
+  left: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.smart-fit-controls {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius);
+  display: inline-block;
+  font-size: 0.875rem;
+}
+
+/* .preview-panel styles merged into .preview-panel-sticky above */
+
+
+.preview-header {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.preview-header h2 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.preview-template-badge {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+}
+
+/* CV in preview */
+.cv { line-height: inherit; font-family: var(--font-body); color: #1d1f20; }
+
+/* ---- Base compartilhada dos templates (padrao: referencia Industry) ---- */
+.cv .cv-name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text);
+}
+.cv .cv-headline {
+  margin: 0.444em 0 0;
+  font-family: var(--font-body);
+  color: var(--color-accent-700);
+}
+.cv .cv-contacts {
+  margin: 0.667em 0 0;
+  font-family: var(--font-body);
+  color: #6b6d6f;
+}
+
+.cv-section { margin-bottom: 1.222em; }
+.cv-section h2 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.111em;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  border-bottom: none;
+  padding-bottom: 0;
+  margin: 0 0 0.556em;
+  color: var(--color-accent-700);
+}
+
+.cv-section-skeleton h2 { color: var(--color-neutral-500); }
+.cv-skeleton-lines { display: flex; flex-direction: column; gap: 0.444em; }
+.cv-skeleton-lines span { display: block; height: 0.667em; background: var(--color-neutral-200); border-radius: 0; }
+.cv-skeleton-lines span:first-child { width: 85%; }
+.cv-skeleton-lines span:last-child { width: 60%; }
+
+.cv-item { margin-bottom: 1em; }
+.cv-item-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  flex-wrap: wrap; gap: 0.444em;
+}
+.cv-item-header strong,
+.cv-item > strong {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.222em;
+  color: #1d1f20;
+}
+.cv-item-sub { font-size: 1em; color: var(--color-accent-700); font-family: var(--font-body); }
+.cv-period { font-size: 0.944em; color: #6b6d6f; font-family: var(--font-body); white-space: nowrap; }
+.cv-desc { margin: 0.333em 0 0; font-size: 1.056em; line-height: 1.5; color: #3a3c3e; }
+.cv-summary { font-size: 1.056em; line-height: 1.5; margin: 0; color: #3a3c3e; }
+.cv-skills { display: flex; flex-wrap: wrap; gap: 0.444em; }
+.cv-skill-tag {
+  background: var(--color-neutral-100);
+  padding: 2px 0.778em; border-radius: 0;
+  font-size: 0.944em; font-family: var(--font-body); color: var(--color-neutral-800);
+}
+.cv-muted { opacity: 0.5; font-style: italic; font-size: 0.944em; }
+
+/* ---- Classico: centrado, monocromatico com acento ---- */
+.cv-classic .cv-header-classic {
+  text-align: center;
+  border-bottom: 1px solid var(--color-divider);
+  padding-bottom: 1.111em;
+  margin-bottom: 1.333em;
+}
+.cv-classic .cv-name { font-size: 2.444em; text-transform: uppercase; letter-spacing: 0.02em; }
+.cv-classic .cv-headline { font-size: 1.111em; text-transform: uppercase; letter-spacing: 0.16em; color: var(--color-accent-700); }
+.cv-classic .cv-contacts { font-size: 0.956em; }
+
+/* ---- Sidebar (Moderno / Criativo) ---- */
+.cv-sidebar-layout { display: flex; min-height: 53.333em; }
+.cv-sidebar-layout .cv-sidebar {
+  width: 38%;
+  padding: 1.778em 1.444em;
+  font-family: var(--font-body);
+  color: #3a3c3e;
+}
+/* Fundo temavel para qualquer template de barra lateral (usa a familia de cor
+   do proprio modelo, definida mais abaixo em .template-<id>). */
+.cv-sidebar-layout .cv-sidebar { background: var(--color-accent-100); border-right: 1px solid var(--color-divider); }
+
+.cv-sidebar-layout .cv-sidebar .cv-name {
+  margin: 0; font-size: 1.778em; line-height: 1.05; text-transform: uppercase;
+  color: var(--color-accent-900);
+}
+.cv-sidebar-layout .cv-sidebar .cv-headline {
+  font-size: 0.956em; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--color-accent-700); margin: 0.444em 0 1.556em; line-height: 1.3;
+}
+.cv-sidebar-layout .cv-sidebar-section { margin-bottom: 1.556em; }
+.cv-sidebar-layout .cv-sidebar-section h3 {
+  font-family: var(--font-heading); font-weight: 600;
+  font-size: 0.944em; text-transform: uppercase; letter-spacing: 0.12em;
+  margin: 0 0 0.556em; padding-bottom: 0; border-bottom: none;
+  color: var(--color-accent-700);
+}
+.cv-sidebar-layout .cv-sidebar-section p { margin: 2px 0; font-size: 0.933em; line-height: 1.3; color: #3a3c3e; }
+.cv-sidebar-layout .cv-main { flex: 1; padding: 1.778em 1.667em; }
+.template-modern .cv-main .cv-section h2,
+.template-creative .cv-main .cv-section h2 { color: var(--color-accent-700); border-bottom: none; }
+
+/* ---- Elegante: centrado, tipografia condensada e fina, acento discreto ---- */
+.cv-elegant .cv-header-classic { text-align: center; border-bottom: none; padding-bottom: 0.444em; margin-bottom: 1.556em; }
+.cv-elegant .cv-name {
+  font-family: var(--font-heading); font-weight: 400;
+  font-size: 2.333em; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.cv-elegant .cv-headline {
+  font-size: 1.056em; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-accent-700);
+  position: relative; padding-top: 1.111em;
+}
+.cv-elegant .cv-header-classic .cv-headline::before {
+  content: ""; position: absolute; top: 0.444em; left: 50%; transform: translateX(-50%);
+  width: 3.333em; height: 1px; background: var(--color-accent);
+}
+.cv-elegant .cv-contacts { font-size: 0.933em; }
+.cv-elegant .cv-section h2 {
+  text-align: center; letter-spacing: 0.28em; color: var(--color-text);
+}
+.cv-elegant .cv-summary, .cv-elegant .cv-desc { text-align: center; }
+.cv-elegant .cv-item-header { justify-content: center; }
+
+/* ---- Executivo: faixa superior escura ---- */
+.cv-executive .cv-banner {
+  background: var(--color-accent-900);
+  color: #eef4fa;
+  padding: 1.778em 1.667em;
+  margin: -2.444em -2.222em 1.556em;
+}
+.cv-executive .cv-banner .cv-name { color: #eef4fa; font-size: 2.111em; text-transform: uppercase; letter-spacing: 0.02em; margin: 0; }
+.cv-executive .cv-banner .cv-headline { color: #b9cde0; font-size: 1.056em; text-transform: uppercase; letter-spacing: 0.14em; margin: 0.444em 0 0; }
+.cv-executive .cv-banner .cv-contacts { color: #9fb6cd; font-size: 0.933em; margin: 0.667em 0 0; }
+.cv-executive .cv-section h2 {
+  color: var(--color-accent-900);
+  border-bottom: 1px solid var(--color-divider);
+  padding-bottom: 0.333em;
+}
+
+/* ---- Minimalista: alinhado a esquerda, ultra limpo ---- */
+.cv-minimal .cv-header-left { text-align: left; margin-bottom: 1.556em; }
+.cv-minimal .cv-name { font-size: 2.667em; text-transform: none; letter-spacing: -0.01em; }
+.cv-minimal .cv-headline { font-size: 1.111em; color: #6b6d6f; margin: 0.556em 0 0.333em; }
+.cv-minimal .cv-contacts { font-size: 0.956em; color: #6b6d6f; margin: 0; }
+.cv-minimal .cv-section h2 {
+  color: var(--color-text);
+  font-size: 1.111em;
+  letter-spacing: 0.04em;
+  border-bottom: none;
+  text-transform: uppercase;
+}
+
+/* ---- Criativo: coluna unica com selo de iniciais ---- */
+.cv-creative .cv-creative-header {
+  display: flex; align-items: center; gap: 1.333em; margin-bottom: 1.778em;
+}
+.cv-creative .cv-creative-badge {
+  width: 4.222em; height: 4.222em; flex: none;
+  background: var(--color-accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-heading); font-weight: 600; font-size: 1.889em; line-height: 1;
+}
+.cv-creative .cv-creative-id { min-width: 0; }
+.cv-creative .cv-name { font-size: 2em; text-transform: uppercase; line-height: 1.02; }
+.cv-creative .cv-headline {
+  font-size: 1em; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--color-accent-700); margin: 0.333em 0 2px;
+}
+.cv-creative .cv-contacts { font-size: 0.933em; color: #6b6d6f; margin: 0; }
+.cv-creative .cv-section h2 {
+  display: flex; align-items: center; gap: 0.667em;
+  color: var(--color-accent-700); border-bottom: none;
+}
+.cv-creative .cv-section h2::before {
+  content: ""; width: 1.556em; height: 2px; flex: none;
+  background: var(--color-accent);
+}
+
+/* ---- Faixa Clara: banner suave accent-100 com texto escuro ---- */
+.template-faixa .cv-banner {
+  background: var(--color-accent-100);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-divider);
+}
+.template-faixa .cv-banner .cv-name { color: var(--color-accent-900); }
+.template-faixa .cv-banner .cv-headline { color: var(--color-accent-700); }
+.template-faixa .cv-banner .cv-contacts { color: #6b6d6f; }
+.template-faixa .cv-section h2 { color: var(--color-accent-700); border-bottom: none; }
+
+/* ---- Pilar: titulos de secao com barra lateral de acento ---- */
+.template-pilar .cv-name { text-transform: uppercase; }
+.template-pilar .cv-header-left { border-left: 0.333em solid var(--color-accent); padding-left: 1em; }
+.template-pilar .cv-section h2 {
+  color: var(--color-text);
+  border-left: 0.333em solid var(--color-accent);
+  padding-left: 0.778em;
+  letter-spacing: 0.1em;
+}
+
+/* ---- Serifado: tipografia tradicional com serifa ---- */
+.template-serifado .cv-name,
+.template-serifado .cv-section h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #2b2b2d;
+}
+.template-serifado .cv-name { text-transform: none; letter-spacing: 0; }
+.template-serifado .cv-headline { color: #5d5d60; text-transform: none; letter-spacing: 0.04em; }
+.template-serifado .cv-section h2 {
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--color-divider);
+  padding-bottom: 0.222em;
+}
+.template-serifado .cv-item-sub { color: #5d5d60; }
+
+/* ==================================================================
+   Temas de cor dos modelos (20 no total).
+   Cada .template-<id> apenas redefine a familia de acento; os layouts
+   (.cv-classic / .cv-minimal / .cv-executive / .cv-sidebar-layout /
+   .cv-creative) e a prévia/PDF herdam essas variaveis automaticamente.
+   Assim a prévia e o PDF (impressao) saem sempre identicos.
+   ================================================================== */
+
+/* Esmeralda — centrado, verde esmeralda */
+.template-esmeralda {
+  --color-accent: #14857a; --color-accent-100: #e8f6f3;
+  --color-accent-700: #0f766e; --color-accent-800: #115e59;
+  --color-accent-900: #134e4a; --color-accent-2-100: #e8f6f3;
+}
+
+/* Violeta — centrado, violeta contemporâneo, fio inferior no titulo */
+.template-violeta {
+  --color-accent: #6d4aa8; --color-accent-100: #f1ecfa;
+  --color-accent-700: #573a8a; --color-accent-800: #46306f;
+  --color-accent-900: #362556; --color-accent-2-100: #f1ecfa;
+}
+.template-violeta .cv-section h2 {
+  border-bottom: 1px solid var(--color-accent);
+  padding-bottom: 0.222em; color: var(--color-accent-700);
+}
+
+/* Bordô — centrado, vinho sobrio com titulos serifados */
+.template-bordo {
+  --color-accent: #9b2c3b; --color-accent-100: #fbecee;
+  --color-accent-700: #7a2230; --color-accent-800: #611a26;
+  --color-accent-900: #4a141d; --color-accent-2-100: #fbecee;
+}
+.template-bordo .cv-name,
+.template-bordo .cv-section h2 { font-family: Georgia, 'Times New Roman', serif; }
+.template-bordo .cv-name { text-transform: none; letter-spacing: 0; }
+.template-bordo .cv-section h2 { letter-spacing: 0.08em; }
+
+/* Linha — centrado, fio fino acima de cada titulo (monoline) */
+.template-linha .cv-section h2 {
+  border-top: 1.5px solid var(--color-accent);
+  padding-top: 0.5em; margin-top: 0.222em;
+  letter-spacing: 0.2em; color: var(--color-text);
+}
+.template-linha .cv-classic .cv-header-classic,
+.template-linha .cv-header-classic { border-bottom-width: 2px; }
+
+/* Grafite — esquerda, cinza grafite com titulos fortes */
+.template-grafite {
+  --color-accent: #4b5563; --color-accent-100: #f1f2f4;
+  --color-accent-700: #374151; --color-accent-800: #1f2937;
+  --color-accent-900: #111827; --color-accent-2-100: #f1f2f4;
+}
+.template-grafite .cv-name { color: var(--color-accent-900); }
+.template-grafite .cv-section h2 {
+  color: var(--color-accent-900); font-weight: 700;
+  border-bottom: 2px solid var(--color-accent-900);
+  padding-bottom: 0.222em; letter-spacing: 0.06em;
+}
+
+/* Âmbar — esquerda, acento âmbar acolhedor com sublinhado no titulo */
+.template-ambar {
+  --color-accent: #b45309; --color-accent-100: #fdf3e7;
+  --color-accent-700: #92400e; --color-accent-800: #78350f;
+  --color-accent-900: #5c290b; --color-accent-2-100: #fdf3e7;
+}
+.template-ambar .cv-section h2 {
+  border-bottom: 1px solid var(--color-accent);
+  padding-bottom: 0.222em;
+}
+
+/* Marinho — faixa superior azul marinho (usa layout .cv-executive) */
+.template-marinho {
+  --color-accent: #2c5a8a; --color-accent-100: #eaf1f9;
+  --color-accent-700: #1e3a5f; --color-accent-800: #182f4d;
+  --color-accent-900: #12253d; --color-accent-2-100: #eaf1f9;
+}
+
+/* Carvão — faixa superior preto carvão */
+.template-carvao {
+  --color-accent: #4a4a4d; --color-accent-100: #f0f0f1;
+  --color-accent-700: #2b2b2d; --color-accent-800: #1f1f21;
+  --color-accent-900: #131315; --color-accent-2-100: #f0f0f1;
+}
+
+/* Petróleo — barra lateral azul petróleo */
+.template-petroleo {
+  --color-accent: #0e7490; --color-accent-100: #e7f5fa;
+  --color-accent-700: #155e75; --color-accent-800: #164e63;
+  --color-accent-900: #133f52; --color-accent-2-100: #e7f5fa;
+}
+
+/* Oliva — barra lateral verde oliva */
+.template-oliva {
+  --color-accent: #3f7d4e; --color-accent-100: #edf5ee;
+  --color-accent-700: #256345; --color-accent-800: #1e5138;
+  --color-accent-900: #17402c; --color-accent-2-100: #edf5ee;
+}
+
+/* Rosado — selo de iniciais em rosé (usa layout .cv-creative) */
+.template-rosado {
+  --color-accent: #be3455; --color-accent-100: #fdecf0;
+  --color-accent-700: #9f2544; --color-accent-800: #841d37;
+  --color-accent-900: #66162b; --color-accent-2-100: #fdecf0;
+}
+
+/* ---- Seleção de personagem (estilo escolha de jogo) ---- */
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 20px;
+}
+
+.character-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 28px 18px 22px;
+  background: transparent;
+  border: 1px solid var(--color-divider);
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.character-card:hover {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+  transform: translateY(-3px);
+}
+
+.character-card:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.character-avatar {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 26px;
+}
+
+.character-card-blank .character-avatar {
+  background: transparent;
+  border: 1px dashed var(--color-divider);
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+
+.character-card-blank:hover .character-avatar {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.character-kicker {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--color-accent-700);
+}
+
+.character-card-blank .character-kicker {
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+
+.character-name {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 20px;
+  text-transform: uppercase;
+  line-height: 1.05;
+}
+
+.character-role {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--color-text) 72%, transparent);
+  flex: 1;
+}
+
+.character-cta {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-accent-700);
+}
+
