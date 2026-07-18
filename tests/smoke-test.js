@@ -601,6 +601,29 @@ assert(appJsContent.includes('Antes de enviar'), 'Rotulo da checklist "Antes de 
 assert(appJsContent.includes('Confirme se o texto do PDF pode ser selecionado e copiado.'), 'Checklist inclui item sobre texto selecionavel no PDF');
 assert(appJsContent.includes('Dica: leia os requisitos da vaga e confira se as habilidades'), 'Dica de habilidades x requisitos da vaga presente abaixo das sugestoes');
 
+// --- Link do LinkedIn clicavel na previa/PDF ---
+console.log('\nLink do LinkedIn clicavel:');
+
+const linkedinState = {
+  template: 'classic',
+  personal: {
+    fullName: 'Maria Teste',
+    headline: 'Engenheira de Dados',
+    linkedinUrl: 'https://linkedin.com/in/maria-teste'
+  },
+  summary: '',
+  experiences: [],
+  education: [],
+  skills: [],
+  skillsText: '',
+  languages: []
+};
+const linkedinSections = EuGeroConfig.getActiveSections(['experiences', 'education']);
+const linkedinHtml = EuGeroPreview.render(linkedinState, 'classic', linkedinSections, 'export');
+assert(linkedinHtml.includes('href="https://linkedin.com/in/maria-teste"'), 'Link do LinkedIn vira <a href> na previa/PDF');
+assert(linkedinHtml.includes('target="_blank"') && linkedinHtml.includes('rel="noopener noreferrer"'), 'Link do LinkedIn abre em nova aba sem vazar window.opener');
+assert(linkedinHtml.includes('>linkedin.com/in/maria-teste<') || linkedinHtml.includes('>https://linkedin.com/in/maria-teste<'), 'Texto visivel do link do LinkedIn preservado');
+
 // --- Utilitários compartilhados (EuGeroUtils) ---
 console.log('\nUtilitários compartilhados:');
 
