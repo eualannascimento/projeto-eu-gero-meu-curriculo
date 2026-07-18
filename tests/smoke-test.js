@@ -601,6 +601,14 @@ assert(appJsContent.includes('Antes de enviar'), 'Rotulo da checklist "Antes de 
 assert(appJsContent.includes('Confirme se o texto do PDF pode ser selecionado e copiado.'), 'Checklist inclui item sobre texto selecionavel no PDF');
 assert(appJsContent.includes('Dica: leia os requisitos da vaga e confira se as habilidades'), 'Dica de habilidades x requisitos da vaga presente abaixo das sugestoes');
 
+// --- Content-Security-Policy ---
+console.log('\nContent-Security-Policy:');
+
+assert(/<meta\s+http-equiv="Content-Security-Policy"/.test(htmlContent), 'index.html declara meta CSP');
+assert(htmlContent.includes("default-src 'self'"), 'CSP restringe default-src a self');
+assert(htmlContent.includes("script-src 'self'"), 'CSP restringe script-src a self (sem inline nem eval)');
+assert(htmlContent.includes("object-src 'none'"), 'CSP bloqueia object/embed/plugin');
+
 // --- Link do LinkedIn clicavel na previa/PDF ---
 console.log('\nLink do LinkedIn clicavel:');
 
