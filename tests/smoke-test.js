@@ -446,6 +446,78 @@ assert(noWordRefs.length === 0, `Sem referencias a Word/export removidos${noWord
 assert(!fs.existsSync(path.join(__dirname, '..', 'js/export.js')), 'js/export.js removido');
 assert(!fs.existsSync(path.join(__dirname, '..', 'js/cv-data.js')), 'js/cv-data.js removido');
 
+// --- P0.2: sem listener duplicado no botão "Voltar" da configuração ---
+console.log('\nNavegação sem binding duplicado:');
+
+const appJsCode = fs.readFileSync(path.join(__dirname, '..', 'js/app.js'), 'utf8');
+const backStartBindings = (appJsCode.match(/getElementById\('btn-back-start'\)\?\.addEventListener/g) || []).length;
+assert(backStartBindings === 1, `btn-back-start tem exatamente 1 listener de clique (encontrados: ${backStartBindings})`);
+
+// --- P0.3: sem skeletons/placeholders no PDF exportado ---
+console.log('\nExportação sem skeletons:');
+
+const previewEmptyState = {
+  template: 'classic',
+  personal: { fullName: 'Maria Teste', headline: 'Engenheira de Dados' },
+  summary: '',
+  experiences: [],
+  education: [],
+  skills: [],
+  skillsText: '',
+  languages: []
+};
+const exportSections = EuGeroConfig.getActiveSections(['experiences', 'education']);
+
+const exportHtml = EuGeroPreview.render(previewEmptyState, 'classic', exportSections, 'export');
+assert(!exportHtml.includes('cv-section-skeleton'), 'Modo export não inclui skeletons de seção vazia');
+assert(!exportHtml.includes('>Experiência<'), 'Modo export não inclui título de seção vazia (Experiência)');
+assert(!exportHtml.includes('>Resumo<'), 'Modo export não inclui título de seção vazia (Resumo)');
+
+const editorHtml = EuGeroPreview.render(previewEmptyState, 'classic', exportSections);
+assert(editorHtml.includes('cv-section-skeleton'), 'Modo padrão (editor) preserva skeletons de seção vazia');
+
+const printCvUsesExportMode = /EuGeroPreview\.render\(\s*state\s*,\s*state\.template\s*,\s*activeSections\(\)\s*,\s*['"]export['"]\s*\)/.test(appJsCode);
+assert(printCvUsesExportMode, 'printCv() chama EuGeroPreview.render com modo "export"');
+
+// --- P0.4: tipografia unificada entre previa e PDF, sem fator de conversão ---
+console.log('\nTipografia unificada (previa = PDF):');
+
+const cssCode = fs.readFileSync(path.join(__dirname, '..', 'css/style.css'), 'utf8');
+assert(!cssCode.includes('calc(210mm *'), 'CSS não usa mais fator de conversão calc(210mm * X / 370) entre previa e impressão');
+assert(!appJsCode.includes('A4_BASE_WIDTH = 370'), 'app.js não usa mais 370px arbitrário como base da página A4');
+
+const normalFontMatch = cssCode.match(/cv-density-normal\s*\{[^}]*--doc-font-size:\s*([\d.]+)pt/);
+const condensedFontMatch = cssCode.match(/cv-density-condensado\s*\{[^}]*--doc-font-size:\s*([\d.]+)pt/);
+assert(normalFontMatch && parseFloat(normalFontMatch[1]) >= 10, 'Fonte normal (previa/PDF) nunca abaixo de 10pt');
+assert(condensedFontMatch && parseFloat(condensedFontMatch[1]) >= 10, 'Fonte condensada (previa/PDF) nunca abaixo de 10pt');
+
+// --- P0.5: progresso não ignora seção de lista habilitada e vazia ---
+console.log('\nProgresso de preenchimento:');
+
+const filledPersonal = {
+  fullName: 'Maria Teste',
+  headline: 'Engenheira de Dados',
+  email: 'maria@teste.com',
+  location: 'São Paulo, SP'
+};
+const progressStateEmptyList = {
+  enabledSections: ['experiences'],
+  personal: filledPersonal,
+  summary: 'Resumo profissional completo com experiência relevante em dados.',
+  skillsText: 'SQL; Python; Power BI',
+  experiences: []
+};
+const progressWithEmptyExperiences = EuGeroScoring.calculateProgress(progressStateEmptyList);
+assert(progressWithEmptyExperiences < 100, 'Seção "Experiência" habilitada e vazia não conta como 100% preenchida');
+
+const progressStateFilledList = {
+  ...progressStateEmptyList,
+  experiences: [{ title: 'Engenheira de Dados', company: 'Empresa X', description: 'Descrição com mais de quarenta e cinco caracteres para passar na validação obrigatória.' }]
+};
+const progressWithFilledExperiences = EuGeroScoring.calculateProgress(progressStateFilledList);
+assert(progressWithFilledExperiences > progressWithEmptyExperiences, 'Preencher a experiência aumenta o progresso em relação à seção vazia');
+assert(progressWithFilledExperiences === 100, 'Todos os campos obrigatórios preenchidos resulta em 100%');
+
 // --- Ajustes de textos ATS ---
 console.log('\nTextos ATS (dicas de campos revisadas):');
 
