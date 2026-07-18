@@ -4,12 +4,7 @@
 const EuGeroPreview = (function () {
   const { getSkillsFromState, getActiveSections, SECTION_LABELS } = EuGeroConfig;
 
-  function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
+  const escapeHtml = EuGeroUtils.escapeHtml;
 
   function formatPeriod(start, end, isCurrent) {
     if (typeof EuGeroDates !== 'undefined') {

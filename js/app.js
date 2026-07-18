@@ -9,6 +9,7 @@
     getActiveSections, normalizeEnabledSections, isSectionMandatory, skillsToText, SHORT_LABELS,
     TEMPLATE_IDS, getTemplateMeta
   } = EuGeroConfig;
+  const { escapeHtml, escapeAttr, debounce } = EuGeroUtils;
 
   let state = EuGeroStorage.load();
   let currentView = 'home';
@@ -1739,14 +1740,6 @@
     syncBodyScrollLock();
   }
 
-  function debounce(fn, ms) {
-    let t;
-    return function (...args) {
-      clearTimeout(t);
-      t = setTimeout(() => fn.apply(this, args), ms);
-    };
-  }
-
   function showToast(message, options = {}) {
     if (!els.toast) return;
     ensureToastStructure();
@@ -1782,22 +1775,6 @@
     els.toast.className = 'toast';
     els.toast.style.pointerEvents = 'none';
     if (els.toastAction) els.toastAction.hidden = true;
-  }
-
-  function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  function escapeAttr(text) {
-    if (!text) return '';
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
   }
 
   window.EuGeroApp = {
