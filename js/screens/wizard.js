@@ -1,12 +1,13 @@
 /**
- * Tela do wizard: renderização de campos, timeline, listas e validação.
+ * Tela do wizard: campos, timeline, listas, validação e dicas de qualidade.
  * Recebe o contexto compartilhado do app via init(ctx).
  */
 const EuGeroWizardScreen = (function () {
   'use strict';
 
   const {
-    SECTIONS, ACTION_VERBS, createEmptyListItem, skillsToText, SHORT_LABELS
+    SECTIONS, ACTION_VERBS, createEmptyListItem,
+    isSectionMandatory, normalizeEnabledSections, skillsToText, SHORT_LABELS
   } = EuGeroConfig;
 
   let ctx = null;
@@ -15,31 +16,11 @@ const EuGeroWizardScreen = (function () {
     ctx = context;
   }
 
-  function clearCurrentSection(section) {
-    if (!section) return;
-    const state = ctx.getState();
-    if (section.id === 'personal') {
-      state.personal = { fullName: '', headline: '', email: '', phone: '', location: '', linkedinUrl: '' };
-    } else if (section.id === 'summary') {
-      state.summary = '';
-    } else if (section.id === 'skills') {
-      state.skillsText = '';
-      state.skills = [];
-    } else if (section.list) {
-      state[section.id] = [];
-    }
-    ctx.saveState();
-    renderWizardStep();
-    ctx.debouncedUpdatePreviews();
-    ctx.showToast(`Seção "${SHORT_LABELS[section.id] || section.title}" limpa.`);
-  }
-
   function renderWizardTimeline() {
     const state = ctx.getState();
-    const els = ctx.els;
-    if (!els.wizardTimeline) return;
+    if (!ctx.els.wizardTimeline) return;
     const sections = ctx.activeSections();
-    els.wizardTimeline.innerHTML = sections.map((section, i) => {
+    ctx.els.wizardTimeline.innerHTML = sections.map((section, i) => {
       const label = SHORT_LABELS[section.id] || section.title;
       const isActive = i === state.currentStep;
       const isDone = i < state.currentStep;
@@ -52,11 +33,11 @@ const EuGeroWizardScreen = (function () {
       `;
     }).join('');
 
-    els.wizardTimeline.querySelectorAll('.timeline-step').forEach((btn) => {
+    ctx.els.wizardTimeline.querySelectorAll('.timeline-step').forEach((btn) => {
       btn.addEventListener('click', () => ctx.goToStep(parseInt(btn.dataset.step, 10)));
     });
 
-    const activeBtn = els.wizardTimeline.querySelector('.timeline-step.active');
+    const activeBtn = ctx.els.wizardTimeline.querySelector('.timeline-step.active');
     if (activeBtn) {
       activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
@@ -64,7 +45,6 @@ const EuGeroWizardScreen = (function () {
 
   function renderWizardStep() {
     const state = ctx.getState();
-    const els = ctx.els;
     const sections = ctx.activeSections();
     const section = sections[state.currentStep];
     if (!section) {
@@ -74,21 +54,21 @@ const EuGeroWizardScreen = (function () {
       return renderWizardStep();
     }
 
-    if (!els.wizardSteps) return;
+    if (!ctx.els.wizardSteps) return;
 
     const titleEl = document.getElementById('wizard-step-title');
     const counterEl = document.getElementById('wizard-step-counter');
     const descEl = document.getElementById('wizard-step-desc');
-
+    
     if (titleEl) titleEl.textContent = SHORT_LABELS[section.id] || section.title;
     if (counterEl) counterEl.textContent = `Etapa ${state.currentStep + 1} de ${sections.length}`;
     if (descEl) descEl.textContent = section.description || '';
-
-    if (els.wizardProgress) {
-      els.wizardProgress.textContent = `Etapa ${state.currentStep + 1} de ${sections.length}: ${section.title}`;
+    
+    if (ctx.els.wizardProgress) {
+      ctx.els.wizardProgress.textContent = `Etapa ${state.currentStep + 1} de ${sections.length}: ${section.title}`;
     }
 
-    els.wizardSteps.innerHTML = '';
+    ctx.els.wizardSteps.innerHTML = '';
     const stepEl = document.createElement('div');
     stepEl.className = 'wizard-step';
     stepEl.dataset.sectionId = section.id;
@@ -98,7 +78,7 @@ const EuGeroWizardScreen = (function () {
     } else if (section.fields) {
       const grid = document.createElement('div');
       grid.className = 'cv-form2';
-      grid.style.marginTop = '16px';
+      grid.style.marginTop = '12px';
       section.fields.forEach((field) => {
         grid.appendChild(renderField(section, field));
       });
@@ -106,14 +86,14 @@ const EuGeroWizardScreen = (function () {
     }
 
     const actionsRow = document.createElement('div');
-    actionsRow.style.cssText = 'margin-top: 30px; display: flex; flex-wrap: wrap; gap: 18px; align-items: center;';
+    actionsRow.style.cssText = 'margin-top: 18px; display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: center;';
     const mutedGhost = 'font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 55%, transparent);';
 
     const aiBtn = document.createElement('button');
     aiBtn.type = 'button';
     aiBtn.className = 'btn btn-ghost btn-ai-section';
     aiBtn.style.cssText = mutedGhost;
-    aiBtn.textContent = 'Travou? Peça ideias a uma IA →';
+    aiBtn.textContent = 'Precisa de ideias? Peça ajuda a uma IA →';
     aiBtn.addEventListener('click', (e) => ctx.showPrompt('section', section.id, e.currentTarget));
     actionsRow.appendChild(aiBtn);
 
@@ -125,8 +105,19 @@ const EuGeroWizardScreen = (function () {
     clearBtn.addEventListener('click', () => clearCurrentSection(section));
     actionsRow.appendChild(clearBtn);
 
+    // Seções opcionais podem ser removidas do currículo direto do wizard.
+    if (!isSectionMandatory(section.id)) {
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'btn btn-ghost';
+      removeBtn.style.cssText = mutedGhost;
+      removeBtn.textContent = 'Remover esta seção';
+      removeBtn.addEventListener('click', () => removeSectionFromWizard(section));
+      actionsRow.appendChild(removeBtn);
+    }
+
     stepEl.appendChild(actionsRow);
-    els.wizardSteps.appendChild(stepEl);
+    ctx.els.wizardSteps.appendChild(stepEl);
 
     const prevBtn = document.getElementById('btn-prev');
     const nextBtn = document.getElementById('btn-next');
@@ -149,7 +140,7 @@ const EuGeroWizardScreen = (function () {
   function renderFieldTip(field) {
     if (!field.tip) return '';
     return `
-      <span class="cv-help" tabindex="0" aria-label="Ajuda">?<span class="cv-tip-pop">${ctx.escapeHtml(field.tip)}</span></span>
+      <span class="cv-help" tabindex="0" aria-label="Ver dica do campo">?<span class="cv-tip-pop">${ctx.escapeHtml(field.tip)}</span></span>
     `;
   }
 
@@ -272,7 +263,7 @@ const EuGeroWizardScreen = (function () {
       input.className = 'cv-input';
       input.id = id;
       input.name = field.key;
-      input.rows = 3;
+      input.rows = field.rows || 3;
       if (field.placeholder) input.placeholder = field.placeholder;
       if (field.required) input.required = true;
       input.value = value;
@@ -329,15 +320,15 @@ const EuGeroWizardScreen = (function () {
 
   function textQuality(text) {
     const t = (text || '').trim();
-    if (!t) return { kind: 'empty', label: 'Dica: comece com um verbo de ação (ex.: Vendi, Organizei, Atendi…).' };
+    if (!t) return { kind: 'empty', label: 'Dica: comece descrevendo uma ação que você realizou.' };
     const low = t.toLowerCase();
     const hasVerb = QUALITY_VERBS.some((v) => low.includes(v));
     const hasNum = /\d/.test(t);
-    if (t.length < 45) return { kind: 'weak', label: 'Continue - conte o que você fez e o impacto disso.' };
-    if (hasVerb && hasNum) return { kind: 'great', label: 'Ótimo! Tem verbo de ação e um resultado com número.' };
-    if (hasNum) return { kind: 'good', label: 'Bom - que tal começar com um verbo de ação para reforçar?' };
-    if (hasVerb) return { kind: 'good', label: 'Bom - tente incluir um número ou resultado concreto.' };
-    return { kind: 'weak', label: 'Adicione um verbo de ação no início da frase.' };
+    if (t.length < 45) return { kind: 'weak', label: 'Continue: conte o que você fez e acrescente contexto ou resultado, se houver.' };
+    if (hasVerb && hasNum) return { kind: 'great', label: 'Ótimo! O texto deixa clara a sua participação e apresenta um resultado concreto.' };
+    if (hasNum) return { kind: 'good', label: 'Bom começo. Explique qual foi a sua participação nesse resultado.' };
+    if (hasVerb) return { kind: 'good', label: 'Bom começo. Acrescente o contexto, o impacto ou o resultado, se tiver essa informação.' };
+    return { kind: 'weak', label: 'Comece com um verbo de ação e deixe clara a sua participação.' };
   }
 
   const HINT_STYLE = {
@@ -361,12 +352,17 @@ const EuGeroWizardScreen = (function () {
   function updateFieldHint(el, kind, value) {
     let q;
     if (kind === 'email') {
-      q = (!value || /.+@.+\..+/.test(value))
-        ? { kind: 'good', label: 'Use um e-mail que você consulta com frequência.' }
-        : { kind: 'weak', label: 'Esse e-mail parece incompleto - confira o "@" e o domínio.' };
+      // E-mail valido nao precisa de dica; so avisa quando parece errado.
+      if (!value || /.+@.+\..+/.test(value)) {
+        el.hidden = true;
+        el.innerHTML = '';
+        return;
+      }
+      q = { kind: 'weak', label: 'Este e-mail parece incompleto. Confira o “@” e o final do endereço.' };
     } else {
       q = textQuality(value);
     }
+    el.hidden = false;
     const m = HINT_STYLE[q.kind];
     el.style.color = m.c;
     el.innerHTML = `${hintIconSvg(m.i, m.c)}<span>${ctx.escapeHtml(q.label)}</span>`;
@@ -396,7 +392,7 @@ const EuGeroWizardScreen = (function () {
       ${showEndCurrent ? `
         <label class="checkbox-label end-current-label">
           <input type="checkbox" class="end-current-checkbox" ${item.endCurrent ? 'checked' : ''}>
-          Ate hoje
+          Até hoje
         </label>
       ` : ''}
       ${renderFieldTip(field)}
@@ -456,8 +452,8 @@ const EuGeroWizardScreen = (function () {
     updateFieldScore(wrap, field, value);
   }
 
-  const SKILL_SUGGESTIONS = ['Trabalho em equipe', 'Comunicação', 'Atendimento ao cliente', 'Organização',
-    'Pacote Office', 'Proatividade', 'Resolução de problemas', 'Liderança', 'Pontualidade', 'Vendas'];
+  const SKILL_SUGGESTIONS = ['Trabalho em equipe', 'Comunicação clara', 'Atendimento ao cliente', 'Organização',
+    'Pacote Office', 'Iniciativa', 'Resolução de problemas', 'Liderança', 'Gestão do tempo', 'Vendas'];
 
   function renderSkillsTagsField(wrap, section, field, value, id) {
     const state = ctx.getState();
@@ -465,10 +461,11 @@ const EuGeroWizardScreen = (function () {
 
     wrap.innerHTML = `
       <span style="display:flex; align-items:center; gap:7px; font-size: 13px; margin-bottom: 6px; color: color-mix(in srgb, var(--color-text) 72%, transparent);">${field.label}${renderFieldTip(field)}</span>
-      <input type="text" id="${id}" class="cv-input" placeholder="${ctx.escapeAttr(field.placeholder || 'Ex.: Atendimento ao cliente…')}" autocomplete="off">
+      <input type="text" id="${id}" class="cv-input" placeholder="${ctx.escapeAttr(field.placeholder || 'Digite uma habilidade…')}" autocomplete="off">
       <div class="skills-tags-chips" role="list"></div>
-      <p class="skills-suggest-title">Sugestões - clique para adicionar</p>
+      <p class="skills-suggest-title">Sugestões para adicionar</p>
       <div class="skills-suggest-row"></div>
+      <p style="font-size: 12.5px; line-height: 1.5; color: color-mix(in srgb, var(--color-text) 60%, transparent); margin: 8px 0 0;">Dica: leia os requisitos da vaga e confira se as habilidades que você possui também aparecem no currículo com nomes claros.</p>
     `;
 
     const chipsEl = wrap.querySelector('.skills-tags-chips');
@@ -503,6 +500,9 @@ const EuGeroWizardScreen = (function () {
     function renderSuggestions() {
       const existing = new Set(tags.map((t) => (t.name || t).toLowerCase()));
       const options = SKILL_SUGGESTIONS.filter((s) => !existing.has(s.toLowerCase())).slice(0, 6);
+      // Sem sugestoes restantes, o titulo some junto.
+      const titleEl = wrap.querySelector('.skills-suggest-title');
+      if (titleEl) titleEl.hidden = options.length === 0;
       suggestEl.innerHTML = options.map((s) =>
         `<button type="button" class="skills-suggest-btn" data-name="${ctx.escapeAttr(s)}">+ ${ctx.escapeHtml(s)}</button>`
       ).join('');
@@ -572,6 +572,56 @@ const EuGeroWizardScreen = (function () {
     }
   }
 
+  // Secoes com formulario grande mostram UM item por vez, com tabs numeradas.
+  // Idiomas fica de fora: as linhas sao curtas e cabem empilhadas.
+  const TABBED_LIST_SECTIONS = ['experiences', 'education', 'certifications', 'projects'];
+  const listActiveIndex = {};
+
+  function isTabbedListSection(sectionId) {
+    return TABBED_LIST_SECTIONS.includes(sectionId);
+  }
+
+  function getActiveItemIndex(sectionId) {
+    const state = ctx.getState();
+    const items = state[sectionId] || [];
+    const idx = listActiveIndex[sectionId] ?? 0;
+    return Math.min(Math.max(0, idx), Math.max(0, items.length - 1));
+  }
+
+  function renderListTabs(section, items) {
+    const tabs = document.createElement('div');
+    tabs.className = 'list-tabs';
+    tabs.setAttribute('role', 'tablist');
+    tabs.setAttribute('aria-label', `Itens de ${section.title}`);
+
+    const active = getActiveItemIndex(section.id);
+    items.forEach((item, i) => {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = `list-tab${i === active ? ' active' : ''}`;
+      tab.setAttribute('role', 'tab');
+      tab.setAttribute('aria-selected', i === active ? 'true' : 'false');
+      tab.setAttribute('aria-label', `${LIST_ITEM_LABELS[section.id] || 'Item'} ${i + 1}`);
+      tab.textContent = String(i + 1);
+      tab.addEventListener('click', () => {
+        listActiveIndex[section.id] = i;
+        renderWizardStep();
+      });
+      tabs.appendChild(tab);
+    });
+
+    const addTab = document.createElement('button');
+    addTab.type = 'button';
+    addTab.className = 'list-tab list-tab-add';
+    addTab.title = `Adicionar ${(LIST_ITEM_LABELS[section.id] || 'item').toLowerCase()}`;
+    addTab.setAttribute('aria-label', addTab.title);
+    addTab.textContent = '+';
+    addTab.addEventListener('click', () => appendListItem(section.id));
+    tabs.appendChild(addTab);
+
+    return tabs;
+  }
+
   function renderListSection(section) {
     const state = ctx.getState();
     const container = document.createElement('div');
@@ -579,13 +629,19 @@ const EuGeroWizardScreen = (function () {
 
     if (!Array.isArray(state[section.id])) state[section.id] = [];
     const items = state[section.id];
+    if (items.length === 0) items.push(createEmptyListItem(section.id));
+
+    if (isTabbedListSection(section.id)) {
+      const active = getActiveItemIndex(section.id);
+      container.appendChild(renderListTabs(section, items));
+      container.appendChild(createListItemEl(section, items[active], active));
+      return container;
+    }
 
     const listEl = document.createElement('div');
     listEl.className = 'list-items';
     listEl.id = `list-items-${section.id}`;
-    listEl.style.cssText = `display: flex; flex-direction: column; gap: ${section.id === 'languages' ? '14px' : '20px'};`;
-
-    if (items.length === 0) items.push(createEmptyListItem(section.id));
+    listEl.style.cssText = 'display: flex; flex-direction: column; gap: 12px;';
 
     items.forEach((item, index) => {
       listEl.appendChild(createListItemEl(section, item, index));
@@ -596,7 +652,7 @@ const EuGeroWizardScreen = (function () {
     const addBtn = document.createElement('button');
     addBtn.type = 'button';
     addBtn.className = 'btn btn-secondary btn-add-item';
-    addBtn.style.cssText = 'align-self: flex-start; min-height: 42px; margin-top: 20px;';
+    addBtn.style.cssText = 'align-self: flex-start; min-height: 42px; margin-top: 16px;';
     addBtn.textContent = `+ Adicionar ${(LIST_ITEM_LABELS[section.id] || 'item').toLowerCase()}`;
     addBtn.addEventListener('click', () => appendListItem(section.id));
     container.appendChild(addBtn);
@@ -605,10 +661,10 @@ const EuGeroWizardScreen = (function () {
   }
 
   const LIST_ITEM_LABELS = {
-    experiences: 'Experiência',
-    education: 'Formação',
+    experiences: 'Experi\u00eancia',
+    education: 'Forma\u00e7\u00e3o',
     languages: 'Idioma',
-    certifications: 'Certificado',
+    certifications: 'Certifica\u00e7\u00e3o',
     projects: 'Projeto'
   };
 
@@ -625,17 +681,19 @@ const EuGeroWizardScreen = (function () {
       return btn;
     };
 
-    // Idiomas: linha simples (Idioma | Nível | Remover), como no modelo.
+    // Idiomas: linha simples (Idioma | Nivel | x), com remover compacto.
     if (section.id === 'languages') {
       const card = document.createElement('div');
-      card.className = 'list-item-card cv-form2';
+      card.className = 'list-item-card lang-row';
       card.dataset.index = String(index);
-      card.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end;';
       section.itemFields.forEach((field) => {
         card.appendChild(renderField(section, field, { item, index, id: `field-${section.id}-${index}-${field.key}` }));
       });
       const removeBtn = makeRemoveBtn(card);
-      removeBtn.style.minHeight = '40px';
+      removeBtn.textContent = '\u00d7';
+      removeBtn.setAttribute('aria-label', 'Remover idioma');
+      removeBtn.title = 'Remover idioma';
+      removeBtn.style.cssText = 'font-size: 18px; width: 40px; min-height: 40px; padding: 0;';
       card.appendChild(removeBtn);
       return card;
     }
@@ -668,16 +726,10 @@ const EuGeroWizardScreen = (function () {
     return card;
   }
 
-  function reindexListCards(sectionId) {
-    const container = document.getElementById(`list-items-${sectionId}`);
-    if (!container) return;
-    const label = LIST_ITEM_LABELS[sectionId] || 'Item';
-    const cards = container.querySelectorAll('.list-item-card');
-    cards.forEach((card, i) => {
-      card.dataset.index = String(i);
-      const num = card.querySelector('.list-item-num');
-      if (num) num.textContent = `${label} ${String(i + 1).padStart(2, '0')}`;
-    });
+  function refreshListSection() {
+    renderWizardStep();
+    ctx.saveState();
+    ctx.debouncedUpdatePreviews();
   }
 
   function appendListItem(sectionId) {
@@ -685,23 +737,11 @@ const EuGeroWizardScreen = (function () {
     const section = SECTIONS.find((s) => s.id === sectionId);
     if (!section) return;
     if (!Array.isArray(state[sectionId])) state[sectionId] = [];
-    const newItem = createEmptyListItem(sectionId);
-    state[sectionId].push(newItem);
-    const index = state[sectionId].length - 1;
-
-    const container = document.getElementById(`list-items-${sectionId}`);
-    if (container) {
-      const card = createListItemEl(section, newItem, index);
-      container.appendChild(card);
-      reindexListCards(sectionId);
-      const firstField = card.querySelector('input:not([type="checkbox"]), textarea, select');
-      firstField?.focus();
-    } else {
-      renderWizardStep();
-    }
-
-    ctx.saveState();
-    ctx.debouncedUpdatePreviews();
+    state[sectionId].push(createEmptyListItem(sectionId));
+    listActiveIndex[sectionId] = state[sectionId].length - 1;
+    refreshListSection();
+    const firstField = ctx.els.wizardSteps?.querySelector('.list-item-card input:not([type="checkbox"]), .list-item-card textarea, .list-item-card select');
+    firstField?.focus();
   }
 
   function removeListItem(sectionId, index) {
@@ -713,40 +753,17 @@ const EuGeroWizardScreen = (function () {
     const removedIndex = index;
     items.splice(index, 1);
 
-    const container = document.getElementById(`list-items-${sectionId}`);
-    const card = container?.querySelector(`.list-item-card[data-index="${index}"]`);
-    card?.remove();
-    reindexListCards(sectionId);
-
-    if (items.length === 0) {
-      appendListItem(sectionId);
-    }
-
-    ctx.saveState();
-    ctx.debouncedUpdatePreviews();
+    if (items.length === 0) items.push(createEmptyListItem(sectionId));
+    listActiveIndex[sectionId] = Math.min(removedIndex, items.length - 1);
+    refreshListSection();
 
     ctx.showToast('Item removido.', {
       actionLabel: 'Desfazer',
       duration: 5000,
       onAction: () => {
-        const section = SECTIONS.find((s) => s.id === sectionId);
-        if (!section) return;
-        ctx.getState()[sectionId].splice(removedIndex, 0, removed);
-        const listContainer = document.getElementById(`list-items-${sectionId}`);
-        if (listContainer) {
-          const newCard = createListItemEl(section, removed, removedIndex);
-          const siblings = listContainer.querySelectorAll('.list-item-card');
-          if (removedIndex >= siblings.length) {
-            listContainer.appendChild(newCard);
-          } else {
-            listContainer.insertBefore(newCard, siblings[removedIndex]);
-          }
-          reindexListCards(sectionId);
-        } else {
-          renderWizardStep();
-        }
-        ctx.saveState();
-        ctx.debouncedUpdatePreviews();
+        state[sectionId].splice(removedIndex, 0, removed);
+        listActiveIndex[sectionId] = removedIndex;
+        refreshListSection();
         ctx.showToast('Item restaurado.');
       }
     });
@@ -761,20 +778,8 @@ const EuGeroWizardScreen = (function () {
     const tmp = items[index];
     items[index] = items[newIndex];
     items[newIndex] = tmp;
-
-    const container = document.getElementById(`list-items-${sectionId}`);
-    if (!container) return;
-    const cards = Array.from(container.querySelectorAll('.list-item-card'));
-    const cardA = cards[index];
-    const cardB = cards[newIndex];
-    if (direction < 0) {
-      container.insertBefore(cardA, cardB);
-    } else {
-      container.insertBefore(cardB, cardA);
-    }
-    reindexListCards(sectionId);
-    ctx.saveState();
-    ctx.debouncedUpdatePreviews();
+    listActiveIndex[sectionId] = newIndex;
+    refreshListSection();
   }
 
   function updateFieldScore(wrap, field, value) {
@@ -786,13 +791,49 @@ const EuGeroWizardScreen = (function () {
     scoreEl.title = `Nota: ${EuGeroScoring.getLabelText(score)}`;
   }
 
+  function clearCurrentSection(section) {
+    const state = ctx.getState();
+    if (!section) return;
+    if (section.id === 'personal') {
+      state.personal = { fullName: '', headline: '', email: '', phone: '', location: '', linkedinUrl: '' };
+    } else if (section.id === 'summary') {
+      state.summary = '';
+    } else if (section.id === 'skills') {
+      state.skillsText = '';
+      state.skills = [];
+    } else if (section.list) {
+      state[section.id] = [];
+    }
+    ctx.saveState();
+    renderWizardStep();
+    ctx.debouncedUpdatePreviews();
+    ctx.showToast(`Seção “${SHORT_LABELS[section.id] || section.title}” limpa.`);
+  }
+
+  function removeSectionFromWizard(section) {
+    const state = ctx.getState();
+    if (!section || isSectionMandatory(section.id)) return;
+    const label = SHORT_LABELS[section.id] || section.title;
+    const enabled = state.enabledSections.filter((id) => id !== section.id);
+    state.enabledSections = normalizeEnabledSections(enabled);
+    const sections = ctx.activeSections();
+    if (state.currentStep > sections.length - 1) {
+      state.currentStep = Math.max(0, sections.length - 1);
+    }
+    ctx.saveState();
+    ctx.renderSectionChecklist();
+    ctx.navigateTo('wizard', sections[state.currentStep]?.id || null);
+    ctx.showToast(`Seção “${label}” removida do currículo.`);
+  }
   return {
     init,
+    renderWizardTimeline,
     renderWizardStep,
     validateCurrentStep,
-    clearCurrentSection,
     appendListItem,
     removeListItem,
-    reorderListItem
+    reorderListItem,
+    clearCurrentSection,
+    removeSectionFromWizard
   };
 })();

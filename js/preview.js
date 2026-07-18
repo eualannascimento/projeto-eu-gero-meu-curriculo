@@ -4,11 +4,16 @@
 const EuGeroPreview = (function () {
   const { getSkillsFromState, getActiveSections, SECTION_LABELS } = EuGeroConfig;
 
-  function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  const { escapeHtml, escapeAttr } = EuGeroUtils;
+
+  function renderLinkedinLink(url) {
+    return `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`;
+  }
+
+  function buildContactParts(personal) {
+    const parts = [personal.email, personal.phone, personal.location].filter(Boolean).map(escapeHtml);
+    if (personal.linkedinUrl) parts.push(renderLinkedinLink(personal.linkedinUrl));
+    return parts;
   }
 
   function formatPeriod(start, end, isCurrent) {
@@ -110,6 +115,7 @@ const EuGeroPreview = (function () {
 
   function buildContent(state, enabledSections, options) {
     const modernLayout = options?.modernLayout === true;
+    const showSkeleton = options?.mode !== 'export';
     const enabled = enabledSections || getActiveSections(state.enabledSections);
     const enabledSet = new Set(enabled.map(s => s.id));
     const p = state.personal || {};
@@ -118,65 +124,66 @@ const EuGeroPreview = (function () {
     if (isSectionEnabled(enabledSet, 'summary')) {
       if (state.summary?.trim()) {
         content += renderSection('Resumo', `<p class="cv-summary">${escapeHtml(state.summary).replace(/\n/g, '<br>')}</p>`);
-      } else {
+      } else if (showSkeleton) {
         content += renderSkeletonSection('Resumo');
       }
     }
 
     if (isSectionEnabled(enabledSet, 'experiences')) {
-      content += renderExperiences(state.experiences, true);
+      content += renderExperiences(state.experiences, showSkeleton);
     }
     if (isSectionEnabled(enabledSet, 'education')) {
-      content += renderEducation(state.education, true);
+      content += renderEducation(state.education, showSkeleton);
     }
     if (isSectionEnabled(enabledSet, 'skills') && !modernLayout) {
-      content += renderSkills(state, true);
+      content += renderSkills(state, showSkeleton);
     }
     if (isSectionEnabled(enabledSet, 'languages') && !modernLayout) {
-      content += renderLanguages(state.languages, true);
+      content += renderLanguages(state.languages, showSkeleton);
     }
 
     if (isSectionEnabled(enabledSet, 'certifications')) {
       content += renderGenericList('Certificados', state.certifications, ['name'], c => `
         <article class="cv-item"><strong>${escapeHtml(c.name)}</strong><div class="cv-item-sub">${escapeHtml(c.issuer || '')}${(c.year || c.date) ? ` · ${escapeHtml(c.year || fmtDate(c.date))}` : ''}</div></article>
-      `, true);
+      `, showSkeleton);
     }
     if (isSectionEnabled(enabledSet, 'projects')) {
       content += renderGenericList('Projetos', state.projects, ['name'], p => `
         <article class="cv-item"><strong>${escapeHtml(p.name)}</strong>${p.description ? `<p class="cv-desc">${escapeHtml(p.description).replace(/\n/g, '<br>')}</p>` : ''}</article>
-      `, true);
+      `, showSkeleton);
     }
     if (isSectionEnabled(enabledSet, 'volunteering')) {
       content += renderGenericList('Voluntariado', state.volunteering, ['organization'], v => `
-        <article class="cv-item"><strong>${escapeHtml(v.role || 'Função')}</strong> — ${escapeHtml(v.organization)}<span class="cv-period">${escapeHtml(formatPeriod(v.startDate, v.endDate, v.endCurrent))}</span></article>
-      `, true);
+        <article class="cv-item"><strong>${escapeHtml(v.role || 'Função')}</strong> · ${escapeHtml(v.organization)}<span class="cv-period">${escapeHtml(formatPeriod(v.startDate, v.endDate, v.endCurrent))}</span></article>
+      `, showSkeleton);
     }
     if (isSectionEnabled(enabledSet, 'publications')) {
       content += renderGenericList('Publicações', state.publications, ['title'], pub => `
         <article class="cv-item"><strong>${escapeHtml(pub.title)}</strong><div class="cv-item-sub">${escapeHtml(pub.publisher || '')}</div></article>
-      `, true);
+      `, showSkeleton);
     }
     if (isSectionEnabled(enabledSet, 'awards')) {
       content += renderGenericList('Prêmios e Honrarias', state.awards, ['title'], a => `
-        <article class="cv-item"><strong>${escapeHtml(a.title)}</strong> — ${escapeHtml(a.issuer || '')}</article>
-      `, true);
+        <article class="cv-item"><strong>${escapeHtml(a.title)}</strong> · ${escapeHtml(a.issuer || '')}</article>
+      `, showSkeleton);
     }
     if (isSectionEnabled(enabledSet, 'organizations')) {
       content += renderGenericList('Organizações', state.organizations, ['name'], o => `
-        <article class="cv-item"><strong>${escapeHtml(o.name)}</strong> — ${escapeHtml(o.role || '')}</article>
-      `, true);
+        <article class="cv-item"><strong>${escapeHtml(o.name)}</strong> · ${escapeHtml(o.role || '')}</article>
+      `, showSkeleton);
     }
     if (isSectionEnabled(enabledSet, 'courses')) {
       content += renderGenericList('Cursos', state.courses, ['name'], c => `
         <article class="cv-item"><strong>${escapeHtml(c.name)}</strong><div class="cv-item-sub">${escapeHtml(c.institution || '')}</div></article>
-      `, true);
+      `, showSkeleton);
     }
 
     return { personal: p, content };
   }
 
-  function renderSidebarLayout(state, enabledSections, templateId) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: true });
+  function renderSidebarLayout(state, enabledSections, templateId, mode) {
+    const { personal, content } = buildContent(state, enabledSections, { modernLayout: true, mode });
+    const showSkeleton = mode !== 'export';
     const skills = getSkillsFromState(state);
     const enabled = enabledSections || getActiveSections(state.enabledSections);
     const enabledSet = new Set(enabled.map(s => s.id));
@@ -185,6 +192,8 @@ const EuGeroPreview = (function () {
       personal.phone || '(00) 00000-0000',
       personal.location || 'Cidade, UF'
     ];
+    const showSkillsBlock = enabledSet.has('skills') && (skills.length || showSkeleton);
+    const showLanguagesBlock = enabledSet.has('languages') && (state.languages?.length || showSkeleton);
 
     return `
       <div class="cv cv-sidebar-layout template-${templateId}">
@@ -194,15 +203,15 @@ const EuGeroPreview = (function () {
           <div class="cv-sidebar-section">
             <h3>Contato</h3>
             ${contactLines.map(c => `<p>${escapeHtml(c)}</p>`).join('')}
-            ${personal.linkedinUrl ? `<p class="cv-link">${escapeHtml(personal.linkedinUrl)}</p>` : ''}
+            ${personal.linkedinUrl ? `<p class="cv-link">${renderLinkedinLink(personal.linkedinUrl)}</p>` : ''}
           </div>
-          ${enabledSet.has('skills') ? `
+          ${showSkillsBlock ? `
             <div class="cv-sidebar-section">
               <h3>Habilidades</h3>
               ${skills.length ? skills.map(s => `<p>${escapeHtml(s.name || s)}</p>`).join('') : '<p class="cv-muted">Suas habilidades</p>'}
             </div>
           ` : ''}
-          ${enabledSet.has('languages') ? `
+          ${showLanguagesBlock ? `
             <div class="cv-sidebar-section">
               <h3>Idiomas</h3>
               ${state.languages?.length
@@ -216,9 +225,9 @@ const EuGeroPreview = (function () {
     `;
   }
 
-  function renderCenteredLayout(state, enabledSections, templateId) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false });
-    const contacts = [personal.email, personal.phone, personal.location, personal.linkedinUrl].filter(Boolean);
+  function renderCenteredLayout(state, enabledSections, templateId, mode) {
+    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
+    const contacts = buildContactParts(personal);
     const extraClass = templateId === 'elegant' ? ' cv-elegant' : '';
 
     return `
@@ -226,15 +235,15 @@ const EuGeroPreview = (function () {
         <header class="cv-header-classic">
           <h1 class="cv-name">${escapeHtml(personal.fullName) || 'Seu Nome'}</h1>
           <p class="cv-headline">${escapeHtml(personal.headline) || 'Título profissional'}</p>
-          <p class="cv-contacts">${contacts.length ? contacts.map(c => escapeHtml(c)).join(' · ') : 'e-mail · telefone · cidade'}</p>
+          <p class="cv-contacts">${contacts.length ? contacts.join(' · ') : 'e-mail · telefone · cidade'}</p>
         </header>
         <div class="cv-body">${content}</div>
       </div>
     `;
   }
 
-  function renderBannerLayout(state, enabledSections, templateId) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false });
+  function renderBannerLayout(state, enabledSections, templateId, mode) {
+    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
     const contacts = [personal.email, personal.phone, personal.location].filter(Boolean);
 
     return `
@@ -249,16 +258,16 @@ const EuGeroPreview = (function () {
     `;
   }
 
-  function renderLeftLayout(state, enabledSections, templateId) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false });
-    const contacts = [personal.email, personal.phone, personal.location, personal.linkedinUrl].filter(Boolean);
+  function renderLeftLayout(state, enabledSections, templateId, mode) {
+    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
+    const contacts = buildContactParts(personal);
 
     return `
       <div class="cv cv-minimal template-${templateId || 'minimal'}">
         <header class="cv-header-left">
           <h1 class="cv-name">${escapeHtml(personal.fullName) || 'Seu Nome'}</h1>
           <p class="cv-headline">${escapeHtml(personal.headline) || 'Título profissional'}</p>
-          <p class="cv-contacts">${contacts.length ? contacts.map(c => escapeHtml(c)).join(' · ') : 'contato@email.com · cidade'}</p>
+          <p class="cv-contacts">${contacts.length ? contacts.join(' · ') : 'contato@email.com · cidade'}</p>
         </header>
         <div class="cv-body">${content}</div>
       </div>
@@ -271,17 +280,17 @@ const EuGeroPreview = (function () {
     return ini || 'SN';
   }
 
-  function renderCreativeLayout(state, enabledSections) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false });
-    const contacts = [personal.email, personal.phone, personal.location, personal.linkedinUrl].filter(Boolean);
+  function renderCreativeLayout(state, enabledSections, templateId, mode) {
+    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
+    const contacts = buildContactParts(personal);
     return `
-      <div class="cv cv-creative template-creative">
+      <div class="cv cv-creative template-${templateId || 'creative'}">
         <header class="cv-creative-header">
           <div class="cv-creative-badge">${escapeHtml(initialsFromName(personal.fullName))}</div>
           <div class="cv-creative-id">
             <h1 class="cv-name">${escapeHtml(personal.fullName) || 'Seu Nome'}</h1>
             <p class="cv-headline">${escapeHtml(personal.headline) || 'Título profissional'}</p>
-            <p class="cv-contacts">${contacts.length ? contacts.map(c => escapeHtml(c)).join(' · ') : 'e-mail · telefone · cidade'}</p>
+            <p class="cv-contacts">${contacts.length ? contacts.join(' · ') : 'e-mail · telefone · cidade'}</p>
           </div>
         </header>
         <div class="cv-body">${content}</div>
@@ -289,32 +298,56 @@ const EuGeroPreview = (function () {
     `;
   }
 
-  function render(state, templateId, enabledSections) {
+  function render(state, templateId, enabledSections, mode) {
     const meta = EuGeroConfig.getTemplateMeta(templateId);
     switch (meta.layout) {
-      case 'sidebar': return renderSidebarLayout(state, enabledSections, templateId);
-      case 'banner': return renderBannerLayout(state, enabledSections, templateId);
-      case 'left': return renderLeftLayout(state, enabledSections, templateId);
-      case 'creative': return renderCreativeLayout(state, enabledSections);
-      default: return renderCenteredLayout(state, enabledSections, templateId);
+      case 'sidebar': return renderSidebarLayout(state, enabledSections, templateId, mode);
+      case 'banner': return renderBannerLayout(state, enabledSections, templateId, mode);
+      case 'left': return renderLeftLayout(state, enabledSections, templateId, mode);
+      case 'creative': return renderCreativeLayout(state, enabledSections, templateId, mode);
+      default: return renderCenteredLayout(state, enabledSections, templateId, mode);
     }
+  }
+
+  const MM_TO_PX = 96 / 25.4;
+  const PAGE_HEIGHT_PX = 297 * MM_TO_PX;
+
+  // Mede a altura real renderizada (DOM) contra a altura fisica de uma
+  // pagina A4, em vez de estimar por contagem de caracteres (P0.4). So se
+  // aplica ao painel de previa principal (dentro de .preview-a4-wrap), onde
+  // o elemento e renderizado na largura fisica real da pagina; miniaturas de
+  // template usam outro mecanismo de exibicao e mantem a estimativa por
+  // caracteres, mais barata para renderizar em lote.
+  function measuresRealPage(container) {
+    return !!(container.parentElement && container.parentElement.classList.contains('preview-a4-wrap'));
+  }
+
+  function isOverflowing(container, state, sections) {
+    if (measuresRealPage(container) && typeof container.scrollHeight === 'number') {
+      container.style.width = '210mm';
+      return container.scrollHeight > PAGE_HEIGHT_PX + 1;
+    }
+    const pageFit = typeof EuGeroScoring !== 'undefined'
+      ? EuGeroScoring.scorePageFit(state, sections)
+      : { level: 'ok' };
+    return pageFit.level !== 'ok';
   }
 
   function updatePreview(container, state, templateId, enabledSections) {
     if (!container) return;
     const sections = enabledSections || getActiveSections(state.enabledSections);
     const inner = render(state, templateId, sections);
-    const pageFit = typeof EuGeroScoring !== 'undefined'
-      ? EuGeroScoring.scorePageFit(state, sections)
-      : { level: 'ok' };
-    const overflowClass = pageFit.level !== 'ok' ? ' preview-overflow' : '';
     container.innerHTML = `
-      <div class="preview-a4-body${overflowClass}">${inner}</div>
+      <div class="preview-a4-body">${inner}</div>
       <div class="cv-page-limit" aria-hidden="true"><span>Limite de 1 pagina A4</span></div>
     `;
     const margin = state.margin || 'padrao';
     const density = state.density || 'normal';
     container.className = `preview-content preview-paper template-${templateId} cv-margin-${margin} cv-density-${density}`;
+
+    const overflows = isOverflowing(container, state, sections);
+    const body = container.querySelector('.preview-a4-body');
+    if (body) body.classList.toggle('preview-overflow', overflows);
   }
 
   return {

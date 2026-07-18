@@ -7,6 +7,7 @@
   const {
     TEMPLATES, getActiveSections, normalizeEnabledSections, TEMPLATE_IDS
   } = EuGeroConfig;
+  const { escapeHtml, escapeAttr, debounce } = EuGeroUtils;
 
   let state = EuGeroStorage.load();
   let currentView = 'home';
@@ -15,8 +16,10 @@
   let toastTimer = null;
 
   const els = {};
-  const A4_BASE_WIDTH = 370;
-  const LIBS_WARN_KEY = 'eugero-libs-warned';
+  // 210mm convertido para px (unidade CSS absoluta: 96px = 1in = 25.4mm) -
+  // a previa usa a largura fisica real da pagina A4 antes da escala de
+  // exibicao, entao previa e impressao usam exatamente a mesma tipografia (P0.4).
+  const A4_BASE_WIDTH = 210 * 96 / 25.4;
 
   // Contexto compartilhado com os módulos de tela (js/screens/*).
   // getState é função porque `state` é reatribuído (import, personagens, limpar).
@@ -36,6 +39,7 @@
       goToWizard,
       updateTemplateIndicators,
       switchTemplate,
+      renderSectionChecklist: () => EuGeroStartScreen.renderSectionChecklist(),
       scaleReviewPreviews,
       debouncedUpdatePreviews: (...args) => debouncedUpdatePreviews(...args),
       escapeHtml,
@@ -57,12 +61,12 @@
     initScreens();
     bindGlobalEvents();
 
+    // Sem hash na URL, sempre abrir na home; deep links por hash continuam valendo.
     const initialRoute = EuGeroRouter.getInitialRoute();
     if (initialRoute) {
       applyRouteState(initialRoute);
     } else {
-      const hasProgress = state.personal?.fullName || state.currentStep > 0;
-      currentView = hasProgress ? 'wizard' : 'home';
+      currentView = 'home';
     }
 
     EuGeroRouter.subscribe((route) => {
@@ -72,7 +76,6 @@
     });
 
     render();
-    probeLibrariesOnce();
   }
 
   function cacheElements() {
@@ -97,6 +100,7 @@
     els.toast = document.getElementById('toast');
     els.previewOverlay = document.getElementById('preview-overlay');
     els.includeDataCheckbox = document.getElementById('include-data-checkbox');
+    els.jobDescriptionTextarea = document.getElementById('job-description-textarea');
     els.privacyPromptWarning = document.getElementById('privacy-prompt-warning');
     els.savedIndicator = document.getElementById('saved-indicator');
     els.previewMobileDock = document.getElementById('preview-mobile-dock');
@@ -190,21 +194,6 @@
     navigateTo('guide');
   }
 
-  async function probeLibrariesOnce() {
-    if (typeof EuGeroLibs === 'undefined') return;
-    try {
-      const caps = await EuGeroLibs.probeAll();
-      if (sessionStorage.getItem(LIBS_WARN_KEY)) return;
-      const msgs = EuGeroLibs.missingMessages(caps);
-      if (msgs.length) {
-        showToast(msgs.join(' '), { duration: 7000 });
-        sessionStorage.setItem(LIBS_WARN_KEY, '1');
-      }
-    } catch (e) {
-      /* ignore probe errors */
-    }
-  }
-
   function bindGlobalEvents() {
     EuGeroStartScreen.renderTemplatePickers();
 
@@ -213,8 +202,7 @@
     document.getElementById('btn-import-home')?.addEventListener('click', () => els.fileImport?.click());
 
     document.getElementById('btn-start-wizard')?.addEventListener('click', startWizard);
-    document.getElementById('btn-fill-sample')?.addEventListener('click', fillSampleData);
-    document.getElementById('btn-clear-all')?.addEventListener('click', clearAll);
+    document.getElementById('btn-back-start')?.addEventListener('click', () => navigateTo('characters'));
     document.getElementById('btn-change-template-wizard')?.addEventListener('click', (e) => openModal(els.modalTemplate, e.currentTarget));
     document.getElementById('btn-prev-template-start')?.addEventListener('click', () => cycleTemplate(-1));
     document.getElementById('btn-next-template-start')?.addEventListener('click', () => cycleTemplate(1));
@@ -224,13 +212,12 @@
     document.getElementById('btn-next')?.addEventListener('click', nextStep);
     document.getElementById('btn-finish')?.addEventListener('click', goToReview);
     document.getElementById('btn-back-wizard')?.addEventListener('click', () => goToWizard());
+    document.getElementById('btn-wizard-to-start')?.addEventListener('click', goToStart);
     document.getElementById('btn-gal-prev')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(-1));
     document.getElementById('btn-gal-next')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(1));
     document.getElementById('btn-export-pdf')?.addEventListener('click', EuGeroReviewScreen.printCv);
-    document.getElementById('btn-export-docx')?.addEventListener('click', (e) => EuGeroReviewScreen.handleExport('docx', e.currentTarget));
     document.getElementById('btn-guide')?.addEventListener('click', goToGuide);
     document.getElementById('btn-back-review')?.addEventListener('click', goToReview);
-    document.getElementById('btn-back-start')?.addEventListener('click', goToStart);
 
     const btnToggleCompact = document.getElementById('toggle-compact-mode');
     if (btnToggleCompact) {
@@ -257,6 +244,7 @@
       EuGeroPromptModal.refreshPromptText();
       EuGeroPromptModal.updatePrivacyWarning();
     });
+    els.jobDescriptionTextarea?.addEventListener('input', EuGeroPromptModal.refreshPromptText);
 
     document.querySelectorAll('.modal-close').forEach((btn) => {
       btn.addEventListener('click', () => closeModal(btn.closest('.modal')));
@@ -331,26 +319,6 @@
     }, 2000);
   }
 
-  function fillSampleData() {
-    const sample = EuGeroSampleData.build();
-    state = EuGeroStorage.mergeWithDefaults({ ...state, ...sample });
-    saveState();
-    render();
-    showToast('Exemplo carregado. Ajuste com seus dados reais.');
-  }
-
-  function clearAll() {
-    const fresh = EuGeroConfig.createEmptyState();
-    fresh.template = state.template;
-    fresh.margin = state.margin;
-    fresh.density = state.density;
-    fresh.enabledSections = [...state.enabledSections];
-    state = EuGeroStorage.mergeWithDefaults(fresh);
-    saveState();
-    render();
-    showToast('Campos limpos. Comece do zero quando quiser.');
-  }
-
   const PAGE_MARGINS = [
     { v: 'estreita', l: 'Estreita' },
     { v: 'padrao', l: 'Padrão' },
@@ -411,13 +379,26 @@
     saveState();
     updateTemplateIndicators();
     debouncedUpdatePreviews();
-    showToast(`Template alterado para ${TEMPLATES[templateId].name}`);
+    showToast(`Modelo alterado para ${TEMPLATES[templateId].name}.`);
   }
 
   function updateTemplateIndicators() {
     document.querySelectorAll('[data-current-template]').forEach((el) => {
       el.textContent = TEMPLATES[state.template]?.name || 'Classico';
     });
+    // Contador do preview do start (mesmo formato da galeria da review).
+    const startCounter = document.getElementById('start-gallery-counter');
+    if (startCounter) {
+      const idx = TEMPLATE_IDS.indexOf(state.template);
+      startCounter.textContent = `${idx + 1} de ${TEMPLATE_IDS.length}`;
+    }
+    const startAtsNote = document.getElementById('start-ats-note');
+    if (startAtsNote) {
+      const meta = TEMPLATES[state.template];
+      startAtsNote.textContent = meta?.atsFriendly
+        ? 'Estrutura simples, que costuma facilitar a leitura por plataformas de recrutamento.'
+        : 'Este visual pode dificultar a leitura automática. Para candidaturas em plataformas de recrutamento, prefira um modelo de uma coluna.';
+    }
   }
 
   function goToStep(stepIndex) {
@@ -436,11 +417,13 @@
   }
 
   function nextStep() {
-    EuGeroWizardScreen.validateCurrentStep();
+    const isValid = EuGeroWizardScreen.validateCurrentStep();
     const sections = activeSections();
-    if (state.currentStep < sections.length - 1) {
-      goToStep(state.currentStep + 1);
-    } else {
+    const decision = EuGeroValidation.resolveStepAdvance(isValid, state.currentStep, sections.length);
+
+    if (decision.action === 'advance') {
+      goToStep(decision.step);
+    } else if (decision.action === 'review') {
       goToReview();
     }
   }
@@ -453,7 +436,7 @@
     els.screenReview.hidden = view !== 'review';
     els.screenGuide.hidden = view !== 'guide';
     if (els.previewMobileDock) {
-      els.previewMobileDock.hidden = (view !== 'start' && view !== 'wizard' && view !== 'review');
+      els.previewMobileDock.hidden = (view !== 'wizard' && view !== 'review');
       // No wizard o botao flutua acima da barra fixa; nas demais, junto da base.
       els.previewMobileDock.style.bottom = view === 'wizard'
         ? 'calc(4.8rem + env(safe-area-inset-bottom))'
@@ -498,12 +481,12 @@
   }
 
   function scaleReviewPreviews() {
-    // Escala as prévias dentro da moldura A4 (base do modelo: 370px de largura).
+    // Escala as prévias dentro da moldura A4 (largura fisica real: 210mm).
     document.querySelectorAll('.preview-a4-wrap > .preview-content').forEach((preview) => {
       const width = preview.parentElement.clientWidth;
       if (width <= 0) return;
       const scale = width / A4_BASE_WIDTH;
-      preview.style.width = `${A4_BASE_WIDTH}px`;
+      preview.style.width = '210mm';
       preview.style.transform = `scale(${scale})`;
     });
   }
@@ -522,6 +505,9 @@
     document.querySelectorAll('[data-preview]').forEach((container) => {
       EuGeroPreview.updatePreview(container, state, state.template, sections);
     });
+    // A previa da review nao tem [data-preview] (id proprio): atualiza a parte
+    // para refletir margem/espacamento e troca de modelo.
+    if (currentView === 'review') EuGeroReviewScreen.renderReviewGallery();
     updateMobilePreviewDock();
     EuGeroStartScreen.updateTemplatePreviewMinis();
     updateProgressBar();
@@ -538,7 +524,7 @@
 
   function exportJson() {
     EuGeroStorage.downloadJson(state);
-    showToast('Rascunho exportado com sucesso!');
+    showToast('Rascunho salvo em arquivo.');
   }
 
   function handleImport(e) {
@@ -546,7 +532,7 @@
     if (!file) return;
 
     if (!file.name.endsWith('.json')) {
-      showToast('Selecione um arquivo .json valido.', { error: true });
+      showToast('Selecione um arquivo .json válido.', { error: true });
       e.target.value = '';
       return;
     }
@@ -566,9 +552,9 @@
         } else {
           navigateTo('home', null, { replace: true });
         }
-        showToast('Rascunho carregado com sucesso!');
+        showToast('Rascunho carregado com sucesso.');
       } catch (err) {
-        showToast('Arquivo corrompido ou invalido. Tente outro arquivo.', { error: true });
+        showToast('Este arquivo está corrompido ou não é válido. Tente outro.', { error: true });
       }
     };
     reader.readAsText(file);
@@ -604,14 +590,6 @@
     if (!els.previewOverlay) return;
     EuGeroA11y.closeOverlay(els.previewOverlay);
     syncBodyScrollLock();
-  }
-
-  function debounce(fn, ms) {
-    let t;
-    return function (...args) {
-      clearTimeout(t);
-      t = setTimeout(() => fn.apply(this, args), ms);
-    };
   }
 
   function showToast(message, options = {}) {
@@ -651,22 +629,6 @@
     if (els.toastAction) els.toastAction.hidden = true;
   }
 
-  function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  function escapeAttr(text) {
-    if (!text) return '';
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
-
   window.EuGeroApp = {
     getState: () => JSON.parse(JSON.stringify(state)),
     setState: (newState) => {
@@ -681,12 +643,6 @@
     render,
     saveState,
     showToast,
-    copyToClipboard: (text) => EuGeroPromptModal.copyToClipboard(text),
-    validateCurrentStep: () => EuGeroWizardScreen.validateCurrentStep(),
-    appendListItem: (sectionId) => EuGeroWizardScreen.appendListItem(sectionId),
-    removeListItem: (sectionId, index) => EuGeroWizardScreen.removeListItem(sectionId, index),
-    reorderListItem: (sectionId, index, dir) => EuGeroWizardScreen.reorderListItem(sectionId, index, dir),
-    handleExport: (type, btn) => EuGeroReviewScreen.handleExport(type, btn),
     debouncedUpdatePreviews
   };
 

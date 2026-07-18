@@ -110,6 +110,8 @@ const EuGeroScoring = (function () {
               sectionId: section.id,
               fieldKey: field.key,
               itemIndex: index,
+              value,
+              fieldConfig: field,
               score: scoreField(value, field, actionVerbs),
               displayName: (state[section.id].length > 1)
                 ? `${field.label} (${section.title} #${index + 1})`
@@ -132,6 +134,8 @@ const EuGeroScoring = (function () {
             sectionId: section.id,
             fieldKey: field.key,
             itemIndex: null,
+            value,
+            fieldConfig: field,
             score: scoreField(value, field, actionVerbs),
             displayName: `${field.label} (${section.title})`
           });
@@ -241,6 +245,68 @@ const EuGeroScoring = (function () {
     return out;
   }
 
+  /**
+   * Dica fixa e especifica para um campo que ainda nao esta otimo.
+   * Regras simples, sem IA: aponta o que falta para subir de nota.
+   */
+  function explainField(value, fieldConfig, actionVerbs) {
+    const text = typeof value === 'string' ? value.trim() : String(value || '');
+    if (!text) return 'preencha este campo';
+
+    const profile = getProfile(fieldConfig);
+    if (text.length > profile.hardMax) return 'está longo demais: corte para caber em 1 página';
+    if (fieldConfig.minLength && text.length < fieldConfig.minLength) return 'escreva um pouco mais';
+
+    if (profile.needsVerbs) {
+      const verb = hasActionVerb(text, actionVerbs);
+      const metric = hasQuantifiedResult(text);
+      if (!verb && !metric) return 'comece com um verbo de ação (Vendi, Organizei...) e cite um número';
+      if (!verb) return 'comece com um verbo de ação (Vendi, Organizei...)';
+      if (!metric) return 'inclua um número ou resultado concreto';
+      if (text.length > profile.idealMax) return 'encurte um pouco para ganhar impacto';
+    }
+
+    if (text.length > profile.idealMax) return 'encurte um pouco para caber melhor na página';
+    return 'dá para deixar mais específico';
+  }
+
+  /**
+   * Quadro de qualidade por secao: status + dicas acionaveis por campo.
+   * Retorna [{ sectionId, title, status, tips: [{ label, advice, itemIndex }] }].
+   */
+  function buildSectionFeedback(state, sections, actionVerbs) {
+    const results = scoreState(state, sections, actionVerbs);
+
+    return sections.map((section) => {
+      const rs = results.filter((r) => r.sectionId === section.id);
+
+      let status;
+      if (rs.length === 0) status = 'vazio';
+      else if (rs.some((r) => r.score === 'fraco')) status = 'fraco';
+      else if (rs.every((r) => r.score === 'otimo')) status = 'otimo';
+      else status = 'bom';
+
+      const tips = rs
+        .filter((r) => r.score !== 'otimo')
+        .sort((a, b) => SCORE_VALUES[a.score] - SCORE_VALUES[b.score])
+        .map((r) => ({
+          score: r.score,
+          label: r.itemIndex != null && (state[section.id] || []).length > 1
+            ? `${r.fieldConfig.label} (item ${r.itemIndex + 1})`
+            : r.fieldConfig.label,
+          advice: explainField(r.value, r.fieldConfig, actionVerbs),
+          itemIndex: r.itemIndex
+        }))
+        // Campo "bom" so vira dica quando ha uma acao concreta a tomar;
+        // conselho generico em campo razoavel e ruido, nao ajuda.
+        .filter((t) => t.score === 'fraco' || t.advice !== 'dá para deixar mais específico')
+        .slice(0, 3)
+        .map(({ score, ...t }) => t);
+
+      return { sectionId: section.id, title: section.title, status, tips };
+    });
+  }
+
   function calculateProgress(state) {
     if (!state) return 0;
     const activeSecs = typeof EuGeroConfig !== 'undefined'
@@ -253,13 +319,21 @@ const EuGeroScoring = (function () {
     activeSecs.forEach(section => {
       if (section.list) {
         const items = state[section.id] || [];
+        const requiredItemFields = (section.itemFields || []).filter(field => field.required);
+        if (requiredItemFields.length === 0) return;
+
+        if (items.length === 0) {
+          // Secao habilitada mas sem nenhum item: conta como pendente em vez
+          // de ficar fora do denominador (P0.5).
+          totalRequired += 1;
+          return;
+        }
+
         items.forEach(item => {
-          (section.itemFields || []).forEach(field => {
-            if (field.required) {
-              totalRequired++;
-              if (item[field.key] !== undefined && String(item[field.key]).trim().length > 0) {
-                filledRequired++;
-              }
+          requiredItemFields.forEach(field => {
+            totalRequired++;
+            if (item[field.key] !== undefined && String(item[field.key]).trim().length > 0) {
+              filledRequired++;
             }
           });
         });
@@ -303,6 +377,8 @@ const EuGeroScoring = (function () {
     estimateContentVolume,
     scorePageFit,
     aggregateScore,
+    explainField,
+    buildSectionFeedback,
     calculateProgress,
     getLabelText
   };

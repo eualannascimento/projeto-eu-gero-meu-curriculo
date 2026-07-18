@@ -100,11 +100,22 @@ const EuGeroValidation = (function () {
     return { valid: issues.length === 0, issues };
   }
 
+  function resolveStepAdvance(isValid, currentStep, totalSteps) {
+    if (!isValid) {
+      return { action: 'stay', step: currentStep };
+    }
+    if (currentStep < totalSteps - 1) {
+      return { action: 'advance', step: currentStep + 1 };
+    }
+    return { action: 'review', step: currentStep };
+  }
+
   return {
     validateEmail,
     validateUrl,
     validateField,
     validateSection,
-    isEmpty
+    isEmpty,
+    resolveStepAdvance
   };
 })();

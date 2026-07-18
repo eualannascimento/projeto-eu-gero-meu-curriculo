@@ -12,7 +12,7 @@ const EuGeroPromptModal = (function () {
     ctx = context;
   }
 
-  function show(type, sectionId, trigger) {
+  function showPrompt(type, sectionId, trigger) {
     promptContext = { type, sectionId: sectionId || null };
     refreshPromptText();
     updatePrivacyWarning();
@@ -21,29 +21,28 @@ const EuGeroPromptModal = (function () {
 
   function refreshPromptText() {
     const state = ctx.getState();
-    const els = ctx.els;
-    const includeData = els.includeDataCheckbox?.checked ?? true;
+    const includeData = ctx.els.includeDataCheckbox?.checked ?? true;
+    const jobDescription = ctx.els.jobDescriptionTextarea?.value || '';
     let prompt = '';
-    if (promptContext.type === 'general') prompt = EuGeroPrompts.buildGeneralPrompt(state, includeData);
-    else if (promptContext.type === 'section') prompt = EuGeroPrompts.buildSectionPrompt(promptContext.sectionId, state, includeData);
+    if (promptContext.type === 'general') prompt = EuGeroPrompts.buildGeneralPrompt(state, includeData, jobDescription);
+    else if (promptContext.type === 'section') prompt = EuGeroPrompts.buildSectionPrompt(promptContext.sectionId, state, includeData, jobDescription);
     else if (promptContext.type === 'translation') prompt = EuGeroPrompts.buildTranslationPrompt(state, includeData);
-    if (els.promptText) els.promptText.value = prompt;
+    if (ctx.els.promptText) ctx.els.promptText.value = prompt;
     updatePrivacyWarning();
   }
 
   function updatePrivacyWarning() {
-    const els = ctx.els;
-    const warning = els.privacyPromptWarning || document.getElementById('privacy-prompt-warning');
+    const warning = ctx.els.privacyPromptWarning || document.getElementById('privacy-prompt-warning');
     if (!warning) return;
-    const includeData = els.includeDataCheckbox?.checked ?? true;
-    const hasData = EuGeroPrompts.containsPersonalData(els.promptText?.value || '');
+    const includeData = ctx.els.includeDataCheckbox?.checked ?? true;
+    const hasData = EuGeroPrompts.containsPersonalData(ctx.els.promptText?.value || '');
     warning.hidden = !(includeData && hasData);
   }
 
   async function copyPrompt() {
     const ok = await copyToClipboard(ctx.els.promptText?.value || '');
-    if (ok) ctx.showToast('Prompt copiado!');
-    else ctx.showToast('Nao foi possivel copiar. Selecione o texto manualmente.', { error: true });
+    if (ok) ctx.showToast('Prompt copiado.');
+    else ctx.showToast('Não foi possível copiar. Selecione o texto e copie manualmente.', { error: true });
   }
 
   async function copyToClipboard(text) {
@@ -70,10 +69,9 @@ const EuGeroPromptModal = (function () {
       return false;
     }
   }
-
   return {
     init,
-    show,
+    show: showPrompt,
     refreshPromptText,
     updatePrivacyWarning,
     copyPrompt,

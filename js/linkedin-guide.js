@@ -1,5 +1,5 @@
 /**
- * Guia LinkedIn — passos curtos e acionáveis, com o caminho exato
+ * Guia LinkedIn - passos curtos e acionáveis, com o caminho exato
  * dentro do LinkedIn e o texto pronto para colar (agrupado por seção).
  */
 const EuGeroLinkedInGuide = (function () {
@@ -21,24 +21,24 @@ const EuGeroLinkedInGuide = (function () {
 
     entries.push({
       title: 'Foto e capa',
-      path: 'Seu perfil → toque na foto → Adicionar foto',
+      path: 'Seu perfil → selecione a foto → Adicionar foto',
       content: '',
-      tip: 'Foto de rosto, fundo neutro e um leve sorriso. A capa pode ser algo simples ligado à sua área.'
+      tip: 'A foto e a capa são opcionais. Caso use uma foto, escolha uma imagem nítida. Não é necessário usar roupa formal nem um cenário profissional. A capa pode ter uma imagem simples relacionada à sua área.'
     });
 
     entries.push({
       title: 'Título do perfil',
-      path: 'Seu perfil → lápis (✎) no topo → campo "Título"',
+      path: 'Seu perfil → lápis (✎) no topo → campo “Título”',
       content: [p.headline, p.location].filter(Boolean).join(' · '),
-      tip: 'Vá além do cargo: diga o que você faz ou busca.'
+      tip: 'Além do cargo, você pode informar sua área ou o tipo de oportunidade que busca.'
     });
 
     if (!isEmpty(state.summary)) {
       entries.push({
         title: 'Sobre',
-        path: 'Seu perfil → seção "Sobre" → lápis (✎)',
+        path: 'Seu perfil → seção “Sobre” → lápis (✎)',
         content: state.summary,
-        tip: 'Escreva em primeira pessoa e diga o que você procura hoje.'
+        tip: 'Escreva em primeira pessoa e fale brevemente sobre suas experiências, habilidades e o que busca.'
       });
     }
 
@@ -46,14 +46,14 @@ const EuGeroLinkedInGuide = (function () {
     if (exps.length) {
       entries.push({
         title: 'Experiência',
-        path: 'Seu perfil → seção "Experiência" → botão + → Adicionar cargo',
+        path: 'Seu perfil → seção “Experiência” → botão + → Adicionar cargo',
         content: exps.map(e => [
           `Cargo: ${e.title || ''}`,
           `Empresa: ${e.company || ''}`,
           `Período: ${e.period || 'preencha no LinkedIn'}`,
           e.description ? `Descrição: ${e.description}` : ''
         ].filter(Boolean).join('\n')).join('\n\n'),
-        tip: 'No LinkedIn cabe mais detalhe que no currículo - aproveite para contar resultados.'
+        tip: 'Use o espaço para explicar melhor suas atividades, seus resultados e o que aprendeu.'
       });
     }
 
@@ -61,9 +61,9 @@ const EuGeroLinkedInGuide = (function () {
     if (edus.length) {
       entries.push({
         title: 'Formação',
-        path: 'Seu perfil → seção "Formação acadêmica" → botão +',
+        path: 'Seu perfil → seção “Formação acadêmica” → botão +',
         content: edus.map(e => `${e.degree || ''} - ${e.institution || ''}${e.period ? ` (${e.period})` : ''}`).join('\n'),
-        tip: 'Cursos técnicos e livres também contam.'
+        tip: 'Inclua também cursos técnicos e outras formações importantes para sua área.'
       });
     }
 
@@ -71,9 +71,9 @@ const EuGeroLinkedInGuide = (function () {
     if (skills.length) {
       entries.push({
         title: 'Competências',
-        path: 'Seu perfil → seção "Competências" → botão + (adicione uma por vez)',
+        path: 'Seu perfil → seção “Competências” → botão +',
         content: skills.join(', '),
-        tip: 'Fixe as 3 principais no topo e peça a colegas para validá-las.'
+        tip: 'Destaque até três competências relevantes. Você pode pedir validações a pessoas que conhecem suas atividades.'
       });
     }
 
@@ -81,24 +81,24 @@ const EuGeroLinkedInGuide = (function () {
     if (langs.length) {
       entries.push({
         title: 'Idiomas',
-        path: 'Seu perfil → "Adicionar seção do perfil" → Idiomas',
+        path: 'Seu perfil → “Adicionar seção do perfil” → Idiomas',
         content: langs.map(l => `${l.language}${l.level ? ` - ${l.level}` : ''}`).join('\n'),
-        tip: 'Seja honesto com o nível - podem testar na entrevista.'
+        tip: 'Escolha o nível que melhor representa seu uso atual do idioma.'
       });
     }
 
     entries.push({
       title: 'URL personalizada',
-      path: 'Seu perfil → "Editar perfil público e URL" (canto superior direito)',
+      path: 'Seu perfil → “Editar perfil público e URL”',
       content: `linkedin.com/in/${slugFromName(p.fullName)}`,
-      tip: 'Um link curto e limpo fica ótimo no topo do currículo.'
+      tip: 'Uma URL curta e personalizada é mais fácil de ler e fica melhor no currículo.'
     });
 
     entries.push({
       title: 'Recomendações',
-      path: 'Perfil de um colega → botão "Mais" → Solicitar recomendação',
+      path: 'Perfil de um contato → botão “Mais” → Solicitar recomendação',
       content: '',
-      tip: 'Peça a um professor, colega ou ex-chefe. Para quem está começando, vale muito.'
+      tip: 'Peça uma recomendação a alguém que tenha acompanhado suas atividades em trabalho, estudo, projetos ou ações voluntárias.'
     });
 
     return entries;
@@ -142,7 +142,7 @@ const EuGeroLinkedInGuide = (function () {
           const card = btn.closest('.guide-entry');
           const feedback = card?.querySelector('.copy-feedback');
           if (feedback) {
-            feedback.textContent = 'Copiado!';
+            feedback.textContent = 'Copiado.';
             setTimeout(() => { feedback.textContent = ''; }, 2000);
           }
         });
@@ -150,14 +150,7 @@ const EuGeroLinkedInGuide = (function () {
     });
   }
 
-  function escapeHtml(text) {
-    if (!text) return '';
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
+  const escapeHtml = EuGeroUtils.escapeHtml;
 
   return {
     buildEntries,

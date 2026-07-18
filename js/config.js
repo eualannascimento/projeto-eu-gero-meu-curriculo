@@ -24,7 +24,7 @@ const EuGeroConfig = (function () {
     education: 'Formação',
     skills: 'Habilidades',
     languages: 'Idiomas',
-    certifications: 'Certificados',
+    certifications: 'Certificações',
     projects: 'Projetos'
   };
 
@@ -32,144 +32,185 @@ const EuGeroConfig = (function () {
     {
       id: 'personal',
       title: 'Dados pessoais',
-      description: 'Comece pelo básico. É assim que os recrutadores vão te encontrar.',
+      description: 'Comece pelas informações usadas para identificar seu currículo e entrar em contato com você.',
       linkedinHint: 'Perfil → foto de capa → seção de introdução no topo do perfil',
       fields: [
-        { key: 'fullName', label: 'Nome completo', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Ex.: Cida Boaventura', tip: 'Escreva seu nome completo, do jeito que quer ser chamado.' },
-        { key: 'headline', label: 'Cargo ou área desejada', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Ex.: Auxiliar Administrativo', tip: 'A vaga ou área que você busca. Ex.: Auxiliar Administrativo.' },
-        { key: 'email', label: 'E-mail', type: 'email', required: true, minLength: 5, placeholder: 'voce@email.com', tip: 'Use um e-mail que você acessa sempre - é por onde te chamam.' },
-        { key: 'phone', label: 'Telefone', type: 'tel', required: false, minLength: 8, placeholder: '(11) 90000-0000', tip: 'Com DDD. De preferência com WhatsApp.' },
-        { key: 'location', label: 'Cidade', type: 'text', required: true, minLength: 3, placeholder: 'Cidade, UF', tip: 'Cidade e estado onde você mora. Ex.: Guarulhos, SP.' },
-        { key: 'linkedinUrl', label: 'LinkedIn (opcional)', type: 'url', required: false, minLength: 10, placeholder: 'linkedin.com/in/voce', tip: 'Opcional. O endereço do seu perfil, se você tiver um.' }
+        { key: 'fullName', label: 'Nome para o currículo', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Digite o nome que deseja usar', tip: 'Use o nome pelo qual deseja ser apresentado. Não inclua números de documentos.' },
+        { key: 'headline', label: 'Cargo ou área desejada', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Informe o cargo ou a área que busca', tip: 'Use um cargo ou uma área clara. Quando fizer sentido, use o mesmo termo adotado nas vagas que procura.' },
+        { key: 'email', label: 'E-mail', type: 'email', required: true, minLength: 5, placeholder: 'Digite seu e-mail', tip: 'Use um e-mail que você acessa com frequência.' },
+        { key: 'phone', label: 'Telefone', type: 'tel', required: false, minLength: 8, placeholder: 'Digite seu telefone com DDD', tip: 'Inclua o DDD e um número em que possa receber ligações ou mensagens.' },
+        { key: 'location', label: 'Cidade', type: 'text', required: true, minLength: 3, placeholder: 'Digite sua cidade e estado', tip: 'Informe apenas a cidade e o estado. Não é necessário incluir o endereço completo.' },
+        { key: 'linkedinUrl', label: 'LinkedIn (opcional)', type: 'url', required: false, minLength: 10, placeholder: 'Cole o link do seu perfil', tip: 'Adicione o endereço do seu perfil, caso queira incluí-lo.' }
       ]
     },
     {
       id: 'summary',
       title: 'Resumo',
-      description: 'Duas ou três frases sobre quem você é e o que faz de melhor. Experiências do dia a dia valem!',
+      description: 'Escreva duas ou três frases sobre sua experiência, suas principais habilidades e o tipo de oportunidade que busca.',
       linkedinHint: 'Perfil → seção "Sobre" → editar',
       fields: [
-        { key: 'summary', label: 'Um parágrafo curto sobre você', type: 'textarea', required: true, minLength: 45, actionVerbs: true, fullWidth: true, placeholder: 'Ex.: Pessoa comunicativa e organizada, com experiência em vendas e atendimento ao público. Busco minha primeira oportunidade com carteira assinada.', tip: '2 a 3 frases sobre quem você é e o que faz bem. Experiências do dia a dia valem!' }
+        { key: 'summary', label: 'Um parágrafo curto sobre você', type: 'textarea', rows: 7, required: true, minLength: 45, actionVerbs: true, fullWidth: true, placeholder: 'Escreva um breve resumo sobre seu perfil', tip: 'Inclua sua área, experiências e habilidades mais relevantes. Use termos da vaga somente quando eles representarem de verdade o seu perfil.' }
       ]
     },
     {
       id: 'experiences',
       title: 'Experiência',
-      description: 'Descreva o que você fez. Trabalho informal, autônomo ou voluntário também conta.',
+      description: 'Conte onde realizou suas atividades e o que fazia. Inclua efeitos ou resultados quando essa informação existir. Trabalhos formais, informais, por conta própria ou voluntários também podem ser incluídos.',
       linkedinHint: 'Perfil → seção "Experiência" → adicionar experiência',
       list: true,
       itemFields: [
-        { key: 'title', label: 'Cargo ou função', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Ex.: Vendedora autônoma', tip: 'Como sua função era chamada. Trabalho informal ou autônomo também vale.' },
-        { key: 'company', label: 'Onde', type: 'text', required: true, minLength: 2, placeholder: 'Ex.: Doces da Cida', tip: "O local. Pode ser 'autônomo', o nome de uma loja ou de um projeto." },
-        { key: 'period', label: 'Período', type: 'text', required: false, minLength: 0, placeholder: 'Ex.: 2019 - atual', tip: 'De quando até quando. Ex.: 2019 - atual.' },
-        { key: 'description', label: 'O que você fez e conquistou', type: 'textarea', required: true, minLength: 45, actionVerbs: true, fullWidth: true, placeholder: 'Ex.: Vendi doces caseiros e atendi mais de 200 clientes fiéis.', tip: 'Comece com um verbo (Vendi, Organizei…) e cite um número quando puder.' }
+        { key: 'title', label: 'Cargo ou função', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Informe seu cargo ou função', tip: 'Use um nome de função claro e conhecido. Se o título usado pela empresa for pouco comum, acrescente uma forma equivalente entre parênteses, sem alterar o sentido.' },
+        { key: 'company', label: 'Empresa, organização ou projeto', type: 'text', required: true, minLength: 2, placeholder: 'Informe onde realizou essa atividade', tip: 'Informe o nome da empresa, organização ou projeto. Se foi por conta própria, escreva “Trabalho independente”.' },
+        { key: 'period', label: 'Período', type: 'text', required: false, minLength: 0, placeholder: 'Mês e ano de início e fim', tip: 'Informe o mês e o ano de início e fim. Marque “Até hoje” se ainda realiza essa atividade.' },
+        { key: 'description', label: 'Atividades e resultados', type: 'textarea', required: true, minLength: 45, actionVerbs: true, fullWidth: true, placeholder: 'Descreva o que você fez', tip: 'Descreva suas atividades, os conhecimentos ou as ferramentas usadas e os resultados relevantes. Use termos específicos e verdadeiros, sem repetir palavras apenas para aumentar a correspondência com a vaga.' }
       ]
     },
     {
       id: 'education',
       title: 'Formação',
-      description: 'Cursos, ensino médio, técnico ou oficinas. O mais recente primeiro.',
+      description: 'Inclua formações, cursos, oficinas ou outras atividades de aprendizagem relevantes. Comece pelo item mais recente.',
       linkedinHint: 'Perfil → seção "Formação acadêmica" → adicionar formação',
       list: true,
       itemFields: [
-        { key: 'degree', label: 'Curso ou formação', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Ex.: Ensino Médio completo', tip: 'Ensino médio, técnico, cursos livres e oficinas também contam.' },
-        { key: 'institution', label: 'Instituição', type: 'text', required: true, minLength: 3, placeholder: 'Ex.: EE Prof. João Ramos', tip: 'Onde você estudou. Ex.: escola, Senai, curso online.' },
-        { key: 'period', label: 'Período', type: 'text', required: false, minLength: 0, placeholder: 'Ex.: 2018', tip: 'O ano de conclusão ou o período. Ex.: 2018.' }
+        { key: 'degree', label: 'Curso ou formação', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Digite o nome da formação', tip: 'Informe o nome completo do curso, da formação ou da atividade de aprendizagem. Evite abreviações pouco conhecidas.' },
+        { key: 'institution', label: 'Instituição', type: 'text', required: true, minLength: 3, placeholder: 'Nome da instituição', tip: 'Informe o nome completo da escola, faculdade, plataforma ou instituição.' },
+        { key: 'period', label: 'Período', type: 'text', required: false, minLength: 0, placeholder: 'Ano de conclusão ou período cursado', tip: 'Informe o ano de conclusão ou o período em que estudou.' }
       ]
     },
     {
       id: 'skills',
       title: 'Habilidades',
-      description: 'Liste o que você sabe fazer. Misture habilidades técnicas e de convivência.',
+      description: 'Liste habilidades, ferramentas, tecnologias e formas de trabalhar que sejam relevantes para a oportunidade desejada.',
       linkedinHint: 'Perfil → seção "Competências" → adicionar competência',
       fields: [
-        { key: 'skillsText', label: 'Digite uma habilidade e aperte Enter', type: 'skillsTags', required: false, minLength: 2, fullWidth: true, tip: 'O que você sabe fazer. Misture técnicas (Excel) e de convivência (trabalho em equipe).', placeholder: 'Ex.: Atendimento ao cliente…' }
+        { key: 'skillsText', label: 'Digite uma habilidade', type: 'skillsTags', required: false, minLength: 2, fullWidth: true, tip: 'Priorize conhecimentos relacionados à vaga. Use os nomes mais conhecidos no mercado e adicione somente habilidades que você realmente possui.', placeholder: 'Digite uma habilidade…' }
       ]
     },
     {
       id: 'languages',
       title: 'Idiomas',
-      description: 'Idiomas que você fala e o nível de cada um.',
+      description: 'Informe os idiomas que conhece e seu nível em cada um.',
       linkedinHint: 'Perfil → seção "Idiomas" → adicionar idioma',
       list: true,
       itemFields: [
-        { key: 'language', label: 'Idioma', type: 'text', required: true, minLength: 2, placeholder: 'Ex.: Inglês', tip: 'Idiomas que você fala, mesmo que básico.' },
-        { key: 'level', label: 'Nível', type: 'text', required: false, minLength: 0, placeholder: 'Ex.: Básico' }
+        { key: 'language', label: 'Idioma', type: 'text', required: true, minLength: 2, placeholder: 'Digite o idioma', tip: 'Inclua os idiomas que deseja apresentar e escolha o nível que melhor representa seu uso atual.' },
+        { key: 'level', label: 'Nível', type: 'select', required: false, minLength: 0, options: ['Básico', 'Intermediário', 'Avançado', 'Fluente'] }
       ]
     },
     {
       id: 'certifications',
-      title: 'Certificados',
-      description: 'Cursos livres, certificados e treinamentos que você concluiu. Curso online e da prefeitura também valem!',
+      title: 'Certificações',
+      description: 'Inclua cursos, certificações e treinamentos que você concluiu. Cursos online também contam.',
       linkedinHint: 'Perfil → seção "Licenças e certificados" → adicionar',
       list: true,
       itemFields: [
-        { key: 'name', label: 'Nome do curso ou certificado', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Ex.: Informática Básica', tip: 'O que você concluiu. Cursos online, da prefeitura ou do SENAI também contam.' },
-        { key: 'issuer', label: 'Onde você fez', type: 'text', required: true, minLength: 2, placeholder: 'Ex.: Fundação Bradesco', tip: 'A instituição que emitiu. Ex.: Fundação Bradesco, Senac, YouTube.' },
-        { key: 'year', label: 'Ano', type: 'text', required: false, minLength: 0, placeholder: 'Ex.: 2023', tip: 'O ano em que você concluiu. Ex.: 2023.' }
+        { key: 'name', label: 'Nome do curso ou certificação', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Nome do curso ou da certificação', tip: 'Informe o nome completo do curso, treinamento ou certificação. Evite siglas sem escrever também o nome por extenso.' },
+        { key: 'issuer', label: 'Instituição', type: 'text', required: true, minLength: 2, placeholder: 'Instituição responsável', tip: 'Informe o nome completo da instituição ou plataforma responsável.' },
+        { key: 'year', label: 'Ano', type: 'text', required: false, minLength: 0, placeholder: 'Ano de conclusão', tip: 'Informe o ano em que concluiu.' }
       ]
     },
     {
       id: 'projects',
       title: 'Projetos',
-      description: 'Trabalhos, projetos ou iniciativas de que você participou - na escola, na comunidade ou por conta própria.',
+      description: 'Inclua projetos de estudo, da comunidade, do trabalho ou feitos por iniciativa própria.',
       linkedinHint: 'Perfil → seção "Projetos" → adicionar projeto',
       list: true,
       itemFields: [
-        { key: 'name', label: 'Nome do projeto', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Ex.: Feira de empreendedorismo', tip: 'Um trabalho ou iniciativa: da escola, da comunidade ou por conta própria.' },
-        { key: 'description', label: 'O que você fez', type: 'textarea', required: true, minLength: 30, actionVerbs: true, fullWidth: true, placeholder: 'Ex.: Organizei a barraca de doces com 2 colegas e cuidei do caixa, com lucro de R$ 300.', tip: 'Explique seu papel e o resultado. Comece com um verbo e cite um número quando puder.' },
-        { key: 'url', label: 'Link (opcional)', type: 'url', required: false, minLength: 0, fullWidth: true, placeholder: 'Ex.: instagram.com/seuprojeto', tip: 'Opcional. Um link para ver o projeto, se existir (rede social, site, drive).' }
+        { key: 'name', label: 'Nome do projeto', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Nome do projeto ou da iniciativa', tip: 'Informe o nome do projeto ou da iniciativa.' },
+        { key: 'description', label: 'Sua participação', type: 'textarea', required: true, minLength: 30, actionVerbs: true, fullWidth: true, placeholder: 'Descreva o que você fez no projeto', tip: 'Explique sua participação, as ferramentas ou os conhecimentos usados e os resultados, quando houver. Inclua termos da área somente quando corresponderem ao que você fez.' },
+        { key: 'url', label: 'Link (opcional)', type: 'url', required: false, minLength: 0, fullWidth: true, placeholder: 'Link para o projeto', tip: 'Adicione um link para o projeto, caso ele possa ser visto online.' }
       ]
     }
   ];
 
+  // 20 modelos. Todos pensados para uma vaga real (estéticos e legíveis); os
+  // marcados atsFriendly: false têm coluna/selo e são os mais "criativos".
+  // thumbAccent tinge o cartão de escolha; a prévia e o PDF usam o CSS do tema.
   const TEMPLATES = {
     classic: {
-      id: 'classic', name: 'Clássico', description: 'Monocromático, limpo e profissional',
-      layout: 'centered', thumbClass: 'template-thumb-classic',
-      accentRgb: [65, 97, 128], textMuted: '#6b6d6f', atsFriendly: true
-    },
-    modern: {
-      id: 'modern', name: 'Moderno', description: 'Barra lateral clara com acento azul',
-      layout: 'sidebar', thumbClass: 'template-thumb-modern',
-      sidebarRgb: [89, 128, 166], accentHex: '5980A6', atsFriendly: false,
-      atsNote: 'Barra lateral: alguns ATS leem melhor layouts de coluna única.'
+      id: 'classic', name: 'Clássico', description: 'Limpo, discreto e profissional',
+      layout: 'centered', thumbAccent: '#334155', atsFriendly: true
     },
     minimal: {
-      id: 'minimal', name: 'Minimalista', description: 'Alinhado à esquerda, ultra limpo',
-      layout: 'left', thumbClass: 'template-thumb-minimal',
-      accentRgb: [65, 97, 128], accentHex: '416180', atsFriendly: true
-    },
-    elegant: {
-      id: 'elegant', name: 'Elegante', description: 'Tipografia condensada, acento discreto',
-      layout: 'centered', thumbClass: 'template-thumb-elegant', serif: false,
-      accentRgb: [65, 97, 128], accentHex: '416180', atsFriendly: true
-    },
-    executive: {
-      id: 'executive', name: 'Executivo', description: 'Faixa superior escura',
-      layout: 'banner', thumbClass: 'template-thumb-executive',
-      bannerRgb: [29, 45, 61], accentHex: '1D2D3D', atsFriendly: true
-    },
-    creative: {
-      id: 'creative', name: 'Criativo', description: 'Coluna única com selo de iniciais',
-      layout: 'creative', thumbClass: 'template-thumb-creative',
-      accentRgb: [89, 128, 166], badgeRgb: [89, 128, 166], accentHex: '5980A6', atsFriendly: false,
-      atsNote: 'Selo gráfico no topo: prefira Clássico ou Minimalista para ATS rigorosos.'
-    },
-    faixa: {
-      id: 'faixa', name: 'Faixa Clara', description: 'Faixa superior suave em azul claro',
-      layout: 'banner', thumbClass: 'template-thumb-executive',
-      bannerRgb: [238, 246, 255], accentHex: '416180', atsFriendly: true
-    },
-    pilar: {
-      id: 'pilar', name: 'Pilar', description: 'Títulos com barra lateral de acento',
-      layout: 'left', thumbClass: 'template-thumb-minimal',
-      accentRgb: [65, 97, 128], accentHex: '416180', atsFriendly: true
+      id: 'minimal', name: 'Minimalista', description: 'Simples, leve e alinhado à esquerda',
+      layout: 'left', thumbAccent: '#334155', atsFriendly: true
     },
     serifado: {
-      id: 'serifado', name: 'Serifado', description: 'Tipografia serifada tradicional',
-      layout: 'centered', thumbClass: 'template-thumb-classic',
-      accentRgb: [43, 43, 45], accentHex: '2B2B2D', atsFriendly: true
+      id: 'serifado', name: 'Serifado', description: 'Tradicional, com letras serifadas',
+      layout: 'centered', thumbAccent: '#2b2b2d', atsFriendly: true
+    },
+    elegant: {
+      id: 'elegant', name: 'Elegante', description: 'Centralizado, leve e bem espaçado',
+      layout: 'centered', thumbAccent: '#334155', atsFriendly: true
+    },
+    linha: {
+      id: 'linha', name: 'Linha', description: 'Títulos com linhas finas e visual discreto',
+      layout: 'centered', thumbAccent: '#334155', atsFriendly: true
+    },
+    pilar: {
+      id: 'pilar', name: 'Pilar', description: 'Títulos com uma barra lateral de destaque',
+      layout: 'left', thumbAccent: '#334155', atsFriendly: true
+    },
+    grafite: {
+      id: 'grafite', name: 'Grafite', description: 'Tons de grafite e títulos mais marcantes',
+      layout: 'left', thumbAccent: '#374151', atsFriendly: true
+    },
+    esmeralda: {
+      id: 'esmeralda', name: 'Esmeralda', description: 'Centralizado, com detalhes em verde-esmeralda',
+      layout: 'centered', thumbAccent: '#0f766e', atsFriendly: true
+    },
+    petroleo: {
+      id: 'petroleo', name: 'Petróleo', description: 'Barra lateral em azul-petróleo',
+      layout: 'sidebar', thumbAccent: '#155e75', atsFriendly: false,
+      atsNote: 'Este modelo divide o conteúdo em mais de uma área visual. Alguns sistemas podem misturar a ordem das informações. Para uma leitura mais segura, prefira um modelo de uma coluna.'
+    },
+    marinho: {
+      id: 'marinho', name: 'Marinho', description: 'Faixa superior em azul-marinho',
+      layout: 'banner', thumbAccent: '#1e3a5f', atsFriendly: true
+    },
+    bordo: {
+      id: 'bordo', name: 'Bordô', description: 'Centralizado, com tom bordô e estilo tradicional',
+      layout: 'centered', thumbAccent: '#7a2230', atsFriendly: true
+    },
+    ambar: {
+      id: 'ambar', name: 'Âmbar', description: 'Alinhado à esquerda, com detalhes em âmbar',
+      layout: 'left', thumbAccent: '#92400e', atsFriendly: true
+    },
+    oliva: {
+      id: 'oliva', name: 'Oliva', description: 'Barra lateral em verde-oliva',
+      layout: 'sidebar', thumbAccent: '#256345', atsFriendly: false,
+      atsNote: 'Este modelo divide o conteúdo em mais de uma área visual. Alguns sistemas podem misturar a ordem das informações. Para uma leitura mais segura, prefira um modelo de uma coluna.'
+    },
+    modern: {
+      id: 'modern', name: 'Moderno', description: 'Barra lateral clara, com detalhes em azul',
+      layout: 'sidebar', thumbAccent: '#5980a6', atsFriendly: false,
+      atsNote: 'Este modelo divide o conteúdo em mais de uma área visual. Alguns sistemas podem misturar a ordem das informações. Para uma leitura mais segura, prefira um modelo de uma coluna.'
+    },
+    executive: {
+      id: 'executive', name: 'Executivo', description: 'Faixa superior escura e visual formal',
+      layout: 'banner', thumbAccent: '#1d2d3d', atsFriendly: true
+    },
+    carvao: {
+      id: 'carvao', name: 'Carvão', description: 'Faixa superior em preto-carvão',
+      layout: 'banner', thumbAccent: '#1f2937', atsFriendly: true
+    },
+    faixa: {
+      id: 'faixa', name: 'Faixa Clara', description: 'Faixa superior suave em azul-claro',
+      layout: 'banner', thumbAccent: '#c9dcf0', atsFriendly: true
+    },
+    violeta: {
+      id: 'violeta', name: 'Violeta', description: 'Centralizado, com detalhes em violeta',
+      layout: 'centered', thumbAccent: '#573a8a', atsFriendly: true
+    },
+    creative: {
+      id: 'creative', name: 'Criativo', description: 'Coluna única, com selo de iniciais',
+      layout: 'creative', thumbAccent: '#5980a6', atsFriendly: false,
+      atsNote: 'Este modelo usa um elemento gráfico no topo. Alguns sistemas podem ignorar ou reorganizar essa parte do conteúdo.'
+    },
+    rosado: {
+      id: 'rosado', name: 'Rosado', description: 'Selo de iniciais em tom rosé, indicado para portfólios',
+      layout: 'creative', thumbAccent: '#9f2544', atsFriendly: false,
+      atsNote: 'Este modelo usa um elemento gráfico no topo. Alguns sistemas podem ignorar ou reorganizar essa parte do conteúdo.'
     }
   };
 
@@ -259,7 +300,7 @@ const EuGeroConfig = (function () {
     education: 'Formação',
     skills: 'Habilidades',
     languages: 'Idiomas',
-    certifications: 'Certificados',
+    certifications: 'Certificações',
     projects: 'Projetos'
   };
 

@@ -271,44 +271,49 @@ const EuGeroCharacters = (function () {
 
   const CHARACTERS = [
     {
+      id: 'blank',
+      name: 'Em branco',
+      role: 'Crie seu currículo do zero',
+      initials: '+',
+      tagline: 'Página em branco',
+      avatarColor: null,
+      state: null
+    },
+    {
       id: 'sherlock',
       name: 'Sherlock Holmes',
-      role: 'Investigação e análise de dados',
+      role: 'Análise, pesquisa e solução de problemas',
       initials: 'SH',
       tagline: 'Exemplo pronto',
+      avatarColor: '#3E5F73',
       state: SHERLOCK
     },
     {
       id: 'mulan',
       name: 'Hua Mulan',
-      role: 'Liderança e operações de equipe',
+      role: 'Liderança, planejamento e trabalho em equipe',
       initials: 'HM',
       tagline: 'Exemplo pronto',
+      avatarColor: '#8E4A54',
       state: MULAN
     },
     {
       id: 'hercules',
       name: 'Hércules',
-      role: 'Projetos críticos sob pressão',
+      role: 'Execução de projetos e resolução de desafios',
       initials: 'HC',
       tagline: 'Exemplo pronto',
+      avatarColor: '#A3813F',
       state: HERCULES
     },
     {
       id: 'chapeuzinho',
       name: 'Chapeuzinho Vermelho',
-      role: 'Logística e atendimento ao cliente',
+      role: 'Organização, comunicação e atendimento',
       initials: 'CV',
       tagline: 'Exemplo pronto',
+      avatarColor: '#7A5E8C',
       state: CHAPEUZINHO
-    },
-    {
-      id: 'blank',
-      name: 'Em branco',
-      role: 'Comece do zero, do seu jeito',
-      initials: '+',
-      tagline: 'Página limpa',
-      state: null
     }
   ];
 

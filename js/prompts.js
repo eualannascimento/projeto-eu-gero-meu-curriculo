@@ -1,16 +1,16 @@
 /**
- * Geração de prompts para IA externa — módulo puro testável.
+ * Geração de prompts para IA externa - módulo puro testável.
  */
 const EuGeroPrompts = (function () {
   const SECTION_PROMPTS = {
-    personal: 'Ajude-me a preencher meus Dados Pessoais para currículo e LinkedIn. Sugira um título profissional impactante, formatação de contato e dicas para URL do LinkedIn.',
-    summary: 'Ajude-me a escrever um Resumo/Sobre profissional para LinkedIn. O texto deve ter 3-4 parágrafos, usar verbos de ação, incluir conquistas mensuráveis e transmitir minha proposta de valor.',
-    experiences: 'Ajude-me a escrever descrições de Experiências Profissionais. Para cada experiência, use verbos de ação no passado (implementei, liderei, desenvolvi), inclua resultados quantificáveis e destaque impacto gerado.',
-    education: 'Ajude-me a formatar minha Formação Acadêmica para currículo. Inclua instituição, curso, período e destaque relevante como honras ou projetos acadêmicos.',
-    skills: 'Sugira uma lista de Habilidades relevantes para meu perfil profissional. Priorize competências técnicas e comportamentais alinhadas ao cargo desejado.',
-    languages: 'Ajude-me a listar meus Idiomas com níveis de proficiência adequados para currículo e LinkedIn.',
-    certifications: 'Ajude-me a formatar meus Certificados e Licenças de forma profissional para currículo.',
-    projects: 'Ajude-me a descrever meus Projetos profissionais. Inclua objetivo, minha contribuição, tecnologias usadas e resultados alcançados.',
+    personal: 'Revise os dados que escolhi incluir no currículo e no LinkedIn. Sugira um título profissional claro, uma forma simples de apresentar os contatos e melhorias para a URL do LinkedIn. Não sugira informações pessoais que não sejam necessárias.',
+    summary: 'Ajude a escrever um resumo profissional curto, com duas ou três frases, destacando experiência, habilidades e objetivo. Se eu fornecer uma descrição de vaga, use termos compatíveis com ela somente quando forem verdadeiros para o meu perfil. Não invente informações.',
+    experiences: 'Ajude a melhorar as descrições das minhas experiências. Use verbos de ação e deixe claras as atividades, ferramentas, conhecimentos e resultados. Se eu fornecer uma descrição de vaga, destaque apenas as relações que forem verdadeiras e não repita palavras-chave de forma artificial.',
+    education: 'Ajude a organizar minha formação, incluindo curso, instituição, período e outras informações relevantes que eu já tenha fornecido.',
+    skills: 'Sugira habilidades técnicas e formas de trabalhar coerentes com as informações fornecidas. Se eu incluir uma descrição de vaga, compare os requisitos com meu perfil e separe o que já está confirmado do que ainda preciso validar.',
+    languages: 'Ajude a apresentar meus idiomas e níveis de forma clara e adequada ao currículo e ao LinkedIn.',
+    certifications: 'Ajude a organizar minhas certificações e meus cursos, com nome, instituição e ano de conclusão.',
+    projects: 'Ajude a descrever meus projetos, destacando objetivo, participação, tecnologias e resultados já informados.',
     volunteering: 'Ajude-me a descrever minhas experiências de Voluntariado de forma impactante para currículo.',
     publications: 'Ajude-me a formatar minhas Publicações para perfil LinkedIn e currículo.',
     awards: 'Ajude-me a descrever meus Prêmios e Honrarias de forma profissional.',
@@ -18,20 +18,33 @@ const EuGeroPrompts = (function () {
     courses: 'Ajude-me a formatar meus Cursos complementares para currículo e LinkedIn.'
   };
 
-  const GENERAL_INTRO = `Você é um especialista em recrutamento e otimização de currículos para o mercado brasileiro. 
-Ajude-me a criar/melhorar meu currículo completo e perfil LinkedIn.
-Siga estas diretrizes:
-- Use verbos de ação em português (implementei, liderei, desenvolvi, gerenciei, otimizei)
-- Inclua resultados mensuráveis sempre que possível (%, números, prazos)
-- Seja conciso e profissional
-- Adapte o tom ao cargo desejado
-- Responda organizado por seções do currículo`;
+  const GENERAL_INTRO = `Atue como especialista em recrutamento e melhoria de currículos para o mercado brasileiro.
 
-  const TRANSLATION_INTRO = `Traduza meu currículo completo do português para inglês profissional.
-Mantenha formatação por seções. Adapte termos técnicos corretamente.
-Use verbos de ação no passado em inglês (implemented, led, developed, managed).
-Preserve nomes próprios de empresas e instituições.
-Responda com o currículo traduzido, seção por seção.`;
+Ajude a revisar e melhorar meu currículo e meu perfil no LinkedIn.
+
+Siga estas orientações:
+- use verbos de ação em português;
+- inclua números e resultados apenas quando houver informações suficientes;
+- escreva de forma clara, curta e profissional;
+- adapte o conteúdo ao cargo ou à área de interesse;
+- organize a resposta pelas seções do currículo;
+- não invente experiências, resultados ou qualificações;
+- use linguagem respeitosa e inclusiva;
+- avalie somente informações relacionadas à oportunidade e não faça suposições sobre gênero, identidade de gênero, idade, raça ou cor, origem, religião, deficiência, aparência, orientação sexual, estado civil, situação familiar ou outras características pessoais;
+- se eu fornecer uma descrição de vaga, compare o currículo com os requisitos;
+- identifique habilidades e termos relevantes que já estejam presentes no meu histórico;
+- use o mesmo idioma da vaga;
+- não repita palavras-chave de forma artificial;
+- não invente experiências, ferramentas, resultados ou qualificações;
+- indique separadamente qualquer requisito que eu ainda precise confirmar.`;
+
+  const TRANSLATION_INTRO = `Traduza meu currículo do português para um inglês profissional e natural.
+
+Mantenha a organização por seções, adapte os termos técnicos e preserve os nomes de empresas e instituições.
+
+Use verbos de ação adequados ao contexto e não acrescente informações que não estejam no texto original. Quando o idioma permitir, não presuma gênero nem outras características pessoais que não tenham sido informadas.
+
+Apresente a tradução seção por seção.`;
 
   function formatPersonalData(state) {
     const p = state.personal || {};
@@ -145,28 +158,33 @@ LinkedIn: ${p.linkedinUrl || '(não preenchido)'}`;
     }
   }
 
-  function buildGeneralPrompt(state, includeData) {
+  function appendJobDescription(prompt, jobDescription) {
+    if (!jobDescription || !jobDescription.trim()) return prompt;
+    return prompt + '\n\n--- DESCRIÇÃO DA VAGA (use apenas como referência para destacar informações verdadeiras e relevantes, sem inventar nem repetir palavras-chave de forma artificial) ---\n\n' + jobDescription.trim();
+  }
+
+  function buildGeneralPrompt(state, includeData, jobDescription) {
     let prompt = GENERAL_INTRO;
     if (includeData) {
       prompt += '\n\n--- MEUS DADOS ATUAIS ---\n\n' + formatStateData(state);
     } else {
-      prompt += '\n\n(Não incluí meus dados pessoais — forneça sugestões genéricas baseadas nas informações que eu fornecer em seguida.)';
+      prompt += '\n\n(Não incluí meus dados pessoais. Forneça sugestões genéricas baseadas nas informações que eu fornecer em seguida.)';
     }
-    return prompt;
+    return appendJobDescription(prompt, jobDescription);
   }
 
-  function buildSectionPrompt(sectionId, state, includeData) {
+  function buildSectionPrompt(sectionId, state, includeData, jobDescription) {
     const label = EuGeroConfig.SECTION_LABELS?.[sectionId]
       || EuGeroConfig.SECTIONS.find(s => s.id === sectionId)?.title
       || 'esta seção';
     const instruction = SECTION_PROMPTS[sectionId] || 'Ajude-me com esta seção do currículo.';
-    let prompt = `Sou candidato(a) a uma vaga e estou preenchendo a seção "${label}" do meu currículo.\n\n${instruction}\n\nMe ajude a melhorar: deixe claro e curto, use verbos de ação e destaque resultados. Se faltar informação, me faça perguntas. Forneça sugestões de texto prontas para copiar e colar.`;
+    let prompt = `Estou preenchendo a seção "${label}" do meu currículo.\n\n${instruction}\n\nSe houver uma descrição de vaga, use-a apenas como referência para destacar informações verdadeiras e relevantes. Não invente experiências nem repita palavras-chave de forma artificial. Caso falte algo importante, faça perguntas objetivas antes de sugerir a versão final. Apresente textos claros, curtos e prontos para copiar e colar.`;
     if (includeData) {
       prompt += '\n\n--- MEU CURRÍCULO COMPLETO ATÉ AGORA (foque na seção "' + label + '", mas use o restante como contexto) ---\n\n' + formatStateData(state);
     } else {
-      prompt += '\n\n(Não incluí meus dados — aguardo fornecer as informações necessárias.)';
+      prompt += '\n\n(Não incluí meus dados. Aguardo fornecer as informações necessárias.)';
     }
-    return prompt;
+    return appendJobDescription(prompt, jobDescription);
   }
 
   function buildTranslationPrompt(state, includeData) {

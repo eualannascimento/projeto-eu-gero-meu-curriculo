@@ -64,7 +64,7 @@ const EuGeroDates = (function () {
   }
 
   function monthOptions(selected) {
-    return `<option value="">Mes</option>${MONTHS.map(m =>
+    return `<option value="">Mês</option>${MONTHS.map(m =>
       `<option value="${m.v}" ${selected === m.v ? 'selected' : ''}>${m.l}</option>`
     ).join('')}`;
   }
