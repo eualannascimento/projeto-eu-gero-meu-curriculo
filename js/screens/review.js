@@ -79,8 +79,27 @@ const EuGeroReviewScreen = (function () {
         </div>
       </div>`;
 
-    // Painel de leitura por ATS: considera apenas a estrutura do modelo escolhido.
     const currentTemplate = TEMPLATES[state.template];
+    const pageTitle = pageFit.level === 'ok' ? 'Cabe em uma página' : pageFit.level === 'detailed' ? 'Modo detalhado: até duas páginas' : 'Revise a extensão';
+    const pageText = pageFit.level === 'ok'
+      ? 'O conteúdo está em uma extensão adequada para uma página.'
+      : pageFit.level === 'detailed'
+        ? 'Duas páginas são aceitáveis quando a experiência e os resultados forem relevantes para a vaga.'
+        : 'Prefira cortar repetições e conteúdo pouco relevante. Se tudo for necessário, escolha "Até 2 páginas".';
+    const checklist = [
+      state.personal.email ? 'E-mail preenchido' : 'Revise o e-mail de contato',
+      state.personal.location ? 'Cidade informada sem endereço completo' : 'Informe cidade e estado',
+      currentTemplate?.atsFriendly ? 'Modelo com estrutura favorável a ATS' : 'Considere um modelo de uma coluna para ATS',
+      state.summary ? 'Resumo incluído' : 'Inclua um resumo curto e específico',
+      pageTitle
+    ];
+    html += `<div style="margin-top: 18px; border-top: 1px solid var(--color-divider); padding-top: 14px;">
+      <p style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: ${muted}; margin: 0 0 6px;">Extensão e checagem final</p>
+      <p style="font-size: 13.5px; line-height: 1.5; margin: 0 0 10px;">${ctx.escapeHtml(pageText)}</p>
+      <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: color-mix(in srgb, var(--color-text) 78%, transparent);">${checklist.map((item) => `<li>${ctx.escapeHtml(item)}</li>`).join('')}</ul>
+    </div>`;
+
+    // Painel de leitura por ATS: considera apenas a estrutura do modelo escolhido.
     const atsStatusLabel = currentTemplate?.atsFriendly ? 'Estrutura favorável' : 'Revise a estrutura';
     const atsStatusDesc = currentTemplate?.atsFriendly
       ? 'O modelo escolhido usa uma organização simples, que costuma facilitar a leitura automática.'

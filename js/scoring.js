@@ -214,6 +214,11 @@ const EuGeroScoring = (function () {
       issues.push(`Muitos itens em listas (${metrics.listItems})`);
     }
 
+    if (state.pageMode === 'detailed' && level === 'overflow' && metrics.totalChars < PAGE_CHAR_HARD_LIMIT * 2) {
+      level = 'detailed';
+      issues.unshift('O conteúdo pode ocupar duas páginas. Isso é adequado quando todas as informações são relevantes para a vaga.');
+    }
+
     const charRatio = Math.min(1, metrics.totalChars / PAGE_CHAR_HARD_LIMIT);
     const listRatio = Math.min(1, metrics.listItems / PAGE_MAX_LIST_ITEMS);
     const fitScore = Math.max(0, Math.round(100 - (charRatio * 55 + listRatio * 45)));
@@ -383,4 +388,3 @@ const EuGeroScoring = (function () {
     getLabelText
   };
 })();
-

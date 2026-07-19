@@ -233,6 +233,7 @@ const EuGeroConfig = (function () {
       template: 'classic',
       margin: 'padrao',
       density: 'normal',
+      pageMode: 'compact',
       currentStep: 0,
       enabledSections: [...DEFAULT_ENABLED_SECTION_IDS],
       personal: { fullName: '', headline: '', email: '', phone: '', location: '', linkedinUrl: '' },

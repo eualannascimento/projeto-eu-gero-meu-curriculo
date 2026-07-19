@@ -328,6 +328,10 @@
     { v: 'normal', l: 'Normal' },
     { v: 'condensado', l: 'Condensado' }
   ];
+  const PAGE_MODES = [
+    { v: 'compact', l: '1 página' },
+    { v: 'detailed', l: 'Até 2 páginas' }
+  ];
 
   function setPageOption(key, value) {
     state[key] = value;
@@ -352,12 +356,16 @@
       c.innerHTML = `<div class="cv-page-controls">
         ${seg(`pc-margin-${ci}`, 'Margens', state.margin || 'padrao', PAGE_MARGINS)}
         ${seg(`pc-density-${ci}`, 'Espaçamento', state.density || 'normal', PAGE_DENSITIES)}
+        ${seg(`pc-mode-${ci}`, 'Extensão', state.pageMode || 'compact', PAGE_MODES)}
       </div>`;
       c.querySelectorAll(`input[name="pc-margin-${ci}"]`).forEach((inp) => {
         inp.addEventListener('change', () => setPageOption('margin', inp.value));
       });
       c.querySelectorAll(`input[name="pc-density-${ci}"]`).forEach((inp) => {
         inp.addEventListener('change', () => setPageOption('density', inp.value));
+      });
+      c.querySelectorAll(`input[name="pc-mode-${ci}"]`).forEach((inp) => {
+        inp.addEventListener('change', () => setPageOption('pageMode', inp.value));
       });
     });
   }
