@@ -218,6 +218,7 @@ const normalized = EuGeroConfig.normalizeEnabledSections(['experiences']);
 assert(normalized.includes('personal'), 'Sempre inclui seção obrigatória');
 assert(normalized[0] === 'personal', 'Dados pessoais permanece na primeira posição');
 assert(EuGeroConfig.getActiveSections(['experiences', 'personal', 'education']).map((s) => s.id).join(',') === 'personal,experiences,education', 'Ordem das seções ativas é preservada');
+assert(EuGeroConfig.moveEnabledSection(['personal', 'experiences', 'education'], 'education', 'experiences', false).join(',') === 'personal,education,experiences', 'Reordenação altera a ordem das seções ativas');
 
 // --- P0.1: gate de avanço do wizard (não avança com validação falha) ---
 console.log('\nGate de avanço do wizard:');

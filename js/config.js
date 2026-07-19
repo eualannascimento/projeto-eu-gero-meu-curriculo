@@ -284,6 +284,16 @@ const EuGeroConfig = (function () {
     return enabled.map(id => SECTIONS.find(s => s.id === id)).filter(Boolean);
   }
 
+  function moveEnabledSection(enabledSections, movedId, targetId, placeAfter) {
+    const ordered = normalizeEnabledSections(enabledSections);
+    if (movedId === 'personal' || targetId === 'personal' || movedId === targetId) return ordered;
+    if (!ordered.includes(movedId) || !ordered.includes(targetId)) return ordered;
+    const withoutMoved = ordered.filter(id => id !== movedId);
+    const targetIndex = withoutMoved.indexOf(targetId);
+    withoutMoved.splice(targetIndex + (placeAfter ? 1 : 0), 0, movedId);
+    return normalizeEnabledSections(withoutMoved);
+  }
+
   function isSectionMandatory(sectionId) {
     return REQUIRED_SECTION_IDS.includes(sectionId);
   }
@@ -326,6 +336,7 @@ const EuGeroConfig = (function () {
     getSkillsFromState,
     normalizeEnabledSections,
     getActiveSections,
+    moveEnabledSection,
     isSectionMandatory,
     SHORT_LABELS
   };

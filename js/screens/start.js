@@ -7,7 +7,7 @@ const EuGeroStartScreen = (function () {
 
   const {
     SECTIONS, TEMPLATES, TEMPLATE_IDS,
-    normalizeEnabledSections, isSectionMandatory
+    normalizeEnabledSections, isSectionMandatory, moveEnabledSection
   } = EuGeroConfig;
 
   let ctx = null;
@@ -166,13 +166,14 @@ const EuGeroStartScreen = (function () {
       const checked = state.enabledSections.includes(section.id) || mandatory;
       const rowBg = checked ? 'color-mix(in srgb, var(--color-accent) 6%, transparent)' : 'transparent';
       return `
-        <label class="section-check ${mandatory ? 'section-check-mandatory' : ''}" data-section-row="${section.id}" ${mandatory ? '' : 'draggable="true"'} style="display: flex; align-items: center; gap: 12px; padding: 8px 14px; border: 1px solid var(--color-divider); cursor: ${mandatory ? 'default' : 'grab'}; background: ${rowBg}; margin-bottom: 2px;">
-          ${mandatory ? '' : '<span aria-hidden="true" style="color:color-mix(in srgb, var(--color-text) 45%, transparent); font-size:18px; line-height:1;">⠿</span>'}
+        <label class="section-check ${mandatory ? 'section-check-mandatory' : ''} ${checked ? 'section-check-enabled' : ''}" data-section-row="${section.id}" ${!mandatory && checked ? 'draggable="true"' : ''} style="display: flex; align-items: center; gap: 12px; padding: 8px 14px; border: 1px solid var(--color-divider); cursor: ${!mandatory && checked ? 'grab' : 'default'}; background: ${rowBg}; margin-bottom: 2px;">
+          ${!mandatory && checked ? '<span class="section-drag-handle" aria-label="Arraste para reordenar" title="Arraste para reordenar">⠿</span>' : '<span class="section-drag-spacer" aria-hidden="true"></span>'}
           <input type="checkbox" data-section-id="${section.id}" ${checked ? 'checked' : ''} ${mandatory ? 'disabled checked' : ''} style="width: 17px; height: 17px; accent-color: var(--color-accent);">
           <span class="section-check-label" style="display:flex; flex:1; align-items:center;">
             <strong style="font-family: var(--font-heading); font-weight: 600; font-size: 16px;">${section.title}</strong>
             <span style="margin-left: auto; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 50%, transparent);">${mandatory ? 'Sempre incluída' : 'Opcional'}</span>
           </span>
+          ${!mandatory && checked ? `<span class="section-move-actions"><button type="button" data-move-section="${section.id}" data-direction="up" aria-label="Subir ${section.title}">↑</button><button type="button" data-move-section="${section.id}" data-direction="down" aria-label="Descer ${section.title}">↓</button></span>` : ''}
         </label>
       `;
     }).join('');
@@ -180,25 +181,57 @@ const EuGeroStartScreen = (function () {
     ctx.els.sectionChecklist.querySelectorAll('input[type="checkbox"]').forEach((input) => {
       input.addEventListener('change', () => toggleSection(input.dataset.sectionId, input.checked));
     });
+    ctx.els.sectionChecklist.querySelectorAll('[data-move-section]').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSection(button.dataset.moveSection, button.dataset.direction);
+      });
+    });
     bindSectionReorder();
+  }
+
+  function moveSection(sectionId, direction) {
+    const state = ctx.getState();
+    const active = state.enabledSections;
+    const index = active.indexOf(sectionId);
+    const targetId = active[index + (direction === 'up' ? -1 : 1)];
+    if (!targetId || targetId === 'personal') return;
+    state.enabledSections = moveEnabledSection(state.enabledSections, sectionId, targetId, direction === 'down');
+    ctx.saveState();
+    renderSectionChecklist();
+    ctx.debouncedUpdatePreviews();
   }
 
   function bindSectionReorder() {
     const list = ctx.els.sectionChecklist;
     let draggedId = null;
     list.querySelectorAll('[data-section-row]').forEach((row) => {
-      row.addEventListener('dragstart', () => { draggedId = row.dataset.sectionRow; row.style.opacity = '0.45'; });
-      row.addEventListener('dragend', () => { draggedId = null; row.style.opacity = ''; });
-      row.addEventListener('dragover', (event) => event.preventDefault());
+      row.addEventListener('dragstart', (event) => {
+        draggedId = row.dataset.sectionRow;
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', draggedId);
+        row.classList.add('section-check-dragging');
+      });
+      row.addEventListener('dragend', () => {
+        draggedId = null;
+        list.querySelectorAll('.section-check-drop-before, .section-check-drop-after, .section-check-dragging').forEach((item) => item.classList.remove('section-check-drop-before', 'section-check-drop-after', 'section-check-dragging'));
+      });
+      row.addEventListener('dragover', (event) => {
+        if (!draggedId || row.dataset.sectionRow === 'personal' || !row.classList.contains('section-check-enabled')) return;
+        event.preventDefault();
+        const after = event.clientY > row.getBoundingClientRect().top + row.offsetHeight / 2;
+        row.classList.toggle('section-check-drop-before', !after);
+        row.classList.toggle('section-check-drop-after', after);
+      });
+      row.addEventListener('dragleave', () => row.classList.remove('section-check-drop-before', 'section-check-drop-after'));
       row.addEventListener('drop', (event) => {
         event.preventDefault();
         const targetId = row.dataset.sectionRow;
         if (!draggedId || !targetId || draggedId === targetId || targetId === 'personal') return;
         const state = ctx.getState();
-        const allIds = Array.from(list.querySelectorAll('[data-section-row]')).map((item) => item.dataset.sectionRow);
-        const moved = allIds.filter((id) => id !== draggedId);
-        moved.splice(moved.indexOf(targetId), 0, draggedId);
-        state.enabledSections = normalizeEnabledSections(moved.filter((id) => state.enabledSections.includes(id)));
+        const after = event.clientY > row.getBoundingClientRect().top + row.offsetHeight / 2;
+        state.enabledSections = moveEnabledSection(state.enabledSections, draggedId, targetId, after);
         ctx.saveState();
         renderSectionChecklist();
         ctx.debouncedUpdatePreviews();
