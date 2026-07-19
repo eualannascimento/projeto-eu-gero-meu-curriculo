@@ -261,6 +261,16 @@ const aggWithFit = EuGeroScoring.aggregateScore(
 );
 assert(aggWithFit.overall <= 45, 'Overflow penaliza pontuação geral');
 
+const detailedState = { ...filledState, summary: 'A'.repeat(4600), pageMode: 'detailed' };
+const detailedFit = EuGeroScoring.scorePageFit(detailedState, EuGeroConfig.SECTIONS);
+assert(detailedFit.level === 'detailed', 'Modo detalhado aceita conteúdo para duas páginas');
+const aggDetailed = EuGeroScoring.aggregateScore(
+  EuGeroScoring.scoreState(filledState, lightSections, EuGeroConfig.ACTION_VERBS),
+  detailedFit
+);
+assert(aggDetailed.overall > 45, 'Modo detalhado não aplica teto de uma página');
+assert(EuGeroConfig.createEmptyState().pageMode === 'compact', 'Novo currículo começa no modo compacto');
+
 // --- Validacao ---
 console.log('\nValidacao de campos:');
 
@@ -800,4 +810,3 @@ function finishTests() {
     process.exit(1);
   }
 }
-
