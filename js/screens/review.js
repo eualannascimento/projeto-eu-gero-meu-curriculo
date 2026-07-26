@@ -34,17 +34,17 @@ const EuGeroReviewScreen = (function () {
 
     const muted = 'color-mix(in srgb, var(--color-text) 55%, transparent)';
     let html = `
-      <p style="font-size: 12.5px; line-height: 1.5; color: ${muted}; margin: 0 0 16px;">Esta análise considera apenas o preenchimento do currículo. Ela não avalia seu perfil nem garante resultados em processos seletivos.</p>
-      <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+      <p class="review-intro">Esta análise considera apenas o preenchimento do currículo. Ela não avalia seu perfil nem garante resultados em processos seletivos.</p>
+      <div class="review-score-row">
         <div>
-          <div style="font-family: var(--font-heading); font-weight: 600; font-size: 44px; line-height: 1; color: var(--color-accent-700);">${ctx.escapeHtml(scoreLabel)}</div>
-          <div style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: ${muted}; margin-top: 4px;">Nível de preenchimento</div>
+          <div class="review-score-value">${ctx.escapeHtml(scoreLabel)}</div>
+          <div class="review-score-caption">Nível de preenchimento</div>
         </div>
-        <div style="flex: 1; min-width: 240px;">
-          <div style="height: 8px; background: var(--color-neutral-200); position: relative; overflow: hidden; margin-bottom: 12px;">
-            <div style="position: absolute; inset: 0 auto 0 0; width: ${pct}%; background: var(--color-accent);"></div>
+        <div class="review-score-bar-wrap">
+          <div class="review-progress-track">
+            <div class="review-progress-fill" data-pct="${pct}"></div>
           </div>
-          <p style="font-size: 14px; line-height: 1.5; color: color-mix(in srgb, var(--color-text) 78%, transparent); margin: 0;">${ctx.escapeHtml(scoreMsg)}</p>
+          <p class="review-score-text">${ctx.escapeHtml(scoreMsg)}</p>
         </div>
       </div>`;
 
@@ -58,8 +58,8 @@ const EuGeroReviewScreen = (function () {
     };
 
     html += `
-      <div style="margin-top: 18px; border-top: 1px solid var(--color-divider); padding-top: 14px;">
-        <p style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: ${muted}; margin: 0 0 10px;">Preenchimento por seção</p>
+      <div class="review-block">
+        <p class="review-block-title">Preenchimento por seção</p>
         <div class="review-feedback">
           ${feedback.map((f) => {
             const meta = STATUS_META[f.status] || STATUS_META.bom;
@@ -93,10 +93,10 @@ const EuGeroReviewScreen = (function () {
       state.summary ? 'Resumo incluído' : 'Inclua um resumo curto e específico',
       pageTitle
     ];
-    html += `<div style="margin-top: 18px; border-top: 1px solid var(--color-divider); padding-top: 14px;">
-      <p style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: ${muted}; margin: 0 0 6px;">Extensão e checagem final</p>
-      <p style="font-size: 13.5px; line-height: 1.5; margin: 0 0 10px;">${ctx.escapeHtml(pageText)}</p>
-      <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: color-mix(in srgb, var(--color-text) 78%, transparent);">${checklist.map((item) => `<li>${ctx.escapeHtml(item)}</li>`).join('')}</ul>
+    html += `<div class="review-block">
+      <p class="review-block-title-tight">Extensão e checagem final</p>
+      <p class="review-block-text">${ctx.escapeHtml(pageText)}</p>
+      <ul class="review-block-list">${checklist.map((item) => `<li>${ctx.escapeHtml(item)}</li>`).join('')}</ul>
     </div>`;
 
     // Painel de leitura por ATS: considera apenas a estrutura do modelo escolhido.
@@ -113,20 +113,26 @@ const EuGeroReviewScreen = (function () {
       'Depois do envio, revise os dados importados pela plataforma.'
     ];
     html += `
-      <div style="margin-top: 18px; border-top: 1px solid var(--color-divider); padding-top: 14px;">
-        <p style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: ${muted}; margin: 0 0 6px;">Leitura por ATS</p>
-        <p style="font-size: 12.5px; line-height: 1.5; color: ${muted}; margin: 0 0 10px;">Esta verificação considera apenas a estrutura e a organização do currículo. Ela não garante aprovação nem substitui o preenchimento dos campos da plataforma.</p>
-        <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+      <div class="review-block">
+        <p class="review-block-title-tight">Leitura por ATS</p>
+        <p class="review-block-note">Esta verificação considera apenas a estrutura e a organização do currículo. Ela não garante aprovação nem substitui o preenchimento dos campos da plataforma.</p>
+        <div class="review-ats-row">
           <span class="rf-badge ${currentTemplate?.atsFriendly ? 'rf-otimo' : 'rf-fraco'}">${ctx.escapeHtml(atsStatusLabel)}</span>
-          <span style="font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 78%, transparent);">${ctx.escapeHtml(atsStatusDesc)}</span>
+          <span class="review-ats-desc">${ctx.escapeHtml(atsStatusDesc)}</span>
         </div>
-        <p style="font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: ${muted}; margin: 0 0 6px;">Antes de enviar</p>
-        <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: color-mix(in srgb, var(--color-text) 78%, transparent);">
+        <p class="review-ats-title">Antes de enviar</p>
+        <ul class="review-block-list">
           ${atsChecklist.map((item) => `<li>${ctx.escapeHtml(item)}</li>`).join('')}
         </ul>
       </div>`;
 
     ctx.els.reviewContent.innerHTML = html;
+    // A largura da barra e o unico valor calculado do bloco. Ela chega por
+    // data-pct e e aplicada aqui por CSSOM: a CSP barra o atributo style,
+    // inclusive vindo de innerHTML, mas nao barra elemento.style.
+    ctx.els.reviewContent.querySelectorAll('[data-pct]').forEach((barra) => {
+      barra.style.width = `${barra.dataset.pct}%`;
+    });
 
     ctx.els.reviewContent.querySelectorAll('.link-btn').forEach((btn) => {
       btn.addEventListener('click', () => {

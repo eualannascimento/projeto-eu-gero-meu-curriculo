@@ -23,7 +23,7 @@ const EuGeroStartScreen = (function () {
     const cards = EuGeroCharacters.CHARACTERS.map((c) => `
       <button type="button" class="character-card${c.state ? '' : ' character-card-blank'}" data-character="${c.id}">
         ${corners}
-        <span class="character-avatar" aria-hidden="true"${c.avatarColor ? ` style="background: ${ctx.escapeAttr(c.avatarColor)};"` : ''}>${ctx.escapeHtml(c.initials)}</span>
+        <span class="character-avatar" aria-hidden="true"${c.avatarColor ? ` data-avatar-color="${ctx.escapeAttr(c.avatarColor)}"` : ''}>${ctx.escapeHtml(c.initials)}</span>
         <span class="character-kicker">${ctx.escapeHtml(c.tagline)}</span>
         <span class="character-name">${ctx.escapeHtml(c.name)}</span>
         <span class="character-role">${ctx.escapeHtml(c.role)}</span>
@@ -42,6 +42,9 @@ const EuGeroStartScreen = (function () {
       </button>
     `);
     grid.innerHTML = cards.join('');
+    grid.querySelectorAll('[data-avatar-color]').forEach((el) => {
+      el.style.background = el.dataset.avatarColor;
+    });
     grid.querySelectorAll('.character-card[data-character]').forEach((card) => {
       card.addEventListener('click', () => pickCharacter(card.dataset.character));
     });
@@ -71,49 +74,60 @@ const EuGeroStartScreen = (function () {
   ];
 
   function renderTemplatePickers() {
+    // A cor de destaque e a unica coisa dinamica da miniatura. Ela vai num
+    // data-* e e aplicada depois por CSSOM (aplicarAcentoDasMiniaturas), porque
+    // atributo style e barrado pela CSP e elemento.style nao e. A geometria toda
+    // mora em css/screens.css.
     const getThumbMarkup = (layout, id) => {
       const accent = TEMPLATES[id]?.thumbAccent || '#334155';
+      const raiz = `data-thumb-accent="${ctx.escapeAttr(accent)}"`;
       if (layout === 'sidebar') {
         return `
-          <div class="thumb-sidebar" style="background: ${accent}; width: 30%; height: 100%;"></div>
-          <div class="thumb-main" style="flex: 1; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
-            <div class="thumb-line" style="height: 4px; background: #cbd5e1; width: 80%; border-radius: 1px;"></div>
-            <div class="thumb-line" style="height: 3px; background: #e2e8f0; width: 100%; border-radius: 1px;"></div>
-            <div class="thumb-line" style="height: 3px; background: #e2e8f0; width: 90%; border-radius: 1px;"></div>
-            <div class="thumb-line" style="height: 3px; background: #e2e8f0; width: 40%; border-radius: 1px;"></div>
+          <div class="thumb-sidebar thumb-accent-bg" ${raiz}></div>
+          <div class="thumb-main">
+            <div class="thumb-line thumb-line-h4 thumb-line-strong thumb-line-w80"></div>
+            <div class="thumb-line thumb-line-soft thumb-line-w100"></div>
+            <div class="thumb-line thumb-line-soft thumb-line-w90"></div>
+            <div class="thumb-line thumb-line-soft thumb-line-w40"></div>
           </div>
         `;
       }
       if (layout === 'banner') {
         return `
-          <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
-            <div class="thumb-banner" style="background: ${accent}; height: 25%; width: 100%;"></div>
-            <div style="flex: 1; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
-              <div class="thumb-line" style="height: 3px; background: #cbd5e1; width: 60%; border-radius: 1px;"></div>
-              <div class="thumb-line" style="height: 3px; background: #e2e8f0; width: 90%; border-radius: 1px;"></div>
-              <div class="thumb-line" style="height: 3px; background: #e2e8f0; width: 40%; border-radius: 1px;"></div>
+          <div class="thumb-col">
+            <div class="thumb-banner thumb-accent-bg" ${raiz}></div>
+            <div class="thumb-main">
+              <div class="thumb-line thumb-line-strong thumb-line-w60"></div>
+              <div class="thumb-line thumb-line-soft thumb-line-w90"></div>
+              <div class="thumb-line thumb-line-soft thumb-line-w40"></div>
             </div>
           </div>
         `;
       }
       if (layout === 'left') {
         return `
-          <div style="display: flex; flex-direction: column; width: 100%; height: 100%; padding: 6px; gap: 4px; align-items: flex-start; text-align: left;">
-            <div class="thumb-line" style="height: 5px; background: ${accent}; width: 50%; border-radius: 1px; margin-bottom: 2px;"></div>
-            <div class="thumb-line" style="height: 3px; background: #cbd5e1; width: 90%; border-radius: 1px;"></div>
-            <div class="thumb-line" style="height: 3px; background: #e2e8f0; width: 80%; border-radius: 1px;"></div>
-            <div class="thumb-line" style="height: 3px; background: #e2e8f0; width: 95%; border-radius: 1px;"></div>
+          <div class="thumb-col thumb-col-pad thumb-col-left">
+            <div class="thumb-line thumb-line-h5 thumb-accent-bg thumb-line-w50 thumb-line-gap" ${raiz}></div>
+            <div class="thumb-line thumb-line-strong thumb-line-w90"></div>
+            <div class="thumb-line thumb-line-soft thumb-line-w80"></div>
+            <div class="thumb-line thumb-line-soft thumb-line-w95"></div>
           </div>
         `;
       }
       // Centrado (classic, elegant, serifado, esmeralda, bordo, violeta, linha)
       const isCreative = layout === 'creative';
+      const topo = isCreative
+        ? `<div class="thumb-creative-head">
+             <div class="thumb-creative-mark thumb-accent-bg" ${raiz}></div>
+             <div class="thumb-line thumb-line-h5 thumb-accent-bg thumb-line-w34px" ${raiz}></div>
+           </div>`
+        : `<div class="thumb-line thumb-line-h5 thumb-accent-bg thumb-line-w60 thumb-line-gap" ${raiz}></div>`;
       return `
-        <div style="display: flex; flex-direction: column; width: 100%; height: 100%; padding: 6px; gap: 4px; align-items: ${isCreative ? 'flex-start' : 'center'}; text-align: ${isCreative ? 'left' : 'center'};">
-          ${isCreative ? `<div style="display:flex; gap:5px; align-items:center; margin-bottom:2px;"><div style="width:12px; height:12px; background:${accent};"></div><div class="thumb-line" style="height:5px; background:${accent}; width:34px; border-radius:1px;"></div></div>` : `<div class="thumb-line" style="height: 5px; background: ${accent}; width: 60%; border-radius: 1px; margin-bottom: 2px;"></div>`}
-          <div class="thumb-line" style="height: 3px; background: #cbd5e1; width: 40%; border-radius: 1px;"></div>
-          <div class="thumb-line" style="height: 3px; background: #e2e8f0; width: 80%; border-radius: 1px; margin-top: 4px;"></div>
-          <div class="thumb-line" style="height: 3px; background: #e2e8f0; width: 90%; border-radius: 1px;"></div>
+        <div class="thumb-col thumb-col-pad ${isCreative ? 'thumb-col-left' : 'thumb-col-center'}">
+          ${topo}
+          <div class="thumb-line thumb-line-strong thumb-line-w40"></div>
+          <div class="thumb-line thumb-line-soft thumb-line-w80 thumb-line-top"></div>
+          <div class="thumb-line thumb-line-soft thumb-line-w90"></div>
         </div>
       `;
     };
@@ -145,11 +159,21 @@ const EuGeroStartScreen = (function () {
       }).join('');
     }
 
+    aplicarAcentoDasMiniaturas();
+
     document.querySelectorAll('.template-card').forEach((card) => {
       card.addEventListener('click', () => pickTemplate(card.dataset.template));
     });
 
     updateTemplatePreviewMinis();
+  }
+
+  // A CSP barra o atributo style, inclusive quando ele chega por innerHTML,
+  // mas nao barra elemento.style. Por isso a cor sai do markup e entra aqui.
+  function aplicarAcentoDasMiniaturas() {
+    document.querySelectorAll('[data-thumb-accent]').forEach((el) => {
+      el.style.setProperty('--thumb-accent', el.dataset.thumbAccent);
+    });
   }
 
   function updateTemplatePreviewMinis() {
@@ -178,14 +202,13 @@ const EuGeroStartScreen = (function () {
     ctx.els.sectionChecklist.innerHTML = orderedSections.map((section) => {
       const mandatory = isSectionMandatory(section.id);
       const checked = state.enabledSections.includes(section.id) || mandatory;
-      const rowBg = checked ? 'color-mix(in srgb, var(--color-accent) 6%, transparent)' : 'transparent';
       return `
-        <label class="section-check ${mandatory ? 'section-check-mandatory' : ''} ${checked ? 'section-check-enabled' : ''}" data-section-row="${section.id}" ${!mandatory && checked ? 'draggable="true"' : ''} style="display: flex; align-items: center; gap: 12px; padding: 8px 14px; border: 1px solid var(--color-divider); cursor: ${!mandatory && checked ? 'grab' : 'default'}; background: ${rowBg}; margin-bottom: 2px;">
+        <label class="section-check ${mandatory ? 'section-check-mandatory' : ''} ${checked ? 'section-check-enabled' : ''}" data-section-row="${section.id}" ${!mandatory && checked ? 'draggable="true"' : ''}>
           ${!mandatory && checked ? '<span class="section-drag-handle" aria-label="Arraste para reordenar" title="Arraste para reordenar">⠿</span>' : '<span class="section-drag-spacer" aria-hidden="true"></span>'}
-          <input type="checkbox" data-section-id="${section.id}" ${checked ? 'checked' : ''} ${mandatory ? 'disabled checked' : ''} style="width: 17px; height: 17px; accent-color: var(--color-accent);">
-          <span class="section-check-label" style="display:flex; flex:1; align-items:center;">
-            <strong style="font-family: var(--font-heading); font-weight: 600; font-size: 16px;">${section.title}</strong>
-            <span style="margin-left: auto; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 50%, transparent);">${mandatory ? 'Sempre incluída' : 'Opcional'}</span>
+          <input type="checkbox" data-section-id="${section.id}" ${checked ? 'checked' : ''} ${mandatory ? 'disabled checked' : ''} class="section-check-box">
+          <span class="section-check-label section-check-row">
+            <strong class="section-check-title">${section.title}</strong>
+            <span class="section-check-tag">${mandatory ? 'Sempre incluída' : 'Opcional'}</span>
           </span>
           ${!mandatory && checked ? `<span class="section-move-actions"><button type="button" data-move-section="${section.id}" data-direction="up" aria-label="Subir ${section.title}">↑</button><button type="button" data-move-section="${section.id}" data-direction="down" aria-label="Descer ${section.title}">↓</button></span>` : ''}
         </label>
