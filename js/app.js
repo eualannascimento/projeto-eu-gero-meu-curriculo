@@ -218,7 +218,9 @@
     document.getElementById('btn-wizard-to-start')?.addEventListener('click', goToStart);
     document.getElementById('btn-gal-prev')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(-1));
     document.getElementById('btn-gal-next')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(1));
-    document.getElementById('btn-export-pdf')?.addEventListener('click', EuGeroReviewScreen.printCv);
+    document.getElementById('btn-export-pdf')?.addEventListener('click', (e) => {
+      EuGeroReviewScreen.downloadPdf(e.currentTarget);
+    });
     document.getElementById('btn-guide')?.addEventListener('click', goToGuide);
     document.getElementById('btn-back-review')?.addEventListener('click', goToReview);
 

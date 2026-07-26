@@ -702,13 +702,18 @@ debounced();
 debounced();
 
 // --- Impressão nativa fiel à prévia ---
-console.log('\nImpressão nativa fiel à prévia:');
+console.log('\nExportação de PDF:');
 
 const reviewJsCode = fs.readFileSync(path.join(__dirname, '..', 'js/screens/review.js'), 'utf8');
 const printCss = fs.readFileSync(path.join(__dirname, '..', 'css/print-preview.css'), 'utf8');
-assert(reviewJsCode.includes('window.print()'), 'Exportação abre a impressão nativa');
-assert(!reviewJsCode.includes('EuGeroPdfExport.generatePdf('), 'Exportação não usa renderizador PDF paralelo');
-assert(appJsCode.includes('EuGeroReviewScreen.printCv'), 'Botão de exportação chama printCv');
+// Decisao revista em 2026-07-26 (ver .docs/specs/feat-pdf-direto-como-unico-caminho.md):
+// o botao passa a baixar um PDF gerado por jsPDF em vez de abrir o dialogo de
+// impressao. O dialogo aplicava margem e escala proprias de cada navegador, e
+// era ali que nascia a segunda pagina em branco no Safari.
+assert(reviewJsCode.includes('EuGeroPdfExport.generatePdf('), 'Exportação gera o PDF direto via jsPDF');
+assert(appJsCode.includes('EuGeroReviewScreen.downloadPdf'), 'Botão de exportação chama downloadPdf');
+assert(reviewJsCode.includes("loadPdfVendor"), 'jsPDF e carregado sob demanda, nao no carregamento da pagina');
+assert(reviewJsCode.includes('window.print()'), 'Ctrl+P do navegador continua funcionando');
 assert(printCss.includes('#print-cv') && printCss.includes('box-sizing: border-box'), 'Área impressa usa caixa A4 com padding interno');
 
 // --- Notificações discretas ---
