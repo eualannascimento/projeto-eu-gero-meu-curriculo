@@ -740,3 +740,13 @@ function finishTests() {
     process.exit(1);
   }
 }
+
+// --- Versionamento do rascunho salvo (schemaVersion) ---
+console.log('\nVersionamento do rascunho:');
+assert(EuGeroStorage.SCHEMA_VERSION >= 1, 'storage expõe SCHEMA_VERSION');
+const semVersao = EuGeroStorage.migrate({ personal: { fullName: 'Ana' } });
+assert(semVersao.schemaVersion === EuGeroStorage.SCHEMA_VERSION, 'rascunho sem versão é migrado para a atual');
+assert(semVersao.personal.fullName === 'Ana', 'migração preserva os dados existentes');
+const jaAtual = EuGeroStorage.migrate({ schemaVersion: EuGeroStorage.SCHEMA_VERSION, summary: 'x' });
+assert(jaAtual.summary === 'x', 'rascunho já na versão atual passa intacto');
+assert(EuGeroStorage.migrate(null) === null, 'migração tolera entrada nula');

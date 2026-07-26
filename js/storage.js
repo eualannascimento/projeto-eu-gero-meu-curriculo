@@ -4,9 +4,23 @@
 const EuGeroStorage = (function () {
   const { STORAGE_KEY, createEmptyState, APP_VERSION } = EuGeroConfig;
 
+  // Versao do formato do rascunho. Sem ela, uma mudanca futura de estrutura
+  // corromperia silenciosamente o rascunho de quem ja usa a ferramenta.
+  const SCHEMA_VERSION = 1;
+
+  /** Traz um rascunho de versao anterior para o formato atual. */
+  function migrate(data) {
+    if (!data || typeof data !== 'object') return data;
+    const from = Number(data.schemaVersion) || 0;
+    if (from >= SCHEMA_VERSION) return data;
+    // v0 -> v1: nenhuma transformacao necessaria; o merge com os defaults
+    // (mergeWithDefaults) ja preenche o que faltava.
+    return { ...data, schemaVersion: SCHEMA_VERSION };
+  }
+
   function save(state) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, schemaVersion: SCHEMA_VERSION }));
       return true;
     } catch (e) {
       console.warn('Erro ao salvar no localStorage:', e);
@@ -23,7 +37,7 @@ const EuGeroStorage = (function () {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return initialState();
-      const parsed = JSON.parse(raw);
+      const parsed = migrate(JSON.parse(raw));
       return mergeWithDefaults(parsed);
     } catch (e) {
       console.warn('Erro ao carregar localStorage:', e);
@@ -104,6 +118,8 @@ const EuGeroStorage = (function () {
   }
 
   return {
+    SCHEMA_VERSION,
+    migrate,
     save,
     load,
     mergeWithDefaults,

@@ -4,7 +4,6 @@ Plataforma web estatica, 100% gratuita e sem servidor, para criar curriculos de 
 
 ## Funcionalidades
 
-- **Homepage** com explicacao do objetivo e acesso central
 - **Selecao de personagens** de exemplo (figuras de dominio publico) para comecar de um curriculo preenchido
 - **Wizard passo a passo** com 13 secoes alinhadas ao LinkedIn
 - **20 templates** esteticos e prontos para vaga (a maioria amigavel a ATS; alguns mais criativos com barra lateral ou selo)
@@ -30,7 +29,7 @@ python3 -m http.server 8080
 
 | Hash | Tela |
 |------|------|
-| `#/` | Homepage |
+| `#/` | Escolha do ponto de partida |
 | `#/start` | Escolha de template e secoes |
 | `#/wizard/personal` | Wizard (secao especifica) |
 | `#/review` | Revisao e exportacao |
@@ -41,6 +40,7 @@ python3 -m http.server 8080
 ```
 index.html
 css/
+  fonts.css         Barlow self-hosted (substitui o CDN do Google)
   base.css          Tokens, header, botoes, cards, formularios, home antiga
   layout.css        Telas, layout do wizard, timeline, campos e listas
   templates.css     Preview A4 e os 20 templates de curriculo
@@ -60,6 +60,8 @@ js/
   a11y.js           Modais acessiveis (Esc, focus trap)
   sample-data.js    Dados de exemplo
   app.js            Orquestracao
+  screens/          Telas (start, wizard, review, prompt-modal)
+  utils.js          Escape de HTML, sanitizacao de URL e debounce
 tests/smoke-test.js
 ```
 
@@ -68,7 +70,7 @@ tests/smoke-test.js
 | Recurso | Offline apos 1a carga? | Notas |
 |---------|------------------------|-------|
 | App (HTML/CSS/JS) | Sim | Funciona abrindo `index.html` |
-| Google Fonts | Parcial | Fallback system-ui se CDN falhar |
+| Fontes | Sim | Barlow self-hosted em `fonts/`, sem CDN externo |
 | **PDF** (impressao do navegador) | Sim | Usa `window.print()` sobre o HTML da previa; nenhuma biblioteca |
 | Prompts IA | N/A | Copia manual - nenhuma API e chamada |
 
@@ -86,7 +88,7 @@ Cobre: scoring, validacao, datas, router, page fit, JSON, prompts, catalogo de 2
 
 1. Push para o GitHub
 2. Settings → Pages → branch `main`, pasta `/ (root)`
-3. URL: https://eualannascimento.github.io/project-classificavagas-page-resume/
+3. URL de producao: https://classificavagas.com/resume/ (o repositorio do site sincroniza este conteudo no deploy; ver `scripts/sync-resume.py` lá)
 
 ## Privacidade
 
