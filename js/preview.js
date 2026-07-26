@@ -4,10 +4,14 @@
 const EuGeroPreview = (function () {
   const { getSkillsFromState, getActiveSections, SECTION_LABELS } = EuGeroConfig;
 
-  const { escapeHtml, escapeAttr } = EuGeroUtils;
+  const { escapeHtml, escapeAttr, safeUrl } = EuGeroUtils;
 
   function renderLinkedinLink(url) {
-    return `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`;
+    const href = safeUrl(url);
+    // Sem esquema http(s) valido o valor vira texto puro: melhor mostrar o que
+    // a pessoa digitou do que entregar um link executavel.
+    if (!href) return escapeHtml(url);
+    return `<a href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`;
   }
 
   function buildContactParts(personal) {
