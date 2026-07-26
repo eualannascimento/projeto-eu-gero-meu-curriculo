@@ -750,3 +750,11 @@ assert(semVersao.personal.fullName === 'Ana', 'migração preserva os dados exis
 const jaAtual = EuGeroStorage.migrate({ schemaVersion: EuGeroStorage.SCHEMA_VERSION, summary: 'x' });
 assert(jaAtual.summary === 'x', 'rascunho já na versão atual passa intacto');
 assert(EuGeroStorage.migrate(null) === null, 'migração tolera entrada nula');
+
+// --- Impressao: margem no @page e animacoes desligadas ---
+console.log('\nRegras de impressão:');
+assert(reviewJsCode.includes('applyPageMargin'), 'printCv injeta a regra @page com a margem escolhida');
+assert(reviewJsCode.includes("PAGE_MARGIN_MM"), 'margens de papel declaradas em milímetros');
+assert(printCss.includes('animation: none !important'), 'impressão desliga animações');
+assert(printCss.includes('transition: none !important'), 'impressão desliga transições');
+assert(printCss.includes('padding: 0 !important'), 'impressão zera o padding interno (a margem vem do @page)');
