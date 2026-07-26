@@ -1,0 +1,7 @@
+Self-hosted font files derived from Google Fonts:
+
+- Instrument Serif — SIL Open Font License 1.1
+- Inter — SIL Open Font License 1.1
+- Material Symbols Rounded — Apache License 2.0
+
+Source: https://fonts.google.com/

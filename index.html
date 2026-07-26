@@ -5,15 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Eu Gero Meu Curriculo - plataforma gratuita para criar curriculo e guia LinkedIn, 100% no navegador.">
   <title>Currículo por ClassificaVagas</title>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+  <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/templates.css">
   <link rel="stylesheet" href="css/print-preview.css">
   <link rel="stylesheet" href="css/responsive.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;700&family=Barlow+Condensed:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <a href="#app-main" class="skip-link">Pular para o conteúdo</a>
@@ -74,7 +72,7 @@
     <!-- Seleção de personagem -->
     <main id="screen-characters" class="screen cv-main" hidden style="max-width: 1180px; margin: 0 auto; padding: 8px 24px 60px;">
       <p style="font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; color: var(--color-accent-700); margin: 8px 0 8px;">Antes de começar</p>
-      <h2 style="font-family: var(--font-heading); font-weight: 600; font-size: 34px; text-transform: uppercase; line-height: 1.05; margin: 0 0 12px;">Escolha um ponto de partida</h2>
+      <h1 style="font-family: var(--font-heading); font-weight: 600; font-size: 34px; text-transform: uppercase; line-height: 1.05; margin: 0 0 12px;">Escolha um ponto de partida</h1>
       <p style="font-size: 15px; line-height: 1.55; color: color-mix(in srgb, var(--color-text) 80%, transparent); margin: 0 0 30px; max-width: 60ch;">Use um exemplo pronto para entender como preencher ou comece com uma página em branco. Você poderá editar tudo depois.</p>
       <div id="character-grid" class="character-grid"></div>
     </main>
@@ -83,7 +81,7 @@
       <div class="cv-split">
         <div>
           <p style="font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; color: var(--color-accent-700); margin: 8px 0 8px;">Antes de começar</p>
-          <h2 style="font-family: var(--font-heading); font-weight: 600; font-size: 34px; text-transform: uppercase; line-height: 1.05; margin: 0 0 12px;">Monte seu currículo do seu jeito</h2>
+          <h1 style="font-family: var(--font-heading); font-weight: 600; font-size: 34px; text-transform: uppercase; line-height: 1.05; margin: 0 0 12px;">Monte seu currículo do seu jeito</h1>
           <p style="font-size: 15px; line-height: 1.55; color: color-mix(in srgb, var(--color-text) 80%, transparent); margin: 0 0 26px; max-width: 52ch;">Escolha um modelo e marque as seções que deseja incluir. Você poderá alterar essas opções depois sem perder seus dados.</p>
   
           <p style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: color-mix(in srgb, var(--color-text) 60%, transparent); margin: 0 0 12px;">Seções do currículo</p>
@@ -141,7 +139,7 @@
           <hr style="height: 1px; border: 0; background: var(--color-divider); margin: 14px 0 22px;">
 
           <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px;">
-            <h2 id="wizard-step-title" style="font-family: var(--font-heading); font-weight: 600; font-size: 30px; text-transform: uppercase; margin: 0;"></h2>
+            <h1 id="wizard-step-title" style="font-family: var(--font-heading); font-weight: 600; font-size: 30px; text-transform: uppercase; margin: 0;"></h1>
             <span id="wizard-step-counter" style="font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 55%, transparent); white-space: nowrap;"></span>
           </div>
           <p id="wizard-step-desc" style="font-size: 14px; line-height: 1.5; color: color-mix(in srgb, var(--color-text) 78%, transparent); margin: 0 0 14px; max-width: 54ch;"></p>
@@ -191,7 +189,7 @@
     <!-- Revisão final -->
     <main id="screen-review" class="screen cv-main" hidden style="max-width: 1180px; margin: 0 auto; padding: 8px 24px 60px;">
       <p style="font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; color: var(--color-accent-700); margin: 8px 0 8px;">Revisão</p>
-      <h2 style="font-family: var(--font-heading); font-weight: 600; font-size: 34px; text-transform: uppercase; line-height: 1.05; margin: 0 0 24px;">Quase pronto: revise e escolha o visual</h2>
+      <h1 style="font-family: var(--font-heading); font-weight: 600; font-size: 34px; text-transform: uppercase; line-height: 1.05; margin: 0 0 24px;">Quase pronto: revise e escolha o visual</h1>
 
       <div class="blueprint" style="padding: 24px; margin-bottom: 30px;">
         <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
@@ -231,7 +229,7 @@
     <!-- Guia LinkedIn -->
     <main id="screen-guide" class="screen cv-main" hidden style="max-width: 900px; margin: 0 auto; padding: 8px 24px 60px;">
       <p style="font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; color: var(--color-accent-700); margin: 8px 0 8px;">Depois do currículo</p>
-      <h2 style="font-family: var(--font-heading); font-weight: 600; font-size: 34px; text-transform: uppercase; line-height: 1.05; margin: 0 0 12px;">Leve o mesmo cuidado para o LinkedIn</h2>
+      <h1 style="font-family: var(--font-heading); font-weight: 600; font-size: 34px; text-transform: uppercase; line-height: 1.05; margin: 0 0 12px;">Leve o mesmo cuidado para o LinkedIn</h1>
       <p style="font-size: 15px; line-height: 1.55; color: color-mix(in srgb, var(--color-text) 80%, transparent); margin: 0 0 30px; max-width: 60ch;">O LinkedIn pode complementar seu currículo. Use estas orientações para manter as informações claras e consistentes nos dois lugares.</p>
       
       <div id="guide-content" class="guide-content" style="display: flex; flex-direction: column; gap: 18px;"></div>
