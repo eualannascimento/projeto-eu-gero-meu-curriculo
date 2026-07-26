@@ -717,6 +717,13 @@ assert(!reviewJsCode.includes('EuGeroPdfExport.generatePdf('), 'Exportação nã
 // min-height 297mm herdado de templates.css que gerava a pagina em branco.
 assert(printCss.includes('min-height: 0 !important'), 'Caixa de impressão não impõe altura de folha');
 assert(printCss.includes('#print-cv') && printCss.includes('box-sizing: border-box'), 'Área impressa usa caixa A4 com padding interno');
+// base.css define "body { min-height: 100vh }". Na impressao o Safari resolve
+// vh pela altura da janela, nao pela altura da folha: numa janela alta o body
+// ficava maior que a area imprimivel e saia uma segunda pagina em branco, com o
+// curriculo inteiro cabendo na primeira.
+const blocoImpressao = printCss.slice(printCss.indexOf('@media print'), printCss.indexOf('/* ---- Moldura A4'));
+assert(/html,\s*body\s*\{[^}]*min-height:\s*0\s*!important/.test(blocoImpressao),
+    'Impressão zera a altura mínima do body (100vh não vale na folha)');
 
 // --- Notificações discretas ---
 console.log('\nNotificações discretas:');
