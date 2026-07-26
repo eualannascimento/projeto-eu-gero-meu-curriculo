@@ -8,14 +8,24 @@
   #print-cv {
     display: block !important;
     width: 210mm;
-    min-height: 297mm;
+    /* NAO usar 297mm exatos: 297mm a 96dpi da 1122,52px e o navegador arredonda
+       para 1123px, ou seja 297,13mm. Esse excesso de 0,13mm cria uma segunda
+       pagina em branco no Safari e no Firefox (o Chrome tolera). 1mm de folga
+       e invisivel no papel e elimina o estouro. */
+    min-height: 296mm;
+    /* Sem max-height de proposito: se o conteudo nao couber, o certo e sair em
+       duas paginas. Cortar o excedente esconderia experiencia do candidato sem
+       ele perceber, que e pior do que a pagina extra. */
+    overflow: hidden;
     box-sizing: border-box;
     background: #fff;
     box-shadow: none;
     /* font-size, line-height e padding vem das mesmas regras .preview-content
        usadas na previa (unidades fisicas mm/pt) - sem conversao aqui (P0.4). */
   }
-  #print-cv .cv-sidebar-layout { min-height: calc(297mm - 2 * var(--doc-padding, 16mm)); }
+  /* Margem do ultimo filho colapsa para fora da caixa e empurra a paginacao. */
+  #print-cv > *:last-child { margin-bottom: 0 !important; }
+  #print-cv .cv-sidebar-layout { min-height: calc(296mm - 2 * var(--doc-padding, 16mm)); }
 }
 
 /* ---- Moldura A4 da prévia (proporção 1:1.414, igual ao modelo) ---- */
