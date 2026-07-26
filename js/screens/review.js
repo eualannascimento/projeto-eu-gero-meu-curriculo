@@ -179,30 +179,8 @@ const EuGeroReviewScreen = (function () {
     return cargo ? `CV_${nome}_${cargo}` : `CV_${nome}`;
   }
 
-  /** Milimetros de margem de papel para cada opcao da tela. */
-  const PAGE_MARGIN_MM = { estreita: 12, padrao: 16, confortavel: 20 };
-
-  /**
-   * Injeta a regra @page com a margem escolhida.
-   * @page nao aceita seletor, entao nao da para condicionar a margem pela
-   * classe do documento em CSS estatico. Deixar a margem no padding interno era
-   * o que quebrava no Safari: ele adiciona margem propria de papel por cima e as
-   * duas se somavam, estourando a folha.
-   */
-  function applyPageMargin(state) {
-    const mm = PAGE_MARGIN_MM[state.margin] || PAGE_MARGIN_MM.padrao;
-    let el = document.getElementById('print-page-rule');
-    if (!el) {
-      el = document.createElement('style');
-      el.id = 'print-page-rule';
-      document.head.appendChild(el);
-    }
-    el.textContent = `@page { size: A4; margin: ${mm}mm; }`;
-  }
-
   function printCv() {
     syncPrintCv();
-    applyPageMargin(ctx.getState());
     window.print();
   }
 

@@ -1,11 +1,13 @@
 /* ---- Impressão: o PDF sai identico a previa (Salvar como PDF) ---- */
 #print-cv { display: none; }
 @media print {
-  /* A margem do papel e desenhada pelo @page, nao pelo padding do documento.
-     O Safari ignora "@page { margin: 0 }" e aplica margem propria (cerca de
-     12,7mm por lado): o documento somava as duas e estourava a folha. A regra
-     @page real e injetada por printCv() em review.js, porque @page nao consegue
-     ler a classe de margem escolhida no documento. */
+  /* Margem do papel volta a vir do padding interno do documento (templates.css,
+     --doc-padding), com @page sem margem.
+     Tentamos declarar a margem no @page e zerar o padding: no Safari o conteudo
+     passou a ser cortado nas bordas, o que estraga o documento. Uma pagina extra
+     e feia; um curriculo cortado nao serve. Revertido em 2026-07-26 a pedido,
+     assumindo que no Safari o documento pode sair em duas paginas. */
+  @page { size: A4; margin: 0; }
   body > *:not(#print-cv) { display: none !important; }
   html, body { background: #fff !important; margin: 0 !important; }
   #print-cv, #print-cv * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
@@ -13,8 +15,7 @@
   /* Animacoes e transicoes travam o conteudo no primeiro quadro na impressao.
      A animacao "cvfade" (opacity 0 -> 1) deixava a coluna de conteudo dos
      modelos com barra lateral invisivel no PDF: o curriculo saia sem a secao de
-     experiencia. Vale para tudo, porque o mesmo risco existe em qualquer
-     elemento animado. */
+     experiencia. Sem relacao com margem; manter sempre. */
   #print-cv, #print-cv *, #print-cv *::before, #print-cv *::after {
     animation: none !important;
     transition: none !important;
@@ -22,15 +23,13 @@
 
   #print-cv {
     display: block !important;
-    /* Sem largura nem altura em milimetros: o bloco preenche a area imprimivel
-       que o @page definiu, seja qual for o navegador. */
-    width: auto !important;
-    max-width: none !important;
+    /* Largura com o A4 como teto: fixar 210mm estourava horizontalmente onde a
+       area imprimivel e menor. */
+    max-width: 210mm;
     /* templates.css define ".preview-content" com min-height 297mm fora de
-       qualquer media query, e o #print-cv recebe essa classe em syncPrintCv(). */
+       qualquer media query, e o #print-cv recebe essa classe em syncPrintCv().
+       Era essa regra que mantinha a caixa com altura de folha inteira. */
     min-height: 0 !important;
-    /* O espaco em volta vem do @page; o padding interno seria margem dobrada. */
-    padding: 0 !important;
     overflow: hidden;
     box-sizing: border-box;
     background: #fff;
@@ -38,8 +37,6 @@
   }
   /* Margem do ultimo filho colapsa para fora da caixa e empurra a paginacao. */
   #print-cv > *:last-child { margin-bottom: 0 !important; }
-  /* A barra lateral mantem o proprio min-height em em (templates.css): ele
-     dimensiona o layout de duas colunas e nao tem relacao com a folha. */
 }
 
 /* ---- Moldura A4 da prévia (proporção 1:1.414, igual ao modelo) ---- */

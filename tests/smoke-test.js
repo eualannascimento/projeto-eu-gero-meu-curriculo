@@ -753,8 +753,11 @@ assert(EuGeroStorage.migrate(null) === null, 'migração tolera entrada nula');
 
 // --- Impressao: margem no @page e animacoes desligadas ---
 console.log('\nRegras de impressão:');
-assert(reviewJsCode.includes('applyPageMargin'), 'printCv injeta a regra @page com a margem escolhida');
-assert(reviewJsCode.includes("PAGE_MARGIN_MM"), 'margens de papel declaradas em milímetros');
+// A animacao cvfade deixava a coluna de conteudo invisivel no PDF dos modelos
+// com barra lateral: o curriculo saia sem a secao de experiencia.
 assert(printCss.includes('animation: none !important'), 'impressão desliga animações');
 assert(printCss.includes('transition: none !important'), 'impressão desliga transições');
-assert(printCss.includes('padding: 0 !important'), 'impressão zera o padding interno (a margem vem do @page)');
+// A margem do papel vem do padding interno do documento. Declarar no @page e
+// zerar o padding fazia o Safari cortar o conteudo nas bordas.
+assert(!printCss.includes('padding: 0 !important'), 'impressão preserva o padding interno do documento');
+assert(!reviewJsCode.includes('applyPageMargin'), 'printCv não injeta regra @page dinâmica');
