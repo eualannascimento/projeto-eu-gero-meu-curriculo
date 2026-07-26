@@ -419,9 +419,10 @@ textarea.cv-input { min-height: 104px; resize: vertical; line-height: 1.5; }
   /* (As regras da home vivem no bloco "Home mobile compacta" no fim do arquivo.) */
 
   /* Selecao de personagem: galeria 3 colunas x 2 linhas */
-  #screen-characters h2 { font-size: 26px !important; }
-  #screen-characters h2 + p { font-size: 13.5px !important; margin-bottom: 14px !important; }
+  #screen-characters h1 { font-size: 26px !important; }
+  #screen-characters h1 + p { font-size: 13.5px !important; margin-bottom: 14px !important; }
   #screen-characters .character-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
   #screen-characters .character-card { padding: 12px 6px 10px; gap: 5px; }
   #screen-characters .character-avatar { width: 40px; height: 40px; font-size: 16px; }
   #screen-characters .character-kicker { display: none; }
@@ -430,15 +431,15 @@ textarea.cv-input { min-height: 104px; resize: vertical; line-height: 1.5; }
   #screen-characters .character-cta { display: none; }
 
   /* Start: espacamentos levemente menores; nota auxiliar sai */
-  #screen-start h2 { font-size: 26px !important; margin-bottom: 8px !important; }
-  #screen-start h2 + p { margin-bottom: 14px !important; font-size: 13.5px !important; }
+  #screen-start h1 { font-size: 26px !important; margin-bottom: 8px !important; }
+  #screen-start h1 + p { margin-bottom: 14px !important; font-size: 13.5px !important; }
   #section-checklist .section-check { padding: 9px 12px !important; }
   #section-checklist strong { font-size: 15px !important; }
   #section-checklist + p { display: none; }
   #screen-start div[style*="margin-top: 26px"] { margin-top: 16px !important; }
 
   /* Review: setas sobre o cartao, cabecalho compacto */
-  #screen-review h2 { font-size: 26px !important; }
+  #screen-review h1 { font-size: 26px !important; }
   #screen-review .blueprint[style*="padding: 24px"] { padding: 16px !important; }
   #screen-review > div[style*="grid-template-columns: auto"] {
     display: block !important;
@@ -458,3 +459,10 @@ textarea.cv-input { min-height: 104px; resize: vertical; line-height: 1.5; }
   #screen-review > div[style*="grid-template-columns: auto"] > div { max-width: none; }
 }
 
+/* Abaixo de 430px, 3 colunas deixam cada card com ~103px e quebram nomes como
+   "Chapeuzinho Vermelho" em tres linhas. Duas colunas mantem a galeria
+   compacta e legivel. Fica fora do bloco de 900px porque @media aninhado em
+   @media nao e valido e invalida o restante do bloco. */
+@media (max-width: 430px) {
+  #screen-characters .character-grid { grid-template-columns: repeat(2, 1fr); }
+}

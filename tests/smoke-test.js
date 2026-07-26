@@ -656,6 +656,33 @@ assert(linkedinHtml.includes('href="https://linkedin.com/in/maria-teste"'), 'Lin
 assert(linkedinHtml.includes('target="_blank"') && linkedinHtml.includes('rel="noopener noreferrer"'), 'Link do LinkedIn abre em nova aba sem vazar window.opener');
 assert(linkedinHtml.includes('>linkedin.com/in/maria-teste<') || linkedinHtml.includes('>https://linkedin.com/in/maria-teste<'), 'Texto visivel do link do LinkedIn preservado');
 
+// --- Sanitizacao de URL (rascunho .json vem de arquivo de terceiro) ---
+assert(
+  EuGeroUtils.safeUrl('https://linkedin.com/in/fulano') === 'https://linkedin.com/in/fulano',
+  'safeUrl preserva https'
+);
+assert(
+  EuGeroUtils.safeUrl('linkedin.com/in/fulano') === 'https://linkedin.com/in/fulano',
+  'safeUrl assume https quando falta o esquema'
+);
+assert(
+  EuGeroUtils.safeUrl('javascript:alert(1)') === '',
+  'safeUrl bloqueia javascript:'
+);
+assert(
+  EuGeroUtils.safeUrl('JaVaScRiPt:alert(1)') === '',
+  'safeUrl bloqueia javascript: em qualquer caixa'
+);
+assert(
+  EuGeroUtils.safeUrl('data:text/html,<script>alert(1)</script>') === '',
+  'safeUrl bloqueia data:'
+);
+assert(
+  EuGeroUtils.safeUrl('vbscript:msgbox(1)') === '',
+  'safeUrl bloqueia vbscript:'
+);
+assert(EuGeroUtils.safeUrl('') === '' && EuGeroUtils.safeUrl(null) === '', 'safeUrl trata vazio e nulo');
+
 // --- Utilitários compartilhados (EuGeroUtils) ---
 console.log('\nUtilitários compartilhados:');
 
