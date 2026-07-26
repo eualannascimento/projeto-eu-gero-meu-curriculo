@@ -203,6 +203,8 @@
     document.getElementById('btn-enter-app')?.addEventListener('click', () => navigateTo('characters'));
     document.getElementById('btn-go-home')?.addEventListener('click', goToHome);
     document.getElementById('btn-import-home')?.addEventListener('click', () => els.fileImport?.click());
+    // O mesmo atalho existe como card na galeria de personagens (ver screens/start.js).
+    document.getElementById('btn-import-characters')?.addEventListener('click', () => els.fileImport?.click());
 
     document.getElementById('btn-start-wizard')?.addEventListener('click', startWizard);
     document.getElementById('btn-back-start')?.addEventListener('click', () => navigateTo('characters'));
@@ -218,7 +220,9 @@
     document.getElementById('btn-wizard-to-start')?.addEventListener('click', goToStart);
     document.getElementById('btn-gal-prev')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(-1));
     document.getElementById('btn-gal-next')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(1));
-    document.getElementById('btn-export-pdf')?.addEventListener('click', EuGeroReviewScreen.printCv);
+    document.getElementById('btn-export-pdf')?.addEventListener('click', (e) => {
+      EuGeroReviewScreen.downloadPdf(e.currentTarget);
+    });
     document.getElementById('btn-guide')?.addEventListener('click', goToGuide);
     document.getElementById('btn-back-review')?.addEventListener('click', goToReview);
 

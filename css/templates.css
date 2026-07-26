@@ -525,3 +525,24 @@
   text-transform: uppercase;
   color: var(--color-accent-700);
 }
+
+/* Cantos decorativos do card de personagem (vinham da copia publicada). */
+.character-card .corner {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  pointer-events: none;
+}
+.character-card .corner::before,
+.character-card .corner::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+}
+.character-card .corner::before { left: 5px; top: 0; width: 1px; height: 100%; }
+.character-card .corner::after { top: 5px; left: 0; width: 100%; height: 1px; }
+.character-card .corner.tl { top: -6px; left: -6px; }
+.character-card .corner.tr { top: -6px; right: -6px; }
+.character-card .corner.bl { bottom: -6px; left: -6px; }
+.character-card .corner.br { bottom: -6px; right: -6px; }

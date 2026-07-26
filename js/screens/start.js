@@ -19,16 +19,30 @@ const EuGeroStartScreen = (function () {
   function renderCharacterGrid() {
     const grid = document.getElementById('character-grid');
     if (!grid || typeof EuGeroCharacters === 'undefined') return;
-    grid.innerHTML = EuGeroCharacters.CHARACTERS.map((c) => `
+    const corners = `<i class="corner tl" aria-hidden="true"></i><i class="corner tr" aria-hidden="true"></i><i class="corner bl" aria-hidden="true"></i><i class="corner br" aria-hidden="true"></i>`;
+    const cards = EuGeroCharacters.CHARACTERS.map((c) => `
       <button type="button" class="character-card${c.state ? '' : ' character-card-blank'}" data-character="${c.id}">
+        ${corners}
         <span class="character-avatar" aria-hidden="true"${c.avatarColor ? ` style="background: ${ctx.escapeAttr(c.avatarColor)};"` : ''}>${ctx.escapeHtml(c.initials)}</span>
         <span class="character-kicker">${ctx.escapeHtml(c.tagline)}</span>
         <span class="character-name">${ctx.escapeHtml(c.name)}</span>
         <span class="character-role">${ctx.escapeHtml(c.role)}</span>
         <span class="character-cta">Escolher →</span>
       </button>
-    `).join('');
-    grid.querySelectorAll('.character-card').forEach((card) => {
+    `);
+    // "Continuar de onde parei" entra logo ao lado do card "Em branco" (índice 0).
+    cards.splice(1, 0, `
+      <button type="button" class="character-card character-card-blank" id="btn-import-characters">
+        ${corners}
+        <span class="character-avatar" aria-hidden="true">↑</span>
+        <span class="character-kicker">Já tenho um rascunho</span>
+        <span class="character-name">Continuar de onde parei</span>
+        <span class="character-role">Carregue um rascunho salvo (.json) e continue de onde parou.</span>
+        <span class="character-cta">Carregar arquivo →</span>
+      </button>
+    `);
+    grid.innerHTML = cards.join('');
+    grid.querySelectorAll('.character-card[data-character]').forEach((card) => {
       card.addEventListener('click', () => pickCharacter(card.dataset.character));
     });
   }

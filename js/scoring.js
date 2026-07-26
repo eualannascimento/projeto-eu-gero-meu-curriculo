@@ -177,7 +177,7 @@ const EuGeroScoring = (function () {
         });
       } else if (section.fields) {
         section.fields.forEach(field => {
-          let value = '';
+          let value;
           if (section.id === 'personal') value = (state.personal || {})[field.key] || '';
           else if (section.id === 'summary') value = state.summary || '';
           else if (section.id === 'skills') {
@@ -346,7 +346,7 @@ const EuGeroScoring = (function () {
         section.fields.forEach(field => {
           if (field.required) {
             totalRequired++;
-            let value = '';
+            let value;
             if (section.id === 'personal') value = (state.personal || {})[field.key] || '';
             else if (section.id === 'summary') value = state.summary || '';
             else value = state[field.key] || '';

@@ -3,16 +3,32 @@
 @media print {
   @page { size: A4; margin: 0; }
   body > *:not(#print-cv) { display: none !important; }
+  /* height 100% da a referencia para o min-height do documento abaixo. */
   html, body { background: #fff !important; margin: 0 !important; }
   #print-cv, #print-cv * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   #print-cv {
     display: block !important;
+    /* Medidas relativas, nao milimetros.
+       O Safari ignora "@page { margin: 0 }" e aplica margem propria (cerca de
+       12,7mm por lado), reduzindo a area imprimivel para ~184,6 x 271,6mm. Uma
+       caixa de 210mm x 296mm nao cabe nisso: os ~25mm que sobram na altura
+       viravam uma segunda pagina em branco, mesmo com o conteudo terminando
+       antes. Com 100% a caixa acompanha a area imprimivel real, seja ela a
+       folha inteira (Chrome, margem 0) ou reduzida (Safari, margem propria). */
     width: 210mm;
-    /* NAO usar 297mm exatos: 297mm a 96dpi da 1122,52px e o navegador arredonda
-       para 1123px, ou seja 297,13mm. Esse excesso de 0,13mm cria uma segunda
-       pagina em branco no Safari e no Firefox (o Chrome tolera). 1mm de folga
-       e invisivel no papel e elimina o estouro. */
-    min-height: 296mm;
+    /* min-height 0 explicito: templates.css define ".preview-content" com
+       min-height 297mm FORA de qualquer media query, e o #print-cv recebe essa
+       classe em syncPrintCv(). Era essa regra, e nao a deste bloco, que mantinha
+       a caixa com altura de folha inteira na impressao.
+       Fixar a altura em milimetros era o que gerava a pagina
+       em branco: a caixa mantinha 296mm mesmo com o conteudo terminando antes,
+       e quando o navegador aplica margem propria de pagina (o Safari ignora
+       "@page { margin: 0 }") a area imprimivel cai para cerca de 271mm. Os
+       ~25mm restantes viravam uma segunda pagina vazia.
+       Sem altura imposta, a caixa termina onde o conteudo termina e cabe em
+       uma folha em qualquer motor. Nao use 100%: em impressao isso referencia
+       o viewport, nao a folha, e o documento sai esticado em telas largas. */
+    min-height: 0 !important;
     /* Sem max-height de proposito: se o conteudo nao couber, o certo e sair em
        duas paginas. Cortar o excedente esconderia experiencia do candidato sem
        ele perceber, que e pior do que a pagina extra. */
@@ -25,7 +41,10 @@
   }
   /* Margem do ultimo filho colapsa para fora da caixa e empurra a paginacao. */
   #print-cv > *:last-child { margin-bottom: 0 !important; }
-  #print-cv .cv-sidebar-layout { min-height: calc(296mm - 2 * var(--doc-padding, 16mm)); }
+  /* A barra lateral acompanha a altura do documento, nao um valor em mm. */
+  /* A barra lateral mantem o proprio min-height em em (definido em
+     templates.css): ele dimensiona o layout de duas colunas e nao tem relacao
+     com o tamanho da folha. Zera-lo colapsava a coluna de conteudo. */
 }
 
 /* ---- Moldura A4 da prévia (proporção 1:1.414, igual ao modelo) ---- */

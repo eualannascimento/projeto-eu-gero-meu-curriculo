@@ -179,7 +179,65 @@ const EuGeroReviewScreen = (function () {
     return cargo ? `CV_${nome}_${cargo}` : `CV_${nome}`;
   }
 
+  /**
+   * Carrega jsPDF e as fontes sob demanda, no primeiro clique.
+   * Sao ~1 MB somados: penalizar o carregamento do wizard com isso seria
+   * cobrar de todo visitante um custo que so quem exporta precisa pagar.
+   */
+  let vendorPromise = null;
+  function loadPdfVendor() {
+    if (vendorPromise) return vendorPromise;
+    const carregar = (src) => new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error(`Falha ao carregar ${src}`));
+      document.head.appendChild(s);
+    });
+    vendorPromise = carregar('js/vendor/jspdf.umd.min.js')
+      .then(() => carregar('js/vendor/fonts-barlow.js'))
+      .then(() => carregar('js/pdf-export.js'))
+      .catch((err) => {
+        vendorPromise = null;
+        throw err;
+      });
+    return vendorPromise;
+  }
+
+  async function downloadPdf(botao) {
+    const rotuloOriginal = botao ? botao.textContent : null;
+    if (botao) {
+      botao.disabled = true;
+      botao.textContent = 'Gerando PDF...';
+    }
+    try {
+      await loadPdfVendor();
+      const state = ctx.getState();
+      const doc = EuGeroPdfExport.generatePdf(
+        state,
+        ctx.activeSections(),
+        state.template,
+        state.margin || 'padrao',
+        state.density || 'normal'
+      );
+      doc.save(`${cvFileBaseName()}.pdf`);
+    } catch (err) {
+      console.error('Falha ao gerar o PDF:', err);
+      if (typeof ctx.showToast === 'function') {
+        ctx.showToast('Nao foi possivel gerar o PDF. Tente novamente.');
+      } else {
+        alert('Nao foi possivel gerar o PDF. Tente novamente.');
+      }
+    } finally {
+      if (botao) {
+        botao.disabled = false;
+        botao.textContent = rotuloOriginal;
+      }
+    }
+  }
+
   function printCv() {
+    // Mantida para quem usa Ctrl+P: a area oculta precisa estar sincronizada.
     syncPrintCv();
     window.print();
   }
@@ -245,6 +303,7 @@ const EuGeroReviewScreen = (function () {
     renderReviewGallery,
     renderReviewTemplateGallery,
     cvFileBaseName,
-    printCv
+    printCv,
+    downloadPdf
   };
 })();

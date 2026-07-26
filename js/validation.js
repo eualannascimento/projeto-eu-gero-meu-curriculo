@@ -76,7 +76,7 @@ const EuGeroValidation = (function () {
       });
     } else if (section.fields) {
       section.fields.forEach(field => {
-        let value = '';
+        let value;
         if (section.id === 'personal') value = (state.personal || {})[field.key] || '';
         else if (section.id === 'summary') value = state.summary || '';
         else if (section.id === 'skills') {
