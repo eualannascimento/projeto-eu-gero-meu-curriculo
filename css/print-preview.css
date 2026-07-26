@@ -9,7 +9,19 @@
      assumindo que no Safari o documento pode sair em duas paginas. */
   @page { size: A4; margin: 0; }
   body > *:not(#print-cv) { display: none !important; }
-  html, body { background: #fff !important; margin: 0 !important; }
+  /* base.css define "body { min-height: 100vh }" para a tela. Na impressao o
+     Chrome resolve vh pela altura da folha, mas o Safari resolve pela altura da
+     JANELA: numa janela mais alta que a area imprimivel o body sozinho passava
+     de uma folha e saia uma segunda pagina em branco, com o curriculo inteiro
+     cabendo na primeira. Medido: #print-cv ocupa no maximo 242,4mm nas 80
+     combinacoes de personagem e modelo, enquanto o body chegava a 423,3mm numa
+     janela de 1600px. Era o body, nao o curriculo. */
+  html, body {
+    background: #fff !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
   #print-cv, #print-cv * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 
   /* Animacoes e transicoes travam o conteudo no primeiro quadro na impressao.
