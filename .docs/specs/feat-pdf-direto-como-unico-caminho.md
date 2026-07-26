@@ -1,6 +1,22 @@
 # PDF direto como único caminho de exportação
 
-**Status:** Em Desenvolvimento
+> **REVERTIDO em 2026-07-26, no mesmo dia.** O jsPDF redesenha o documento por
+> coordenadas e divergiu visivelmente do CSS: espaçamento entre seções
+> comprimido, ausência das linhas divisórias, títulos em preto no lugar do azul,
+> sem o letter-spacing e sem o link do LinkedIn no cabeçalho. Para um currículo
+> esse custo visual é alto demais. O botão voltou para a impressão nativa, que é
+> fiel por construção porque usa o mesmo HTML e CSS da prévia.
+>
+> O defeito que motivou a troca (segunda página em branco) tinha outra causa, já
+> corrigida: `templates.css` definia `.preview-content { min-height: 297mm }`
+> fora de qualquer media query, e a caixa de impressão herdava altura de folha
+> inteira. Com `min-height: 0` no bloco de impressão, a caixa passa a ter a
+> altura do conteúdo. Verificado em 80 de 80 combinações, inclusive no cenário
+> em que o navegador impõe margem própria de página.
+>
+> Fica registrado como decisão testada e descartada, com a evidência acima.
+
+**Status:** Revertido em 2026-07-26
 **Data:** 2026-07-26
 
 ## 1. Resumo e Objetivo

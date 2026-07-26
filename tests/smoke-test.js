@@ -710,10 +710,12 @@ const printCss = fs.readFileSync(path.join(__dirname, '..', 'css/print-preview.c
 // o botao passa a baixar um PDF gerado por jsPDF em vez de abrir o dialogo de
 // impressao. O dialogo aplicava margem e escala proprias de cada navegador, e
 // era ali que nascia a segunda pagina em branco no Safari.
-assert(reviewJsCode.includes('EuGeroPdfExport.generatePdf('), 'Exportação gera o PDF direto via jsPDF');
-assert(appJsCode.includes('EuGeroReviewScreen.downloadPdf'), 'Botão de exportação chama downloadPdf');
-assert(reviewJsCode.includes("loadPdfVendor"), 'jsPDF e carregado sob demanda, nao no carregamento da pagina');
-assert(reviewJsCode.includes('window.print()'), 'Ctrl+P do navegador continua funcionando');
+assert(reviewJsCode.includes('window.print()'), 'Exportação usa a impressão nativa, fiel à prévia');
+assert(appJsCode.includes('EuGeroReviewScreen.printCv'), 'Botão de exportação chama printCv');
+assert(!reviewJsCode.includes('EuGeroPdfExport.generatePdf('), 'Exportação não usa renderizador PDF paralelo');
+// A altura da caixa de impressao nao pode ser fixada em milimetros: era o
+// min-height 297mm herdado de templates.css que gerava a pagina em branco.
+assert(printCss.includes('min-height: 0 !important'), 'Caixa de impressão não impõe altura de folha');
 assert(printCss.includes('#print-cv') && printCss.includes('box-sizing: border-box'), 'Área impressa usa caixa A4 com padding interno');
 
 // --- Notificações discretas ---

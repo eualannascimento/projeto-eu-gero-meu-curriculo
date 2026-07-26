@@ -4,11 +4,11 @@
 const EuGeroRouter = (function () {
   'use strict';
 
-  const VIEWS = new Set(['home', 'characters', 'start', 'wizard', 'review', 'guide']);
+  const VIEWS = new Set(['characters', 'start', 'wizard', 'review', 'guide']);
 
   function parseHash(hash) {
     const raw = (hash != null ? hash : location.hash || '').replace(/^#\/?/, '').trim();
-    if (!raw) return { view: 'home', sectionId: null };
+    if (!raw) return { view: 'characters', sectionId: null };
 
     const parts = raw.split('/').filter(Boolean);
     const head = parts[0];
@@ -21,11 +21,11 @@ const EuGeroRouter = (function () {
       return { view: head, sectionId: null };
     }
 
-    return { view: 'home', sectionId: null };
+    return { view: 'characters', sectionId: null };
   }
 
   function buildHash(view, sectionId) {
-    if (!view || view === 'home') return '#/';
+    if (!view || view === 'characters') return '#/';
     if (view === 'wizard' && sectionId) return `#/wizard/${sectionId}`;
     return `#/${view}`;
   }

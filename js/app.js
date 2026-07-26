@@ -10,7 +10,7 @@
   const { escapeHtml, escapeAttr, debounce } = EuGeroUtils;
 
   let state = EuGeroStorage.load();
-  let currentView = 'home';
+  let currentView = 'characters';
   let suppressHash = false;
   let saveTimer = null;
   let toastTimer = null;
@@ -66,7 +66,7 @@
     if (initialRoute) {
       applyRouteState(initialRoute);
     } else {
-      currentView = 'home';
+      currentView = 'characters';
     }
 
     EuGeroRouter.subscribe((route) => {
@@ -79,7 +79,6 @@
   }
 
   function cacheElements() {
-    els.screenHome = document.getElementById('screen-home');
     els.screenCharacters = document.getElementById('screen-characters');
     els.screenStart = document.getElementById('screen-start');
     els.screenWizard = document.getElementById('screen-wizard');
@@ -144,7 +143,7 @@
   }
 
   function applyRouteState(route) {
-    currentView = route.view || 'home';
+    currentView = route.view || 'characters';
     if (currentView === 'wizard') {
       resolveWizardSectionId(route.sectionId);
     }
@@ -164,10 +163,6 @@
     EuGeroRouter.setHash(view, hashSectionId, { replace });
     suppressHash = false;
     saveState();
-  }
-
-  function goToHome() {
-    navigateTo('home');
   }
 
   function goToStart() {
@@ -200,9 +195,7 @@
   function bindGlobalEvents() {
     EuGeroStartScreen.renderTemplatePickers();
 
-    document.getElementById('btn-enter-app')?.addEventListener('click', () => navigateTo('characters'));
-    document.getElementById('btn-go-home')?.addEventListener('click', goToHome);
-    document.getElementById('btn-import-home')?.addEventListener('click', () => els.fileImport?.click());
+    document.getElementById('btn-go-home')?.addEventListener('click', (e) => { e.preventDefault(); navigateTo('characters'); });
     // O mesmo atalho existe como card na galeria de personagens (ver screens/start.js).
     document.getElementById('btn-import-characters')?.addEventListener('click', () => els.fileImport?.click());
 
@@ -220,9 +213,7 @@
     document.getElementById('btn-wizard-to-start')?.addEventListener('click', goToStart);
     document.getElementById('btn-gal-prev')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(-1));
     document.getElementById('btn-gal-next')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(1));
-    document.getElementById('btn-export-pdf')?.addEventListener('click', (e) => {
-      EuGeroReviewScreen.downloadPdf(e.currentTarget);
-    });
+    document.getElementById('btn-export-pdf')?.addEventListener('click', EuGeroReviewScreen.printCv);
     document.getElementById('btn-guide')?.addEventListener('click', goToGuide);
     document.getElementById('btn-back-review')?.addEventListener('click', goToReview);
 
@@ -445,7 +436,6 @@
   }
 
   function showView(view) {
-    els.screenHome.hidden = view !== 'home';
     if (els.screenCharacters) els.screenCharacters.hidden = view !== 'characters';
     els.screenStart.hidden = view !== 'start';
     els.screenWizard.hidden = view !== 'wizard';
@@ -568,7 +558,7 @@
         if (hasProgress) {
           navigateTo('wizard', activeSections()[state.currentStep]?.id, { replace: true });
         } else {
-          navigateTo('home', null, { replace: true });
+          navigateTo('characters', null, { replace: true });
         }
         showToast('Rascunho carregado com sucesso.');
       } catch (err) {
