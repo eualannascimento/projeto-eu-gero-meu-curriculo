@@ -203,6 +203,8 @@
     document.getElementById('btn-enter-app')?.addEventListener('click', () => navigateTo('characters'));
     document.getElementById('btn-go-home')?.addEventListener('click', goToHome);
     document.getElementById('btn-import-home')?.addEventListener('click', () => els.fileImport?.click());
+    // O mesmo atalho existe como card na galeria de personagens (ver screens/start.js).
+    document.getElementById('btn-import-characters')?.addEventListener('click', () => els.fileImport?.click());
 
     document.getElementById('btn-start-wizard')?.addEventListener('click', startWizard);
     document.getElementById('btn-back-start')?.addEventListener('click', () => navigateTo('characters'));
