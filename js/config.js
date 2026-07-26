@@ -35,12 +35,12 @@ const EuGeroConfig = (function () {
       description: 'Comece pelas informações usadas para identificar seu currículo e entrar em contato com você.',
       linkedinHint: 'Perfil → foto de capa → seção de introdução no topo do perfil',
       fields: [
-        { key: 'fullName', label: 'Nome para o currículo', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Digite o nome que deseja usar', tip: 'Use o nome pelo qual deseja ser apresentado. Não inclua números de documentos.' },
-        { key: 'headline', label: 'Cargo ou área desejada', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Informe o cargo ou a área que busca', tip: 'Use um cargo ou uma área clara. Quando fizer sentido, use o mesmo termo adotado nas vagas que procura.' },
-        { key: 'email', label: 'E-mail', type: 'email', required: true, minLength: 5, placeholder: 'Digite seu e-mail', tip: 'Use um e-mail que você acessa com frequência.' },
-        { key: 'phone', label: 'Telefone', type: 'tel', required: false, minLength: 8, placeholder: 'Digite seu telefone com DDD', tip: 'Inclua o DDD e um número em que possa receber ligações ou mensagens.' },
-        { key: 'location', label: 'Cidade', type: 'text', required: true, minLength: 3, placeholder: 'Digite sua cidade e estado', tip: 'Informe apenas a cidade e o estado. Não é necessário incluir o endereço completo.' },
-        { key: 'linkedinUrl', label: 'LinkedIn (opcional)', type: 'url', required: false, minLength: 10, placeholder: 'Cole o link do seu perfil', tip: 'Adicione o endereço do seu perfil, caso queira incluí-lo.' }
+        { key: 'fullName', autocomplete: 'name', label: 'Nome para o currículo', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Digite o nome que deseja usar', tip: 'Use o nome pelo qual deseja ser apresentado. Não inclua números de documentos.' },
+        { key: 'headline', autocomplete: 'organization-title', label: 'Cargo ou área desejada', type: 'text', required: true, minLength: 3, fullWidth: true, placeholder: 'Informe o cargo ou a área que busca', tip: 'Use um cargo ou uma área clara. Quando fizer sentido, use o mesmo termo adotado nas vagas que procura.' },
+        { key: 'email', autocomplete: 'email', label: 'E-mail', type: 'email', required: true, minLength: 5, placeholder: 'Digite seu e-mail', tip: 'Use um e-mail que você acessa com frequência.' },
+        { key: 'phone', autocomplete: 'tel', label: 'Telefone', type: 'tel', required: false, minLength: 8, placeholder: 'Digite seu telefone com DDD', tip: 'Inclua o DDD e um número em que possa receber ligações ou mensagens.' },
+        { key: 'location', autocomplete: 'address-level2', label: 'Cidade', type: 'text', required: true, minLength: 3, placeholder: 'Digite sua cidade e estado', tip: 'Informe apenas a cidade e o estado. Não é necessário incluir o endereço completo.' },
+        { key: 'linkedinUrl', autocomplete: 'url', label: 'LinkedIn (opcional)', type: 'url', required: false, minLength: 10, placeholder: 'Cole o link do seu perfil', tip: 'Adicione o endereço do seu perfil, caso queira incluí-lo.' }
       ]
     },
     {

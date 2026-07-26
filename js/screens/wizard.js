@@ -287,6 +287,9 @@ const EuGeroWizardScreen = (function () {
       input.value = value;
       if (field.placeholder) input.placeholder = field.placeholder;
       if (field.required) input.required = true;
+      // Sem autocomplete o usuario redigita nome, e-mail e telefone a mao em
+      // cada dispositivo; no celular isso e a maior parte do esforco do passo.
+      if (field.autocomplete) input.autocomplete = field.autocomplete;
       wrap.appendChild(input);
     }
 

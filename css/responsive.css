@@ -817,3 +817,24 @@
   }
   .home-how-steps p { font-size: 12.5px; }
 }
+
+/* ---- Alvos de toque no celular (WCAG 2.5.5 / HIG: minimo 44x44) ----
+   Os passos da timeline sao a navegacao principal do wizard e mediam 36x36,
+   e os botoes de acao 38px de altura: no dedo, erro de alvo constante. */
+@media (max-width: 900px) {
+  .timeline-step {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .btn,
+  .link-btn,
+  #btn-wizard-to-start,
+  #btn-go-home {
+    min-height: 44px;
+  }
+  /* O alvo cresce sem inchar o desenho: o padding acompanha a altura. */
+  .btn-ghost {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
