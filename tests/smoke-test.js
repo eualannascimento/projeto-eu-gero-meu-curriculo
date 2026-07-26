@@ -725,6 +725,28 @@ const blocoImpressao = printCss.slice(printCss.indexOf('@media print'), printCss
 assert(/html,\s*body\s*\{[^}]*min-height:\s*0\s*!important/.test(blocoImpressao),
     'Impressão zera a altura mínima do body (100vh não vale na folha)');
 
+// --- CSP sem estilo inline ---
+console.log('\nCSP:');
+
+const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const csp = (indexHtml.match(/style-src([^;"]*)/) || [])[1] || '';
+assert(csp.trim() === "'self'", "style-src e 'self', sem 'unsafe-inline'");
+assert(!/\sstyle="/.test(indexHtml), 'index.html sem atributo style inline');
+// A CSP barra o atributo style tambem quando ele chega por innerHTML, e o modo
+// de falha e silencioso: o elemento aparece sem o estilo e so o console avisa.
+for (const arquivo of ['js/linkedin-guide.js', 'js/screens/start.js', 'js/screens/wizard.js', 'js/screens/review.js']) {
+    const codigo = fs.readFileSync(path.join(__dirname, '..', arquivo), 'utf8');
+    assert(!/\sstyle="/.test(codigo), `${arquivo} nao monta atributo style`);
+}
+const screensCss = fs.readFileSync(path.join(__dirname, '..', 'css/screens.css'), 'utf8');
+assert(screensCss.includes('--thumb-accent'), 'a cor da miniatura vem de propriedade personalizada');
+// A ordem importa: fora dela, regras de componente vencem as novas e as telas
+// de revisao e guia perdem o estilo.
+assert(indexHtml.indexOf('css/screens.css') > indexHtml.indexOf('css/print-preview.css'),
+    'screens.css entra depois de print-preview.css');
+assert(indexHtml.indexOf('css/screens.css') < indexHtml.indexOf('css/responsive.css'),
+    'screens.css entra antes de responsive.css');
+
 // --- Notificações discretas ---
 console.log('\nNotificações discretas:');
 

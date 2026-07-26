@@ -463,12 +463,12 @@ const EuGeroWizardScreen = (function () {
     const tags = EuGeroConfig.parseSkillsText(value || state.skillsText);
 
     wrap.innerHTML = `
-      <span style="display:flex; align-items:center; gap:7px; font-size: 13px; margin-bottom: 6px; color: color-mix(in srgb, var(--color-text) 72%, transparent);">${field.label}${renderFieldTip(field)}</span>
+      <span class="wizard-field-note">${field.label}${renderFieldTip(field)}</span>
       <input type="text" id="${id}" class="cv-input" placeholder="${ctx.escapeAttr(field.placeholder || 'Digite uma habilidade…')}" autocomplete="off">
       <div class="skills-tags-chips" role="list"></div>
       <p class="skills-suggest-title">Sugestões para adicionar</p>
       <div class="skills-suggest-row"></div>
-      <p style="font-size: 12.5px; line-height: 1.5; color: color-mix(in srgb, var(--color-text) 60%, transparent); margin: 8px 0 0;">Dica: leia os requisitos da vaga e confira se as habilidades que você possui também aparecem no currículo com nomes claros.</p>
+      <p class="wizard-field-hint">Dica: leia os requisitos da vaga e confira se as habilidades que você possui também aparecem no currículo com nomes claros.</p>
     `;
 
     const chipsEl = wrap.querySelector('.skills-tags-chips');

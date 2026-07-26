@@ -109,25 +109,25 @@ const EuGeroLinkedInGuide = (function () {
     const entries = buildEntries(state);
 
     container.innerHTML = entries.map((entry, index) => `
-      <div class="blueprint guide-entry" style="padding: 16px 18px;" data-index="${index}">
+      <div class="blueprint guide-entry guide-entry-box" data-index="${index}">
         <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-          <span style="display: flex; align-items: baseline; gap: 10px;">
-            <span style="font-family: var(--font-heading); font-weight: 600; font-size: 13px; color: var(--color-accent-700);">${String(index + 1).padStart(2, '0')}</span>
-            <span style="font-family: var(--font-heading); font-weight: 600; font-size: 17px; text-transform: uppercase;">${escapeHtml(entry.title)}</span>
+        <div class="guide-entry-head">
+          <span class="guide-entry-heading">
+            <span class="guide-entry-num">${String(index + 1).padStart(2, '0')}</span>
+            <span class="guide-entry-name">${escapeHtml(entry.title)}</span>
           </span>
-          ${entry.content ? `<button type="button" class="btn btn-secondary btn-copy-guide" data-index="${index}" style="font-size: 13px; min-height: 34px;">Copiar</button>` : ''}
+          ${entry.content ? `<button type="button" class="btn btn-secondary btn-copy-guide btn-copy-sm" data-index="${index}">Copiar</button>` : ''}
         </div>
-        <p style="display: flex; gap: 8px; align-items: baseline; font-size: 13.5px; margin: 8px 0 0; color: color-mix(in srgb, var(--color-text) 82%, transparent);">
-          <span style="font-family: var(--font-heading); font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-accent-700); flex: none;">Onde</span>
+        <p class="guide-entry-row">
+          <span class="guide-entry-tag">Onde</span>
           <span>${escapeHtml(entry.path)}</span>
         </p>
-        ${entry.content ? `<p class="guide-entry-content" style="font-size: 13.5px; line-height: 1.5; color: var(--color-accent-900); background: var(--color-accent-100); border: 1px solid var(--color-divider); padding: 10px 12px; margin: 10px 0 0; white-space: pre-wrap; max-height: 130px; overflow-y: auto;" data-index="${index}"></p>` : ''}
-        <p style="display: flex; gap: 8px; align-items: baseline; font-size: 13.5px; margin: 8px 0 0; color: color-mix(in srgb, var(--color-text) 72%, transparent);">
-          <span style="font-family: var(--font-heading); font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 50%, transparent); flex: none;">Dica</span>
+        ${entry.content ? `<p class="guide-entry-content guide-entry-text" data-index="${index}"></p>` : ''}
+        <p class="guide-entry-row-muted">
+          <span class="guide-entry-tag-muted">Dica</span>
           <span>${escapeHtml(entry.tip)}</span>
         </p>
-        <span class="copy-feedback" aria-live="polite" style="font-size: 12px; color: var(--color-success); display: block; height: 14px;"></span>
+        <span class="copy-feedback guide-copy-feedback" aria-live="polite"></span>
       </div>
     `).join('');
 
