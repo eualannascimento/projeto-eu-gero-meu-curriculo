@@ -15,7 +15,15 @@
        viravam uma segunda pagina em branco, mesmo com o conteudo terminando
        antes. Com 100% a caixa acompanha a area imprimivel real, seja ela a
        folha inteira (Chrome, margem 0) ou reduzida (Safari, margem propria). */
-    width: 210mm;
+    /* Largura fluida, com o A4 como teto.
+       Fixar 210mm estourava horizontalmente no Safari: ele aplica margem
+       propria de pagina (cerca de 12,7mm por lado, sobrando ~184,6mm uteis) e,
+       com escala 100%, o excedente virava uma segunda pagina em branco - branca
+       porque o conteudo nao alcanca a borda direita, ha 16mm de padding
+       interno. Com max-width o documento ocupa 210mm onde ha 210mm (Chrome,
+       margem 0) e encolhe onde a area e menor (Safari), cabendo em uma folha
+       nos dois casos. */
+    max-width: 210mm;
     /* min-height 0 explicito: templates.css define ".preview-content" com
        min-height 297mm FORA de qualquer media query, e o #print-cv recebe essa
        classe em syncPrintCv(). Era essa regra, e nao a deste bloco, que mantinha
