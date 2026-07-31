@@ -809,6 +809,19 @@ function createFakeDoc() {
   assert(!calls.some((c) => c.method === 'line'), 'drawSectionHeading nao desenha linha quando skipDivider e true (coluna da sidebar)');
 }
 
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 178 };
+  const blocks = [{ type: 'item', title: 'Consultor Sênior', sub: 'Empresa X', period: '2020 - Atual', desc: '' }];
+  EuGeroPdfExport.drawBlocks(doc, cursor, blocks, 16, 178, palette, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const corDoTitulo = calls.find((c) => c.method === 'setTextColor' && calls.indexOf(c) === calls.findIndex((x2) => x2.method === 'text' && x2.args[0] === 'Consultor Sênior') - 1);
+  const idxTexto = calls.findIndex((c) => c.method === 'text' && c.args[0] === 'Consultor Sênior');
+  const corAntes = [...calls].slice(0, idxTexto).reverse().find((c) => c.method === 'setTextColor');
+  assert(!!corAntes, 'Existe uma cor definida antes do titulo do item');
+  assert(corAntes.args.join(',') === palette.accent900.join(','), 'Titulo do item usa palette.accent900, nao a cor fixa anterior');
+}
+
 setTimeout(() => {
   assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
   finishTests();

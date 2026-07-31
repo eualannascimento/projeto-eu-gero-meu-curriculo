@@ -212,7 +212,7 @@ const EuGeroPdfExport = (function () {
       }
       ensureSpace(doc, cursor, 6);
       setFont(doc, 'BarlowCondensed', 'bold', density.fontPt + 1.5, hasFonts);
-      doc.setTextColor(29, 31, 32);
+      doc.setTextColor(palette.accent900[0], palette.accent900[1], palette.accent900[2]);
       doc.text(block.title, x, cursor.y);
       if (block.period) {
         setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
@@ -425,6 +425,7 @@ const EuGeroPdfExport = (function () {
     generatePdf,
     buildSectionsData,
     accentPalette,
-    drawSectionHeading
+    drawSectionHeading,
+    drawBlocks
   };
 })();
