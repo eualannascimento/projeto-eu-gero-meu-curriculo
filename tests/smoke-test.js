@@ -822,6 +822,33 @@ function createFakeDoc() {
   assert(corAntes.args.join(',') === palette.accent900.join(','), 'Titulo do item usa palette.accent900, nao a cor fixa anterior');
 }
 
+// --- Task 4: colisao entre titulo e periodo ---
+console.log('\nPDF - colisao entre titulo e periodo:');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 60 };
+  const tituloLongo = 'Especializacao em Ciencia da Computacao Aplicada';
+  const blocks = [{ type: 'item', title: tituloLongo, sub: 'Universidade X', period: '2018 - 2022', desc: '' }];
+  EuGeroPdfExport.drawBlocks(doc, cursor, blocks, 16, 60, palette, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const idxTitulo = calls.findIndex((c) => c.method === 'text' && c.args[0] === tituloLongo);
+  const idxPeriodo = calls.findIndex((c) => c.method === 'text' && c.args[0] === '2018 - 2022');
+  assert(idxPeriodo > -1, 'Periodo continua sendo desenhado mesmo com titulo longo');
+  const mesmaLinha = calls[idxTitulo].args[2] === calls[idxPeriodo].args[2];
+  assert(!mesmaLinha, 'Com titulo longo, periodo vai para a linha seguinte em vez de sobrepor o titulo');
+}
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 178 };
+  const blocks = [{ type: 'item', title: 'Consultor', sub: 'Empresa X', period: '2020 - Atual', desc: '' }];
+  EuGeroPdfExport.drawBlocks(doc, cursor, blocks, 16, 178, palette, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const idxTitulo = calls.findIndex((c) => c.method === 'text' && c.args[0] === 'Consultor');
+  const idxPeriodo = calls.findIndex((c) => c.method === 'text' && c.args[0] === '2020 - Atual');
+  assert(calls[idxTitulo].args[2] === calls[idxPeriodo].args[2], 'Com titulo curto, periodo continua na mesma linha do titulo');
+}
+
 setTimeout(() => {
   assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
   finishTests();

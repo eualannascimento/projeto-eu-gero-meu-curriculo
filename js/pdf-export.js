@@ -217,9 +217,20 @@ const EuGeroPdfExport = (function () {
       if (block.period) {
         setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
         doc.setTextColor(107, 109, 111);
-        doc.text(block.period, x + width, cursor.y, { align: 'right' });
+        const larguraTitulo = doc.getTextWidth(block.title);
+        const larguraPeriodo = doc.getTextWidth(block.period);
+        const cabemNaMesmaLinha = (larguraTitulo + larguraPeriodo + 4) <= width;
+        if (cabemNaMesmaLinha) {
+          doc.text(block.period, x + width, cursor.y, { align: 'right' });
+          cursor.y += density.fontPt * PT_TO_MM * 1.3;
+        } else {
+          cursor.y += density.fontPt * PT_TO_MM * 1.3;
+          doc.text(block.period, x + 3, cursor.y);
+          cursor.y += density.fontPt * PT_TO_MM * 1.3;
+        }
+      } else {
+        cursor.y += density.fontPt * PT_TO_MM * 1.3;
       }
-      cursor.y += density.fontPt * PT_TO_MM * 1.3;
       if (block.sub) {
         setFont(doc, 'Barlow', 'normal', density.fontPt, hasFonts);
         doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
