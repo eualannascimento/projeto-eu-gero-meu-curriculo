@@ -187,13 +187,18 @@ const EuGeroPdfExport = (function () {
     });
   }
 
-  function drawSectionHeading(doc, cursor, title, x, width, palette, density, hasFonts) {
+  function drawSectionHeading(doc, cursor, title, x, width, palette, density, hasFonts, skipDivider) {
     ensureSpace(doc, cursor, 8);
     cursor.y += 3;
     setFont(doc, 'BarlowCondensed', 'bold', density.fontPt + 1.5, hasFonts);
     doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
     doc.text(title.toUpperCase(), x, cursor.y);
-    cursor.y += 5.5;
+    cursor.y += 2.5;
+    if (!skipDivider) {
+      doc.setDrawColor(224, 224, 227);
+      doc.line(x, cursor.y, x + width, cursor.y);
+    }
+    cursor.y += 3;
     setFont(doc, 'Barlow', 'normal', density.fontPt, hasFonts);
   }
 
@@ -419,6 +424,7 @@ const EuGeroPdfExport = (function () {
   return {
     generatePdf,
     buildSectionsData,
-    accentPalette
+    accentPalette,
+    drawSectionHeading
   };
 })();

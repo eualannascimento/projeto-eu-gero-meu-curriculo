@@ -44,6 +44,7 @@ global.document = {
   }
 };
 loadScript('js/preview.js');
+loadScript('js/pdf-export.js');
 
 let passed = 0;
 let failed = 0;
@@ -787,6 +788,25 @@ function createFakeDoc() {
   assert(calls.length === 2, 'createFakeDoc registra chamadas na ordem');
   assert(calls[0].method === 'text' && calls[0].args[0] === 'ola', 'createFakeDoc registra metodo e argumentos de text()');
   assert(calls[1].method === 'setDrawColor' && calls[1].args.join(',') === '1,2,3', 'createFakeDoc registra setDrawColor com os argumentos certos');
+}
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 178 };
+  EuGeroPdfExport.drawSectionHeading(doc, cursor, 'Experiência', 16, 178, palette, { fontPt: 10.5 }, false);
+  const linha = calls.find((c) => c.method === 'line');
+  assert(!!linha, 'drawSectionHeading desenha uma linha divisoria abaixo do titulo');
+  const corAntesDaLinha = calls.filter((c) => c.method === 'setDrawColor');
+  assert(corAntesDaLinha.some((c) => c.args.join(',') === '224,224,227'), 'Linha divisoria usa a cor neutra 224,224,227');
+}
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 60 };
+  EuGeroPdfExport.drawSectionHeading(doc, cursor, 'Habilidades', 16, 60, palette, { fontPt: 10.5 }, false, true);
+  assert(!calls.some((c) => c.method === 'line'), 'drawSectionHeading nao desenha linha quando skipDivider e true (coluna da sidebar)');
 }
 
 setTimeout(() => {
