@@ -218,10 +218,10 @@ const EuGeroPdfExport = (function () {
       setFont(doc, 'BarlowCondensed', 'bold', density.fontPt + 1.5, hasFonts);
       doc.setTextColor(palette.accent900[0], palette.accent900[1], palette.accent900[2]);
       doc.text(block.title, x, cursor.y);
+      const larguraTitulo = doc.getTextWidth(block.title);
       if (block.period) {
         setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
         doc.setTextColor(107, 109, 111);
-        const larguraTitulo = doc.getTextWidth(block.title);
         const larguraPeriodo = doc.getTextWidth(block.period);
         const cabemNaMesmaLinha = (larguraTitulo + larguraPeriodo + 4) <= width;
         if (cabemNaMesmaLinha) {
@@ -248,15 +248,58 @@ const EuGeroPdfExport = (function () {
     });
   }
 
-  function contactLine(personal) {
-    return [personal.email, personal.phone, personal.location].filter(Boolean).join('   ·   ');
-  }
-
   function contactLineParts(personal) {
     return {
       base: [personal.email, personal.phone, personal.location].filter(Boolean).join('   ·   '),
       linkedinUrl: personal.linkedinUrl || ''
     };
+  }
+
+  // Trunca apenas o texto EXIBIDO do link do LinkedIn (o href/url do
+  // textWithLink continua completo). Evita que uma URL longa vaze da
+  // margem ou da coluna da sidebar.
+  function truncateLinkedinDisplay(url) {
+    if (!url) return '';
+    return url.length > 40 ? `${url.slice(0, 37)}...` : url;
+  }
+
+  // Desenha a linha de contato (email/telefone/localizacao + LinkedIn
+  // clicavel) compartilhada pelos layouts centered/left/banner/creative.
+  // options: { align: 'center'|'left' (padrao 'left'), baseColor, linkColor,
+  // maxWidth, fallbackText }
+  function drawContactLine(doc, personal, palette, x, y, options) {
+    const opts = options || {};
+    const align = opts.align || 'left';
+    const baseColor = opts.baseColor || [107, 109, 111];
+    const linkColor = opts.linkColor || palette.accent700;
+    const maxWidth = opts.maxWidth;
+    const fallbackText = opts.fallbackText !== undefined ? opts.fallbackText : '';
+    const { base, linkedinUrl } = contactLineParts(personal);
+    const linkedinDisplay = truncateLinkedinDisplay(linkedinUrl);
+
+    if (linkedinUrl) {
+      const larguraBase = base ? doc.getTextWidth(`${base}   ·   `) : 0;
+      if (align === 'center') {
+        const larguraTotal = doc.getTextWidth([base, linkedinDisplay].filter(Boolean).join('   ·   '));
+        const xInicio = x - larguraTotal / 2;
+        doc.setTextColor(baseColor[0], baseColor[1], baseColor[2]);
+        if (base) doc.text(`${base}   ·   `, xInicio, y);
+        doc.setTextColor(linkColor[0], linkColor[1], linkColor[2]);
+        doc.textWithLink(linkedinDisplay, xInicio + larguraBase, y, { url: linkedinUrl });
+      } else {
+        doc.setTextColor(baseColor[0], baseColor[1], baseColor[2]);
+        if (base) doc.text(`${base}   ·   `, x, y, maxWidth ? { maxWidth } : undefined);
+        doc.setTextColor(linkColor[0], linkColor[1], linkColor[2]);
+        doc.textWithLink(linkedinDisplay, x + larguraBase, y, { url: linkedinUrl });
+      }
+      return;
+    }
+
+    const texto = base || fallbackText;
+    const textOptions = {};
+    if (align === 'center') textOptions.align = 'center';
+    if (maxWidth) textOptions.maxWidth = maxWidth;
+    doc.text(texto, x, y, Object.keys(textOptions).length ? textOptions : undefined);
   }
 
   // ---- Layouts (5 familias estruturais) ----
@@ -275,21 +318,7 @@ const EuGeroPdfExport = (function () {
     cursor.y += 6;
     setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
     doc.setTextColor(107, 109, 111);
-    {
-      const { base, linkedinUrl } = contactLineParts(personal);
-      const linha = [base, linkedinUrl].filter(Boolean).join('   ·   ');
-      if (linkedinUrl) {
-        const larguraTotal = doc.getTextWidth(linha);
-        const xInicio = PAGE_W / 2 - larguraTotal / 2;
-        const larguraBase = base ? doc.getTextWidth(`${base}   ·   `) : 0;
-        doc.setTextColor(107, 109, 111);
-        if (base) doc.text(`${base}   ·   `, xInicio, cursor.y);
-        doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
-        doc.textWithLink(linkedinUrl, xInicio + larguraBase, cursor.y, { url: linkedinUrl });
-      } else {
-        doc.text(linha || 'e-mail · telefone · cidade', PAGE_W / 2, cursor.y, { align: 'center' });
-      }
-    }
+    drawContactLine(doc, personal, palette, PAGE_W / 2, cursor.y, { align: 'center', fallbackText: 'e-mail · telefone · cidade' });
     cursor.y += 5;
     doc.setDrawColor(224, 224, 227);
     doc.line(margin, cursor.y, PAGE_W - margin, cursor.y);
@@ -315,19 +344,7 @@ const EuGeroPdfExport = (function () {
     doc.text(personal.headline || 'Título profissional', margin, cursor.y);
     cursor.y += 6;
     setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
-    {
-      const { base, linkedinUrl } = contactLineParts(personal);
-      const linha = [base, linkedinUrl].filter(Boolean).join('   ·   ');
-      if (linkedinUrl) {
-        doc.setTextColor(58, 60, 62);
-        const larguraBase = base ? doc.getTextWidth(`${base}   ·   `) : 0;
-        if (base) doc.text(`${base}   ·   `, margin, cursor.y);
-        doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
-        doc.textWithLink(linkedinUrl, margin + larguraBase, cursor.y, { url: linkedinUrl });
-      } else {
-        doc.text(linha || 'contato@email.com · cidade', margin, cursor.y);
-      }
-    }
+    drawContactLine(doc, personal, palette, margin, cursor.y, { align: 'left', baseColor: [58, 60, 62], fallbackText: 'contato@email.com · cidade' });
     cursor.y += 9;
 
     sections.forEach((s) => {
@@ -351,18 +368,7 @@ const EuGeroPdfExport = (function () {
     doc.text((personal.headline || 'Título profissional').toUpperCase(), margin, 21);
     setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
     doc.setTextColor(159, 182, 205);
-    {
-      const { base, linkedinUrl } = contactLineParts(personal);
-      const linha = [base, linkedinUrl].filter(Boolean).join('   ·   ');
-      if (linkedinUrl) {
-        const larguraBase = base ? doc.getTextWidth(`${base}   ·   `) : 0;
-        if (base) doc.text(`${base}   ·   `, margin, 27);
-        doc.setTextColor(238, 244, 250);
-        doc.textWithLink(linkedinUrl, margin + larguraBase, 27, { url: linkedinUrl });
-      } else {
-        doc.text(linha, margin, 27);
-      }
-    }
+    drawContactLine(doc, personal, palette, margin, 27, { align: 'left', baseColor: [159, 182, 205], linkColor: [238, 244, 250] });
 
     const cursor = makeCursor(doc, margin);
     cursor.y = bannerH + 10;
@@ -394,10 +400,7 @@ const EuGeroPdfExport = (function () {
     drawWrappedText(doc, sideCursor, (personal.headline || 'Título profissional').toUpperCase(), sideCursor.x, sideCursor.colWidth, density.fontPt - 0.5, 1.3, palette.accent700, desenharFundo);
     sideCursor.y += 4;
 
-    setFont(doc, 'BarlowCondensed', 'bold', density.fontPt, hasFonts);
-    doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
-    doc.text('CONTATO', sideCursor.x, sideCursor.y);
-    sideCursor.y += 5;
+    drawSectionHeading(doc, sideCursor, 'Contato', sideCursor.x, sideCursor.colWidth, palette, density, hasFonts, true, desenharFundo);
     setFont(doc, 'Barlow', 'normal', density.fontPt - 1, hasFonts);
     doc.setTextColor(58, 60, 62);
     [personal.email, personal.phone, personal.location].filter(Boolean).forEach((line) => {
@@ -407,7 +410,7 @@ const EuGeroPdfExport = (function () {
       ensureSpace(doc, sideCursor, 6, desenharFundo);
       setFont(doc, 'Barlow', 'normal', density.fontPt - 1, hasFonts);
       doc.setTextColor(58, 60, 62);
-      doc.textWithLink(personal.linkedinUrl, sideCursor.x, sideCursor.y + (density.fontPt - 1) * PT_TO_MM * 0.8, { url: personal.linkedinUrl });
+      doc.textWithLink(truncateLinkedinDisplay(personal.linkedinUrl), sideCursor.x, sideCursor.y + (density.fontPt - 1) * PT_TO_MM * 0.8, { url: personal.linkedinUrl });
       sideCursor.y += (density.fontPt - 1) * PT_TO_MM * 1.3;
     }
     sideCursor.y += 4;
@@ -419,10 +422,7 @@ const EuGeroPdfExport = (function () {
     const languagesSection = data.sections.find((s) => s.id === 'languages');
 
     [skillsSection, languagesSection].filter(Boolean).forEach((s) => {
-      setFont(doc, 'BarlowCondensed', 'bold', density.fontPt, hasFonts);
-      doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
-      doc.text(s.title.toUpperCase(), sideCursor.x, sideCursor.y);
-      sideCursor.y += 5;
+      drawSectionHeading(doc, sideCursor, s.title, sideCursor.x, sideCursor.colWidth, palette, density, hasFonts, true, desenharFundo);
       setFont(doc, 'Barlow', 'normal', density.fontPt - 1, hasFonts);
       doc.setTextColor(58, 60, 62);
       s.blocks.forEach((b) => {
@@ -461,18 +461,7 @@ const EuGeroPdfExport = (function () {
     doc.text((personal.headline || 'Título profissional').toUpperCase(), textX, cursor.y + 11);
     setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
     doc.setTextColor(107, 109, 111);
-    {
-      const { base, linkedinUrl } = contactLineParts(personal);
-      const linha = [base, linkedinUrl].filter(Boolean).join('   ·   ');
-      if (linkedinUrl) {
-        const larguraBase = base ? doc.getTextWidth(`${base}   ·   `) : 0;
-        if (base) doc.text(`${base}   ·   `, textX, cursor.y + 16, { maxWidth: textW });
-        doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
-        doc.textWithLink(linkedinUrl, textX + larguraBase, cursor.y + 16, { url: linkedinUrl });
-      } else {
-        doc.text(linha, textX, cursor.y + 16, { maxWidth: textW });
-      }
-    }
+    drawContactLine(doc, personal, palette, textX, cursor.y + 16, { align: 'left', maxWidth: textW });
 
     cursor.y += badgeSize + 8;
     sections.forEach((s) => {
@@ -514,6 +503,8 @@ const EuGeroPdfExport = (function () {
     accentPalette,
     drawSectionHeading,
     drawBlocks,
+    drawContactLine,
+    truncateLinkedinDisplay,
     LAYOUTS
   };
 })();
