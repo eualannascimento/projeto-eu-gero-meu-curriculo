@@ -849,6 +849,21 @@ console.log('\nPDF - colisao entre titulo e periodo:');
   assert(calls[idxTitulo].args[2] === calls[idxPeriodo].args[2], 'Com titulo curto, periodo continua na mesma linha do titulo');
 }
 
+// --- Task 5: letter-spacing (charSpace) em nome e titulos de secao ---
+console.log('\nPDF - letter-spacing (charSpace):');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 178 };
+  EuGeroPdfExport.drawSectionHeading(doc, cursor, 'Formação', 16, 178, palette, { fontPt: 10.5 }, false);
+  const idxTexto = calls.findIndex((c) => c.method === 'text' && c.args[0] === 'FORMAÇÃO');
+  const charSpaceAntes = [...calls].slice(0, idxTexto).reverse().find((c) => c.method === 'setCharSpace');
+  assert(!!charSpaceAntes && charSpaceAntes.args[0] > 0, 'Titulo de secao recebe charSpace maior que zero antes de ser desenhado');
+  const charSpaceDepois = calls.slice(idxTexto + 1).find((c) => c.method === 'setCharSpace');
+  assert(!!charSpaceDepois && charSpaceDepois.args[0] === 0, 'charSpace e resetado para 0 depois do titulo de secao');
+}
+
 setTimeout(() => {
   assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
   finishTests();

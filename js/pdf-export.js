@@ -192,7 +192,10 @@ const EuGeroPdfExport = (function () {
     cursor.y += 3;
     setFont(doc, 'BarlowCondensed', 'bold', density.fontPt + 1.5, hasFonts);
     doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
+    const sizePt = density.fontPt + 1.5;
+    doc.setCharSpace(sizePt * PT_TO_MM * 0.08);
     doc.text(title.toUpperCase(), x, cursor.y);
+    doc.setCharSpace(0);
     cursor.y += 2.5;
     if (!skipDivider) {
       doc.setDrawColor(224, 224, 227);
@@ -254,7 +257,9 @@ const EuGeroPdfExport = (function () {
     const { personal, sections } = data;
     setFont(doc, 'BarlowCondensed', 'bold', 24, hasFonts);
     doc.setTextColor(26, 26, 46);
+    doc.setCharSpace(24 * PT_TO_MM * 0.08);
     doc.text((personal.fullName || 'Seu Nome').toUpperCase(), PAGE_W / 2, cursor.y + 8, { align: 'center' });
+    doc.setCharSpace(0);
     cursor.y += 13;
     setFont(doc, 'Barlow', 'normal', density.fontPt + 1, hasFonts);
     doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
@@ -279,7 +284,9 @@ const EuGeroPdfExport = (function () {
     const { personal, sections } = data;
     setFont(doc, 'BarlowCondensed', 'bold', 26, hasFonts);
     doc.setTextColor(26, 26, 46);
+    doc.setCharSpace(26 * PT_TO_MM * 0.08);
     doc.text(personal.fullName || 'Seu Nome', margin, cursor.y + 8);
+    doc.setCharSpace(0);
     cursor.y += 13;
     setFont(doc, 'Barlow', 'normal', density.fontPt + 1, hasFonts);
     doc.setTextColor(107, 109, 111);
@@ -302,7 +309,9 @@ const EuGeroPdfExport = (function () {
     doc.rect(0, 0, PAGE_W, bannerH, 'F');
     setFont(doc, 'BarlowCondensed', 'bold', 22, hasFonts);
     doc.setTextColor(238, 244, 250);
+    doc.setCharSpace(22 * PT_TO_MM * 0.08);
     doc.text((personal.fullName || 'Seu Nome').toUpperCase(), margin, 14);
+    doc.setCharSpace(0);
     setFont(doc, 'Barlow', 'normal', density.fontPt + 1, hasFonts);
     doc.setTextColor(185, 205, 224);
     doc.text((personal.headline || 'Título profissional').toUpperCase(), margin, 21);
@@ -328,7 +337,9 @@ const EuGeroPdfExport = (function () {
     setFont(doc, 'BarlowCondensed', 'bold', 18, hasFonts);
     doc.setTextColor(palette.accent900[0], palette.accent900[1], palette.accent900[2]);
     const nameLines = doc.splitTextToSize((personal.fullName || 'Seu Nome').toUpperCase(), sideCursor.colWidth);
+    doc.setCharSpace(18 * PT_TO_MM * 0.08);
     nameLines.forEach((line) => { doc.text(line, sideCursor.x, sideCursor.y); sideCursor.y += 7; });
+    doc.setCharSpace(0);
     sideCursor.y += 1;
     setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
     doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
@@ -390,7 +401,9 @@ const EuGeroPdfExport = (function () {
     const textW = cursor.colWidth - badgeSize - 6;
     setFont(doc, 'BarlowCondensed', 'bold', 18, hasFonts);
     doc.setTextColor(26, 26, 46);
+    doc.setCharSpace(18 * PT_TO_MM * 0.08);
     doc.text((personal.fullName || 'Seu Nome').toUpperCase(), textX, cursor.y + 6);
+    doc.setCharSpace(0);
     setFont(doc, 'Barlow', 'normal', density.fontPt, hasFonts);
     doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
     doc.text((personal.headline || 'Título profissional').toUpperCase(), textX, cursor.y + 11);
