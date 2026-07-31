@@ -190,6 +190,47 @@ const EuGeroReviewScreen = (function () {
     window.print();
   }
 
+  let pdfVendorPromise = null;
+
+  function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Falha ao carregar ${src}`));
+      document.head.appendChild(script);
+    });
+  }
+
+  function loadPdfVendor() {
+    if (!pdfVendorPromise) {
+      pdfVendorPromise = Promise.all([
+        loadScriptOnce('js/vendor/jspdf.umd.min.js'),
+        loadScriptOnce('js/vendor/fonts-barlow.js')
+      ]).then(() => loadScriptOnce('js/pdf-export.js'))
+        .catch((err) => { pdfVendorPromise = null; throw err; });
+    }
+    return pdfVendorPromise;
+  }
+
+  async function downloadPdf() {
+    const btn = document.getElementById('btn-export-pdf');
+    const rotuloOriginal = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Gerando PDF...'; }
+    try {
+      await loadPdfVendor();
+      const state = ctx.getState();
+      const sections = ctx.activeSections();
+      const doc = EuGeroPdfExport.generatePdf(state, sections, state.template, state.margin || 'padrao', state.density || 'normal');
+      doc.save(`${cvFileBaseName()}.pdf`);
+    } catch (err) {
+      ctx.showToast?.('Não foi possível gerar o PDF. Tente novamente.', { error: true });
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = rotuloOriginal; }
+    }
+  }
+
   function renderReviewTemplateGallery() {
     const state = ctx.getState();
     if (!ctx.els.reviewTemplateGallery) return;
@@ -251,6 +292,7 @@ const EuGeroReviewScreen = (function () {
     renderReviewGallery,
     renderReviewTemplateGallery,
     cvFileBaseName,
-    printCv
+    printCv,
+    downloadPdf
   };
 })();
