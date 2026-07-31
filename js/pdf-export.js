@@ -160,10 +160,11 @@ const EuGeroPdfExport = (function () {
     return { x: margin, y: margin, margin, colWidth: PAGE_W - margin * 2 };
   }
 
-  function ensureSpace(doc, cursor, heightMm) {
+  function ensureSpace(doc, cursor, heightMm, onNewPage) {
     if (cursor.y + heightMm > PAGE_H - cursor.margin) {
       doc.addPage();
       cursor.y = cursor.margin;
+      if (onNewPage) onNewPage();
     }
   }
 
@@ -176,12 +177,12 @@ const EuGeroPdfExport = (function () {
     doc.setFontSize(sizePt);
   }
 
-  function drawWrappedText(doc, cursor, text, x, width, sizePt, lineHeightMult, color) {
+  function drawWrappedText(doc, cursor, text, x, width, sizePt, lineHeightMult, color, onNewPage) {
     doc.setTextColor(color[0], color[1], color[2]);
     const lines = doc.splitTextToSize(text, width);
     const lineHeightMm = sizePt * PT_TO_MM * lineHeightMult;
     lines.forEach((line) => {
-      ensureSpace(doc, cursor, lineHeightMm);
+      ensureSpace(doc, cursor, lineHeightMm, onNewPage);
       doc.text(line, x, cursor.y + sizePt * PT_TO_MM * 0.8);
       cursor.y += lineHeightMm;
     });
@@ -205,15 +206,15 @@ const EuGeroPdfExport = (function () {
     setFont(doc, 'Barlow', 'normal', density.fontPt, hasFonts);
   }
 
-  function drawBlocks(doc, cursor, blocks, x, width, palette, density, hasFonts) {
+  function drawBlocks(doc, cursor, blocks, x, width, palette, density, hasFonts, onNewPage) {
     blocks.forEach((block) => {
       if (block.type === 'text') {
         setFont(doc, 'Barlow', 'normal', density.fontPt, hasFonts);
-        drawWrappedText(doc, cursor, block.text, x, width, density.fontPt, density.lineHeightMult, [58, 60, 62]);
+        drawWrappedText(doc, cursor, block.text, x, width, density.fontPt, density.lineHeightMult, [58, 60, 62], onNewPage);
         cursor.y += 1.5;
         return;
       }
-      ensureSpace(doc, cursor, 6);
+      ensureSpace(doc, cursor, 6, onNewPage);
       setFont(doc, 'BarlowCondensed', 'bold', density.fontPt + 1.5, hasFonts);
       doc.setTextColor(palette.accent900[0], palette.accent900[1], palette.accent900[2]);
       doc.text(block.title, x, cursor.y);
@@ -241,7 +242,7 @@ const EuGeroPdfExport = (function () {
         cursor.y += density.fontPt * PT_TO_MM * 1.3;
       }
       if (block.desc) {
-        drawWrappedText(doc, cursor, block.desc, x, width, density.fontPt, density.lineHeightMult, [58, 60, 62]);
+        drawWrappedText(doc, cursor, block.desc, x, width, density.fontPt, density.lineHeightMult, [58, 60, 62], onNewPage);
       }
       cursor.y += 3;
     });
@@ -374,8 +375,11 @@ const EuGeroPdfExport = (function () {
   function layoutSidebar(doc, data, palette, margin, density, hasFonts) {
     const { personal, sections } = data;
     const sidebarW = PAGE_W * 0.38;
-    doc.setFillColor(palette.accent100[0], palette.accent100[1], palette.accent100[2]);
-    doc.rect(0, 0, sidebarW, PAGE_H, 'F');
+    const desenharFundo = () => {
+      doc.setFillColor(palette.accent100[0], palette.accent100[1], palette.accent100[2]);
+      doc.rect(0, 0, sidebarW, PAGE_H, 'F');
+    };
+    desenharFundo();
 
     const sideCursor = { x: margin, y: margin, margin, colWidth: sidebarW - margin * 1.4 };
     setFont(doc, 'BarlowCondensed', 'bold', 18, hasFonts);
@@ -387,7 +391,7 @@ const EuGeroPdfExport = (function () {
     sideCursor.y += 1;
     setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
     doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
-    drawWrappedText(doc, sideCursor, (personal.headline || 'Título profissional').toUpperCase(), sideCursor.x, sideCursor.colWidth, density.fontPt - 0.5, 1.3, palette.accent700);
+    drawWrappedText(doc, sideCursor, (personal.headline || 'Título profissional').toUpperCase(), sideCursor.x, sideCursor.colWidth, density.fontPt - 0.5, 1.3, palette.accent700, desenharFundo);
     sideCursor.y += 4;
 
     setFont(doc, 'BarlowCondensed', 'bold', density.fontPt, hasFonts);
@@ -397,10 +401,10 @@ const EuGeroPdfExport = (function () {
     setFont(doc, 'Barlow', 'normal', density.fontPt - 1, hasFonts);
     doc.setTextColor(58, 60, 62);
     [personal.email, personal.phone, personal.location].filter(Boolean).forEach((line) => {
-      drawWrappedText(doc, sideCursor, line, sideCursor.x, sideCursor.colWidth, density.fontPt - 1, 1.3, [58, 60, 62]);
+      drawWrappedText(doc, sideCursor, line, sideCursor.x, sideCursor.colWidth, density.fontPt - 1, 1.3, [58, 60, 62], desenharFundo);
     });
     if (personal.linkedinUrl) {
-      ensureSpace(doc, sideCursor, 6);
+      ensureSpace(doc, sideCursor, 6, desenharFundo);
       setFont(doc, 'Barlow', 'normal', density.fontPt - 1, hasFonts);
       doc.setTextColor(58, 60, 62);
       doc.textWithLink(personal.linkedinUrl, sideCursor.x, sideCursor.y, { url: personal.linkedinUrl });
@@ -422,7 +426,7 @@ const EuGeroPdfExport = (function () {
       setFont(doc, 'Barlow', 'normal', density.fontPt - 1, hasFonts);
       doc.setTextColor(58, 60, 62);
       s.blocks.forEach((b) => {
-        drawWrappedText(doc, sideCursor, b.text, sideCursor.x, sideCursor.colWidth, density.fontPt - 1, 1.3, [58, 60, 62]);
+        drawWrappedText(doc, sideCursor, b.text, sideCursor.x, sideCursor.colWidth, density.fontPt - 1, 1.3, [58, 60, 62], desenharFundo);
       });
       sideCursor.y += 4;
     });
@@ -430,7 +434,7 @@ const EuGeroPdfExport = (function () {
     const mainCursor = { x: sidebarW + margin, y: margin, margin, colWidth: PAGE_W - sidebarW - margin * 1.6 };
     mainSections.forEach((s) => {
       drawSectionHeading(doc, mainCursor, s.title, mainCursor.x, mainCursor.colWidth, palette, density, hasFonts);
-      drawBlocks(doc, mainCursor, s.blocks, mainCursor.x, mainCursor.colWidth, palette, density, hasFonts);
+      drawBlocks(doc, mainCursor, s.blocks, mainCursor.x, mainCursor.colWidth, palette, density, hasFonts, desenharFundo);
     });
   }
 

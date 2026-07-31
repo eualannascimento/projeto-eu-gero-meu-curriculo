@@ -882,6 +882,31 @@ console.log('\nPDF - link do LinkedIn clicavel no cabecalho:');
   assert(link.args[3] && link.args[3].url === 'https://linkedin.com/in/maria-teste', 'Link aponta para a URL correta do LinkedIn');
 }
 
+// --- Task 7: fundo da sidebar redesenhado em varias paginas ---
+console.log('\nPDF - fundo da sidebar em varias paginas:');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#155e75');
+  const experienciasLongas = Array.from({ length: 20 }, (_, i) => ({
+    title: `Cargo ${i}`, company: `Empresa ${i}`, period: '2020 - 2021',
+    description: 'Descricao longa o suficiente para forcar quebra de pagina no layout de teste, repetida varias vezes para garantir overflow do conteudo principal da coluna direita.'
+  }));
+  const state = {
+    personal: { fullName: 'Maria Teste', headline: 'Analista', email: 'maria@teste.com', phone: '', location: 'São Paulo' },
+    experiences: experienciasLongas,
+    enabledSections: { experiences: true }
+  };
+  const sections = [{ id: 'experiences', title: 'Experiência', list: true, itemFields: [{ key: 'title' }, { key: 'company' }, { key: 'description' }] }];
+  const data = EuGeroPdfExport.buildSectionsData(state, sections);
+  data.state = state;
+  EuGeroPdfExport.LAYOUTS.sidebar(doc, data, palette, 16, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const paginas = calls.filter((c) => c.method === 'addPage').length;
+  assert(paginas > 0, 'Conteudo longo forca pelo menos uma nova pagina neste cenario de teste');
+  const fundos = calls.filter((c) => c.method === 'rect' && c.args[2] < 100 && c.args[3] > 290);
+  assert(fundos.length === paginas + 1, 'O fundo da sidebar e redesenhado uma vez por pagina (inicial + cada addPage)');
+}
+
 setTimeout(() => {
   assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
   finishTests();
