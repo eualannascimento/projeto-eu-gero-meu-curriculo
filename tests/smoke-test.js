@@ -756,6 +756,39 @@ assert(!startScreenCode.includes('Página em branco pronta'), 'Escolher ponto de
 assert(!appJsCode.includes('Modelo alterado para'), 'Trocar modelo não abre toast');
 assert(responsiveCss.includes('bottom: max(5.25rem'), 'Toast mobile fica acima da barra fixa');
 
+// --- PDF: fidelidade visual (fake doc para testar desenho sem jsPDF real) ---
+console.log('\nPDF - fake doc:');
+
+function createFakeDoc() {
+  const calls = [];
+  const record = (method) => (...args) => { calls.push({ method, args }); };
+  const doc = {
+    setFont: record('setFont'),
+    setFontSize: record('setFontSize'),
+    setTextColor: record('setTextColor'),
+    setDrawColor: record('setDrawColor'),
+    setFillColor: record('setFillColor'),
+    setCharSpace: record('setCharSpace'),
+    text: record('text'),
+    textWithLink: record('textWithLink'),
+    line: record('line'),
+    rect: record('rect'),
+    addPage: record('addPage'),
+    splitTextToSize: (text) => [text],
+    getTextWidth: (text) => String(text).length * 2
+  };
+  return { doc, calls };
+}
+
+{
+  const { doc, calls } = createFakeDoc();
+  doc.text('ola', 10, 10);
+  doc.setDrawColor(1, 2, 3);
+  assert(calls.length === 2, 'createFakeDoc registra chamadas na ordem');
+  assert(calls[0].method === 'text' && calls[0].args[0] === 'ola', 'createFakeDoc registra metodo e argumentos de text()');
+  assert(calls[1].method === 'setDrawColor' && calls[1].args.join(',') === '1,2,3', 'createFakeDoc registra setDrawColor com os argumentos certos');
+}
+
 setTimeout(() => {
   assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
   finishTests();
