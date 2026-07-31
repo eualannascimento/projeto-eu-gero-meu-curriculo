@@ -928,6 +928,26 @@ console.log('\nPDF - fundo da sidebar em varias paginas:');
   assert(fundos.length === paginas + 1, 'O fundo da sidebar e redesenhado uma vez por pagina (inicial + cada addPage)');
 }
 
+// --- Task 9b: sobreposicao do link do LinkedIn na sidebar ---
+console.log('\nPDF - LinkedIn na sidebar nao sobrepoe a linha da localizacao:');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#155e75');
+  const state = {
+    personal: { fullName: 'Hua Mulan Teste', headline: 'Analista', email: 'hua@teste.com', phone: '11 99999-9999', location: 'Vale do Rio Amarelo, China', linkedinUrl: 'https://linkedin.com/in/hua-mulan-teste' },
+    enabledSections: {}
+  };
+  const data = EuGeroPdfExport.buildSectionsData(state, []);
+  data.state = state;
+  EuGeroPdfExport.LAYOUTS.sidebar(doc, data, palette, 16, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const idxLocalizacao = calls.findIndex((c) => c.method === 'text' && c.args[0] === 'Vale do Rio Amarelo, China');
+  const link = calls.find((c) => c.method === 'textWithLink' && c.args[3] && c.args[3].url === 'https://linkedin.com/in/hua-mulan-teste');
+  assert(idxLocalizacao > -1, 'Linha da localizacao e desenhada na sidebar');
+  assert(!!link, 'Link do LinkedIn e desenhado na sidebar com textWithLink');
+  assert(link.args[2] > calls[idxLocalizacao].args[2], 'Link do LinkedIn fica estritamente abaixo (y maior) da linha da localizacao, sem sobrepor');
+}
+
 setTimeout(() => {
   assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
   finishTests();

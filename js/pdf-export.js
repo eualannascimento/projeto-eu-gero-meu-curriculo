@@ -407,7 +407,7 @@ const EuGeroPdfExport = (function () {
       ensureSpace(doc, sideCursor, 6, desenharFundo);
       setFont(doc, 'Barlow', 'normal', density.fontPt - 1, hasFonts);
       doc.setTextColor(58, 60, 62);
-      doc.textWithLink(personal.linkedinUrl, sideCursor.x, sideCursor.y, { url: personal.linkedinUrl });
+      doc.textWithLink(personal.linkedinUrl, sideCursor.x, sideCursor.y + (density.fontPt - 1) * PT_TO_MM * 0.8, { url: personal.linkedinUrl });
       sideCursor.y += (density.fontPt - 1) * PT_TO_MM * 1.3;
     }
     sideCursor.y += 4;
