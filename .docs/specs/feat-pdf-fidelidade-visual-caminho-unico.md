@@ -1,6 +1,6 @@
 # PDF: fidelidade visual no caminho unico (jsPDF)
 
-**Status:** Aprovado
+**Status:** Concluído
 **Data:** 2026-07-31
 
 ## 1. Resumo e Objetivo
@@ -40,15 +40,15 @@ Esta spec reabre e substitui o escopo de `feat-pdf-direto-como-unico-caminho.md`
 
 ## 5. Criterios de Aceite (verificaveis por teste)
 
-* [ ] CA01: Dado um clique no botao "Baixar curriculo em PDF", quando a geracao terminar, entao um arquivo `CV_*.pdf` e baixado e `window.print` nao e chamado.
-* [ ] CA02: Dado qualquer uma das 5 familias de layout com uma secao preenchida, quando o PDF for gerado, entao existe uma linha divisoria abaixo de cada titulo de secao (exceto na coluna lateral da familia `sidebar`).
-* [ ] CA03: Dado um item de lista com titulo preenchido, quando o PDF for gerado, entao a cor do titulo do item corresponde a `palette.accent900` do template escolhido, nao a cor fixa anterior.
-* [ ] CA04: Dado o nome do candidato e os titulos de secao, quando o PDF for gerado, entao o `charSpace` aplicado a esses trechos e maior que zero, e o texto de corpo (resumo/descricoes) mantem `charSpace` zero.
-* [ ] CA05: Dado `personal.linkedinUrl` preenchido, quando o PDF for gerado, entao o texto da URL no cabecalho (ou no bloco de contato da sidebar) tem um link clicavel para essa URL.
-* [ ] CA06: Dado um template da familia `sidebar` com conteudo que ocupa duas paginas, quando o PDF for gerado, entao o fundo colorido da barra lateral cobre a altura completa de ambas as paginas.
-* [ ] CA07: Dado um item de lista cujo titulo mais o periodo ultrapassam a largura da coluna, quando o PDF for gerado, entao o periodo e desenhado na linha seguinte, sem sobrepor o titulo.
-* [ ] CA08: Dado cada uma das 5 familias de layout com um conjunto de dados de exemplo (`js/characters.js`), quando o PDF for gerado, entao o documento tem exatamente uma pagina (mantendo a garantia ja validada em `feat-pdf-direto-como-unico-caminho.md`, CA02).
-* [ ] CA09: Dado o carregamento da tela de revisao, quando nenhum clique no botao de exportar ocorrer, entao nenhum dos tres scripts (`jspdf.umd.min.js`, `fonts-barlow.js`, `pdf-export.js`) e requisitado.
+* [x] CA01: Dado um clique no botao "Baixar curriculo em PDF", quando a geracao terminar, entao um arquivo `CV_*.pdf` e baixado e `window.print` nao e chamado.
+* [x] CA02: Dado qualquer uma das 5 familias de layout com uma secao preenchida, quando o PDF for gerado, entao existe uma linha divisoria abaixo de cada titulo de secao (exceto na coluna lateral da familia `sidebar`).
+* [x] CA03: Dado um item de lista com titulo preenchido, quando o PDF for gerado, entao a cor do titulo do item corresponde a `palette.accent900` do template escolhido, nao a cor fixa anterior.
+* [x] CA04: Dado o nome do candidato e os titulos de secao, quando o PDF for gerado, entao o `charSpace` aplicado a esses trechos e maior que zero, e o texto de corpo (resumo/descricoes) mantem `charSpace` zero.
+* [x] CA05: Dado `personal.linkedinUrl` preenchido, quando o PDF for gerado, entao o texto da URL no cabecalho (ou no bloco de contato da sidebar) tem um link clicavel para essa URL.
+* [x] CA06: Dado um template da familia `sidebar` com conteudo que ocupa duas paginas, quando o PDF for gerado, entao o fundo colorido da barra lateral cobre a altura completa de ambas as paginas.
+* [x] CA07: Dado um item de lista cujo titulo mais o periodo ultrapassam a largura da coluna, quando o PDF for gerado, entao o periodo e desenhado na linha seguinte, sem sobrepor o titulo.
+* [x] CA08: Dado cada uma das 5 familias de layout com um conjunto de dados de exemplo (`js/characters.js`), quando o PDF for gerado, entao o documento tem exatamente uma pagina (mantendo a garantia ja validada em `feat-pdf-direto-como-unico-caminho.md`, CA02).
+* [x] CA09: Dado o carregamento da tela de revisao, quando nenhum clique no botao de exportar ocorrer, entao nenhum dos tres scripts (`jspdf.umd.min.js`, `fonts-barlow.js`, `pdf-export.js`) e requisitado.
 
 ## 6. Fora de Escopo
 
