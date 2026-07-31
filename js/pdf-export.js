@@ -251,6 +251,13 @@ const EuGeroPdfExport = (function () {
     return [personal.email, personal.phone, personal.location].filter(Boolean).join('   ·   ');
   }
 
+  function contactLineParts(personal) {
+    return {
+      base: [personal.email, personal.phone, personal.location].filter(Boolean).join('   ·   '),
+      linkedinUrl: personal.linkedinUrl || ''
+    };
+  }
+
   // ---- Layouts (5 familias estruturais) ----
   function layoutCentered(doc, data, palette, margin, density, hasFonts) {
     const cursor = makeCursor(doc, margin);
@@ -267,7 +274,21 @@ const EuGeroPdfExport = (function () {
     cursor.y += 6;
     setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
     doc.setTextColor(107, 109, 111);
-    doc.text(contactLine(personal) || 'e-mail · telefone · cidade', PAGE_W / 2, cursor.y, { align: 'center' });
+    {
+      const { base, linkedinUrl } = contactLineParts(personal);
+      const linha = [base, linkedinUrl].filter(Boolean).join('   ·   ');
+      if (linkedinUrl) {
+        const larguraTotal = doc.getTextWidth(linha);
+        const xInicio = PAGE_W / 2 - larguraTotal / 2;
+        const larguraBase = base ? doc.getTextWidth(`${base}   ·   `) : 0;
+        doc.setTextColor(107, 109, 111);
+        if (base) doc.text(`${base}   ·   `, xInicio, cursor.y);
+        doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
+        doc.textWithLink(linkedinUrl, xInicio + larguraBase, cursor.y, { url: linkedinUrl });
+      } else {
+        doc.text(linha || 'e-mail · telefone · cidade', PAGE_W / 2, cursor.y, { align: 'center' });
+      }
+    }
     cursor.y += 5;
     doc.setDrawColor(224, 224, 227);
     doc.line(margin, cursor.y, PAGE_W - margin, cursor.y);
@@ -293,7 +314,19 @@ const EuGeroPdfExport = (function () {
     doc.text(personal.headline || 'Título profissional', margin, cursor.y);
     cursor.y += 6;
     setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
-    doc.text(contactLine(personal) || 'contato@email.com · cidade', margin, cursor.y);
+    {
+      const { base, linkedinUrl } = contactLineParts(personal);
+      const linha = [base, linkedinUrl].filter(Boolean).join('   ·   ');
+      if (linkedinUrl) {
+        doc.setTextColor(58, 60, 62);
+        const larguraBase = base ? doc.getTextWidth(`${base}   ·   `) : 0;
+        if (base) doc.text(`${base}   ·   `, margin, cursor.y);
+        doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
+        doc.textWithLink(linkedinUrl, margin + larguraBase, cursor.y, { url: linkedinUrl });
+      } else {
+        doc.text(linha || 'contato@email.com · cidade', margin, cursor.y);
+      }
+    }
     cursor.y += 9;
 
     sections.forEach((s) => {
@@ -317,7 +350,18 @@ const EuGeroPdfExport = (function () {
     doc.text((personal.headline || 'Título profissional').toUpperCase(), margin, 21);
     setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
     doc.setTextColor(159, 182, 205);
-    doc.text(contactLine(personal), margin, 27);
+    {
+      const { base, linkedinUrl } = contactLineParts(personal);
+      const linha = [base, linkedinUrl].filter(Boolean).join('   ·   ');
+      if (linkedinUrl) {
+        const larguraBase = base ? doc.getTextWidth(`${base}   ·   `) : 0;
+        if (base) doc.text(`${base}   ·   `, margin, 27);
+        doc.setTextColor(238, 244, 250);
+        doc.textWithLink(linkedinUrl, margin + larguraBase, 27, { url: linkedinUrl });
+      } else {
+        doc.text(linha, margin, 27);
+      }
+    }
 
     const cursor = makeCursor(doc, margin);
     cursor.y = bannerH + 10;
@@ -356,7 +400,11 @@ const EuGeroPdfExport = (function () {
       drawWrappedText(doc, sideCursor, line, sideCursor.x, sideCursor.colWidth, density.fontPt - 1, 1.3, [58, 60, 62]);
     });
     if (personal.linkedinUrl) {
-      drawWrappedText(doc, sideCursor, personal.linkedinUrl, sideCursor.x, sideCursor.colWidth, density.fontPt - 1, 1.3, [58, 60, 62]);
+      ensureSpace(doc, sideCursor, 6);
+      setFont(doc, 'Barlow', 'normal', density.fontPt - 1, hasFonts);
+      doc.setTextColor(58, 60, 62);
+      doc.textWithLink(personal.linkedinUrl, sideCursor.x, sideCursor.y, { url: personal.linkedinUrl });
+      sideCursor.y += (density.fontPt - 1) * PT_TO_MM * 1.3;
     }
     sideCursor.y += 4;
 
@@ -409,7 +457,18 @@ const EuGeroPdfExport = (function () {
     doc.text((personal.headline || 'Título profissional').toUpperCase(), textX, cursor.y + 11);
     setFont(doc, 'Barlow', 'normal', density.fontPt - 0.5, hasFonts);
     doc.setTextColor(107, 109, 111);
-    doc.text(contactLine(personal), textX, cursor.y + 16, { maxWidth: textW });
+    {
+      const { base, linkedinUrl } = contactLineParts(personal);
+      const linha = [base, linkedinUrl].filter(Boolean).join('   ·   ');
+      if (linkedinUrl) {
+        const larguraBase = base ? doc.getTextWidth(`${base}   ·   `) : 0;
+        if (base) doc.text(`${base}   ·   `, textX, cursor.y + 16, { maxWidth: textW });
+        doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
+        doc.textWithLink(linkedinUrl, textX + larguraBase, cursor.y + 16, { url: linkedinUrl });
+      } else {
+        doc.text(linha, textX, cursor.y + 16, { maxWidth: textW });
+      }
+    }
 
     cursor.y += badgeSize + 8;
     sections.forEach((s) => {
@@ -450,6 +509,7 @@ const EuGeroPdfExport = (function () {
     buildSectionsData,
     accentPalette,
     drawSectionHeading,
-    drawBlocks
+    drawBlocks,
+    LAYOUTS
   };
 })();

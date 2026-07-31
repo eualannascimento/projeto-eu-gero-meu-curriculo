@@ -864,6 +864,24 @@ console.log('\nPDF - letter-spacing (charSpace):');
   assert(!!charSpaceDepois && charSpaceDepois.args[0] === 0, 'charSpace e resetado para 0 depois do titulo de secao');
 }
 
+// --- Task 6: link do LinkedIn clicavel no cabecalho ---
+console.log('\nPDF - link do LinkedIn clicavel no cabecalho:');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const state = {
+    personal: { fullName: 'Maria Teste', headline: 'Analista', email: 'maria@teste.com', phone: '', location: 'São Paulo', linkedinUrl: 'https://linkedin.com/in/maria-teste' },
+    enabledSections: {}
+  };
+  const data = EuGeroPdfExport.buildSectionsData(state, []);
+  data.state = state;
+  EuGeroPdfExport.LAYOUTS.left(doc, data, palette, 16, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const link = calls.find((c) => c.method === 'textWithLink');
+  assert(!!link, 'Cabecalho desenha o LinkedIn com textWithLink quando linkedinUrl esta preenchido');
+  assert(link.args[3] && link.args[3].url === 'https://linkedin.com/in/maria-teste', 'Link aponta para a URL correta do LinkedIn');
+}
+
 setTimeout(() => {
   assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
   finishTests();
