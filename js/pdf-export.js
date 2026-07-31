@@ -188,8 +188,8 @@ const EuGeroPdfExport = (function () {
     });
   }
 
-  function drawSectionHeading(doc, cursor, title, x, width, palette, density, hasFonts, skipDivider) {
-    ensureSpace(doc, cursor, 8);
+  function drawSectionHeading(doc, cursor, title, x, width, palette, density, hasFonts, skipDivider, onNewPage) {
+    ensureSpace(doc, cursor, 8, onNewPage);
     cursor.y += 3;
     setFont(doc, 'BarlowCondensed', 'bold', density.fontPt + 1.5, hasFonts);
     doc.setTextColor(palette.accent700[0], palette.accent700[1], palette.accent700[2]);
@@ -433,7 +433,7 @@ const EuGeroPdfExport = (function () {
 
     const mainCursor = { x: sidebarW + margin, y: margin, margin, colWidth: PAGE_W - sidebarW - margin * 1.6 };
     mainSections.forEach((s) => {
-      drawSectionHeading(doc, mainCursor, s.title, mainCursor.x, mainCursor.colWidth, palette, density, hasFonts);
+      drawSectionHeading(doc, mainCursor, s.title, mainCursor.x, mainCursor.colWidth, palette, density, hasFonts, undefined, desenharFundo);
       drawBlocks(doc, mainCursor, s.blocks, mainCursor.x, mainCursor.colWidth, palette, density, hasFonts, desenharFundo);
     });
   }

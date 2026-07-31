@@ -882,6 +882,17 @@ console.log('\nPDF - link do LinkedIn clicavel no cabecalho:');
   assert(link.args[3] && link.args[3].url === 'https://linkedin.com/in/maria-teste', 'Link aponta para a URL correta do LinkedIn');
 }
 
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 290, margin: 16, colWidth: 178 };
+  let onNewPageChamado = false;
+  const onNewPage = () => { onNewPageChamado = true; };
+  EuGeroPdfExport.drawSectionHeading(doc, cursor, 'Habilidades', 16, 178, palette, { fontPt: 10.5 }, false, undefined, onNewPage);
+  assert(calls.some((c) => c.method === 'addPage'), 'drawSectionHeading quebra a pagina quando o cursor esta perto do fim');
+  assert(onNewPageChamado, 'drawSectionHeading repassa onNewPage para ensureSpace e ele e chamado ao quebrar pagina');
+}
+
 // --- Task 7: fundo da sidebar redesenhado em varias paginas ---
 console.log('\nPDF - fundo da sidebar em varias paginas:');
 
