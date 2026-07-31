@@ -727,6 +727,15 @@ const blocoImpressao = printCss.slice(printCss.indexOf('@media print'), printCss
 assert(/html,\s*body\s*\{[^}]*min-height:\s*0\s*!important/.test(blocoImpressao),
     'Impressão zera a altura mínima do body (100vh não vale na folha)');
 
+// --- Carregamento sob demanda (CA09) ---
+console.log('\nCarregamento sob demanda:');
+
+assert(!reviewJsCode.includes("loadScriptOnce('js/vendor/jspdf.umd.min.js')") || reviewJsCode.includes('function loadPdfVendor'),
+    'Scripts do jsPDF sao carregados dentro de loadPdfVendor, nao no topo do modulo');
+const indexHtmlCode = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+assert(!indexHtmlCode.includes('jspdf.umd.min.js') && !indexHtmlCode.includes('pdf-export.js'),
+    'index.html nao carrega os scripts de PDF por tag <script> direta (carregamento sob demanda)');
+
 // --- CSP sem estilo inline ---
 console.log('\nCSP:');
 
