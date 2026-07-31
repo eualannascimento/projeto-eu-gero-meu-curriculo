@@ -44,6 +44,7 @@ global.document = {
   }
 };
 loadScript('js/preview.js');
+loadScript('js/pdf-export.js');
 
 let passed = 0;
 let failed = 0;
@@ -710,9 +711,10 @@ const printCss = fs.readFileSync(path.join(__dirname, '..', 'css/print-preview.c
 // o botao passa a baixar um PDF gerado por jsPDF em vez de abrir o dialogo de
 // impressao. O dialogo aplicava margem e escala proprias de cada navegador, e
 // era ali que nascia a segunda pagina em branco no Safari.
-assert(reviewJsCode.includes('window.print()'), 'Exportação usa a impressão nativa, fiel à prévia');
-assert(appJsCode.includes('EuGeroReviewScreen.printCv'), 'Botão de exportação chama printCv');
-assert(!reviewJsCode.includes('EuGeroPdfExport.generatePdf('), 'Exportação não usa renderizador PDF paralelo');
+assert(reviewJsCode.includes('function downloadPdf'), 'review.js define downloadPdf');
+assert(appJsCode.includes('EuGeroReviewScreen.downloadPdf'), 'Botão de exportação chama downloadPdf');
+assert(reviewJsCode.includes('EuGeroPdfExport.generatePdf('), 'downloadPdf usa o gerador jsPDF');
+assert(reviewJsCode.includes('function printCv'), 'printCv continua disponível para Ctrl+P');
 // A altura da caixa de impressao nao pode ser fixada em milimetros: era o
 // min-height 297mm herdado de templates.css que gerava a pagina em branco.
 assert(printCss.includes('min-height: 0 !important'), 'Caixa de impressão não impõe altura de folha');
@@ -724,6 +726,15 @@ assert(printCss.includes('#print-cv') && printCss.includes('box-sizing: border-b
 const blocoImpressao = printCss.slice(printCss.indexOf('@media print'), printCss.indexOf('/* ---- Moldura A4'));
 assert(/html,\s*body\s*\{[^}]*min-height:\s*0\s*!important/.test(blocoImpressao),
     'Impressão zera a altura mínima do body (100vh não vale na folha)');
+
+// --- Carregamento sob demanda (CA09) ---
+console.log('\nCarregamento sob demanda:');
+
+assert(!reviewJsCode.includes("loadScriptOnce('js/vendor/jspdf.umd.min.js')") || reviewJsCode.includes('function loadPdfVendor'),
+    'Scripts do jsPDF sao carregados dentro de loadPdfVendor, nao no topo do modulo');
+const indexHtmlCode = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+assert(!indexHtmlCode.includes('jspdf.umd.min.js') && !indexHtmlCode.includes('pdf-export.js'),
+    'index.html nao carrega os scripts de PDF por tag <script> direta (carregamento sob demanda)');
 
 // --- CSP sem estilo inline ---
 console.log('\nCSP:');
@@ -755,6 +766,235 @@ const responsiveCss = fs.readFileSync(path.join(__dirname, '..', 'css/responsive
 assert(!startScreenCode.includes('Página em branco pronta'), 'Escolher ponto de partida não abre toast');
 assert(!appJsCode.includes('Modelo alterado para'), 'Trocar modelo não abre toast');
 assert(responsiveCss.includes('bottom: max(5.25rem'), 'Toast mobile fica acima da barra fixa');
+
+// --- PDF: fidelidade visual (fake doc para testar desenho sem jsPDF real) ---
+console.log('\nPDF - fake doc:');
+
+function createFakeDoc() {
+  const calls = [];
+  const record = (method) => (...args) => { calls.push({ method, args }); };
+  const doc = {
+    setFont: record('setFont'),
+    setFontSize: record('setFontSize'),
+    setTextColor: record('setTextColor'),
+    setDrawColor: record('setDrawColor'),
+    setFillColor: record('setFillColor'),
+    setCharSpace: record('setCharSpace'),
+    text: record('text'),
+    textWithLink: record('textWithLink'),
+    line: record('line'),
+    rect: record('rect'),
+    addPage: record('addPage'),
+    splitTextToSize: (text) => [text],
+    getTextWidth: (text) => String(text).length * 2
+  };
+  return { doc, calls };
+}
+
+{
+  const { doc, calls } = createFakeDoc();
+  doc.text('ola', 10, 10);
+  doc.setDrawColor(1, 2, 3);
+  assert(calls.length === 2, 'createFakeDoc registra chamadas na ordem');
+  assert(calls[0].method === 'text' && calls[0].args[0] === 'ola', 'createFakeDoc registra metodo e argumentos de text()');
+  assert(calls[1].method === 'setDrawColor' && calls[1].args.join(',') === '1,2,3', 'createFakeDoc registra setDrawColor com os argumentos certos');
+}
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 178 };
+  EuGeroPdfExport.drawSectionHeading(doc, cursor, 'Experiência', 16, 178, palette, { fontPt: 10.5 }, false);
+  const linha = calls.find((c) => c.method === 'line');
+  assert(!!linha, 'drawSectionHeading desenha uma linha divisoria abaixo do titulo');
+  const corAntesDaLinha = calls.filter((c) => c.method === 'setDrawColor');
+  assert(corAntesDaLinha.some((c) => c.args.join(',') === '224,224,227'), 'Linha divisoria usa a cor neutra 224,224,227');
+}
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 60 };
+  EuGeroPdfExport.drawSectionHeading(doc, cursor, 'Habilidades', 16, 60, palette, { fontPt: 10.5 }, false, true);
+  assert(!calls.some((c) => c.method === 'line'), 'drawSectionHeading nao desenha linha quando skipDivider e true (coluna da sidebar)');
+}
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 178 };
+  const blocks = [{ type: 'item', title: 'Consultor Sênior', sub: 'Empresa X', period: '2020 - Atual', desc: '' }];
+  EuGeroPdfExport.drawBlocks(doc, cursor, blocks, 16, 178, palette, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const corDoTitulo = calls.find((c) => c.method === 'setTextColor' && calls.indexOf(c) === calls.findIndex((x2) => x2.method === 'text' && x2.args[0] === 'Consultor Sênior') - 1);
+  const idxTexto = calls.findIndex((c) => c.method === 'text' && c.args[0] === 'Consultor Sênior');
+  const corAntes = [...calls].slice(0, idxTexto).reverse().find((c) => c.method === 'setTextColor');
+  assert(!!corAntes, 'Existe uma cor definida antes do titulo do item');
+  assert(corAntes.args.join(',') === palette.accent900.join(','), 'Titulo do item usa palette.accent900, nao a cor fixa anterior');
+}
+
+// --- Task 4: colisao entre titulo e periodo ---
+console.log('\nPDF - colisao entre titulo e periodo:');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 60 };
+  const tituloLongo = 'Especializacao em Ciencia da Computacao Aplicada';
+  const blocks = [{ type: 'item', title: tituloLongo, sub: 'Universidade X', period: '2018 - 2022', desc: '' }];
+  EuGeroPdfExport.drawBlocks(doc, cursor, blocks, 16, 60, palette, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const idxTitulo = calls.findIndex((c) => c.method === 'text' && c.args[0] === tituloLongo);
+  const idxPeriodo = calls.findIndex((c) => c.method === 'text' && c.args[0] === '2018 - 2022');
+  assert(idxPeriodo > -1, 'Periodo continua sendo desenhado mesmo com titulo longo');
+  const mesmaLinha = calls[idxTitulo].args[2] === calls[idxPeriodo].args[2];
+  assert(!mesmaLinha, 'Com titulo longo, periodo vai para a linha seguinte em vez de sobrepor o titulo');
+}
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 178 };
+  const blocks = [{ type: 'item', title: 'Consultor', sub: 'Empresa X', period: '2020 - Atual', desc: '' }];
+  EuGeroPdfExport.drawBlocks(doc, cursor, blocks, 16, 178, palette, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const idxTitulo = calls.findIndex((c) => c.method === 'text' && c.args[0] === 'Consultor');
+  const idxPeriodo = calls.findIndex((c) => c.method === 'text' && c.args[0] === '2020 - Atual');
+  assert(calls[idxTitulo].args[2] === calls[idxPeriodo].args[2], 'Com titulo curto, periodo continua na mesma linha do titulo');
+}
+
+// --- Task 5: letter-spacing (charSpace) em nome e titulos de secao ---
+console.log('\nPDF - letter-spacing (charSpace):');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 178 };
+  EuGeroPdfExport.drawSectionHeading(doc, cursor, 'Formação', 16, 178, palette, { fontPt: 10.5 }, false);
+  const idxTexto = calls.findIndex((c) => c.method === 'text' && c.args[0] === 'FORMAÇÃO');
+  const charSpaceAntes = [...calls].slice(0, idxTexto).reverse().find((c) => c.method === 'setCharSpace');
+  assert(!!charSpaceAntes && charSpaceAntes.args[0] > 0, 'Titulo de secao recebe charSpace maior que zero antes de ser desenhado');
+  const charSpaceDepois = calls.slice(idxTexto + 1).find((c) => c.method === 'setCharSpace');
+  assert(!!charSpaceDepois && charSpaceDepois.args[0] === 0, 'charSpace e resetado para 0 depois do titulo de secao');
+}
+
+// --- Task 6: link do LinkedIn clicavel no cabecalho ---
+console.log('\nPDF - link do LinkedIn clicavel no cabecalho:');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const state = {
+    personal: { fullName: 'Maria Teste', headline: 'Analista', email: 'maria@teste.com', phone: '', location: 'São Paulo', linkedinUrl: 'https://linkedin.com/in/maria-teste' },
+    enabledSections: {}
+  };
+  const data = EuGeroPdfExport.buildSectionsData(state, []);
+  data.state = state;
+  EuGeroPdfExport.LAYOUTS.left(doc, data, palette, 16, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const link = calls.find((c) => c.method === 'textWithLink');
+  assert(!!link, 'Cabecalho desenha o LinkedIn com textWithLink quando linkedinUrl esta preenchido');
+  assert(link.args[3] && link.args[3].url === 'https://linkedin.com/in/maria-teste', 'Link aponta para a URL correta do LinkedIn');
+}
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 290, margin: 16, colWidth: 178 };
+  let onNewPageChamado = false;
+  const onNewPage = () => { onNewPageChamado = true; };
+  EuGeroPdfExport.drawSectionHeading(doc, cursor, 'Habilidades', 16, 178, palette, { fontPt: 10.5 }, false, undefined, onNewPage);
+  assert(calls.some((c) => c.method === 'addPage'), 'drawSectionHeading quebra a pagina quando o cursor esta perto do fim');
+  assert(onNewPageChamado, 'drawSectionHeading repassa onNewPage para ensureSpace e ele e chamado ao quebrar pagina');
+}
+
+// --- Task 7: fundo da sidebar redesenhado em varias paginas ---
+console.log('\nPDF - fundo da sidebar em varias paginas:');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#155e75');
+  const experienciasLongas = Array.from({ length: 20 }, (_, i) => ({
+    title: `Cargo ${i}`, company: `Empresa ${i}`, period: '2020 - 2021',
+    description: 'Descricao longa o suficiente para forcar quebra de pagina no layout de teste, repetida varias vezes para garantir overflow do conteudo principal da coluna direita.'
+  }));
+  const state = {
+    personal: { fullName: 'Maria Teste', headline: 'Analista', email: 'maria@teste.com', phone: '', location: 'São Paulo' },
+    experiences: experienciasLongas,
+    enabledSections: { experiences: true }
+  };
+  const sections = [{ id: 'experiences', title: 'Experiência', list: true, itemFields: [{ key: 'title' }, { key: 'company' }, { key: 'description' }] }];
+  const data = EuGeroPdfExport.buildSectionsData(state, sections);
+  data.state = state;
+  EuGeroPdfExport.LAYOUTS.sidebar(doc, data, palette, 16, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const paginas = calls.filter((c) => c.method === 'addPage').length;
+  assert(paginas > 0, 'Conteudo longo forca pelo menos uma nova pagina neste cenario de teste');
+  const fundos = calls.filter((c) => c.method === 'rect' && c.args[2] < 100 && c.args[3] > 290);
+  assert(fundos.length === paginas + 1, 'O fundo da sidebar e redesenhado uma vez por pagina (inicial + cada addPage)');
+}
+
+// --- Task 9b: sobreposicao do link do LinkedIn na sidebar ---
+console.log('\nPDF - LinkedIn na sidebar nao sobrepoe a linha da localizacao:');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#155e75');
+  const state = {
+    personal: { fullName: 'Hua Mulan Teste', headline: 'Analista', email: 'hua@teste.com', phone: '11 99999-9999', location: 'Vale do Rio Amarelo, China', linkedinUrl: 'https://linkedin.com/in/hua-mulan-teste' },
+    enabledSections: {}
+  };
+  const data = EuGeroPdfExport.buildSectionsData(state, []);
+  data.state = state;
+  EuGeroPdfExport.LAYOUTS.sidebar(doc, data, palette, 16, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const idxLocalizacao = calls.findIndex((c) => c.method === 'text' && c.args[0] === 'Vale do Rio Amarelo, China');
+  const link = calls.find((c) => c.method === 'textWithLink' && c.args[3] && c.args[3].url === 'https://linkedin.com/in/hua-mulan-teste');
+  assert(idxLocalizacao > -1, 'Linha da localizacao e desenhada na sidebar');
+  assert(!!link, 'Link do LinkedIn e desenhado na sidebar com textWithLink');
+  assert(link.args[2] > calls[idxLocalizacao].args[2], 'Link do LinkedIn fica estritamente abaixo (y maior) da linha da localizacao, sem sobrepor');
+}
+
+// --- Correcao 2: largura do titulo medida com a fonte do titulo, nao do periodo ---
+console.log('\nPDF - largura do titulo medida antes de trocar a fonte:');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 178 };
+  const blocks = [{ type: 'item', title: 'Cargo', sub: 'Empresa X', period: '2020 - Atual', desc: '' }];
+  EuGeroPdfExport.drawBlocks(doc, cursor, blocks, 16, 178, palette, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const idxTitulo = calls.findIndex((c) => c.method === 'text' && c.args[0] === 'Cargo');
+  const fontesAntesDoTitulo = calls.slice(0, idxTitulo + 1).filter((c) => c.method === 'setFontSize');
+  const tamanhoFonteDoTitulo = fontesAntesDoTitulo[fontesAntesDoTitulo.length - 1].args[0];
+  assert(tamanhoFonteDoTitulo === 12, 'A ultima fonte definida antes de desenhar o titulo e a do titulo (fontPt + 1.5), nao a do periodo');
+}
+
+// --- Correcao 3: drawContactLine centraliza a logica repetida das 4 familias ---
+console.log('\nPDF - drawContactLine (helper compartilhado):');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const personal = { email: 'ana@teste.com', phone: '11 99999-0000', location: 'São Paulo', linkedinUrl: 'https://linkedin.com/in/ana-teste' };
+  EuGeroPdfExport.drawContactLine(doc, personal, palette, 100, 30, { align: 'center' });
+  const link = calls.find((c) => c.method === 'textWithLink');
+  assert(!!link, 'drawContactLine desenha o LinkedIn com textWithLink quando preenchido');
+  assert(link.args[3].url === personal.linkedinUrl, 'drawContactLine preserva a URL completa no href do link');
+}
+
+// --- Correcao 4: URL longa do LinkedIn e truncada apenas no texto exibido ---
+console.log('\nPDF - truncamento do texto exibido do LinkedIn:');
+
+{
+  const urlLonga = 'https://www.linkedin.com/in/um-nome-de-usuario-bem-comprido-para-teste';
+  const exibido = EuGeroPdfExport.truncateLinkedinDisplay(urlLonga);
+  assert(exibido.length === 40, 'Texto exibido do LinkedIn e truncado para 40 caracteres (37 + "...")');
+  assert(exibido.endsWith('...'), 'Texto truncado termina com reticencias');
+  assert(urlLonga.startsWith(exibido.slice(0, 37)), 'Texto truncado preserva o inicio da URL original');
+
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const personal = { email: 'ana@teste.com', linkedinUrl: urlLonga };
+  EuGeroPdfExport.drawContactLine(doc, personal, palette, 16, 30, { align: 'left' });
+  const link = calls.find((c) => c.method === 'textWithLink');
+  assert(!!link, 'drawContactLine desenha o link mesmo com URL longa');
+  assert(link.args[0] === exibido, 'Texto exibido no PDF e a versao truncada da URL');
+  assert(link.args[3].url === urlLonga, 'href do link continua sendo a URL completa, sem truncar');
+}
 
 setTimeout(() => {
   assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
