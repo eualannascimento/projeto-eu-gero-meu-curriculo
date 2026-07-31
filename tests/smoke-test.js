@@ -948,6 +948,54 @@ console.log('\nPDF - LinkedIn na sidebar nao sobrepoe a linha da localizacao:');
   assert(link.args[2] > calls[idxLocalizacao].args[2], 'Link do LinkedIn fica estritamente abaixo (y maior) da linha da localizacao, sem sobrepor');
 }
 
+// --- Correcao 2: largura do titulo medida com a fonte do titulo, nao do periodo ---
+console.log('\nPDF - largura do titulo medida antes de trocar a fonte:');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const cursor = { x: 16, y: 16, margin: 16, colWidth: 178 };
+  const blocks = [{ type: 'item', title: 'Cargo', sub: 'Empresa X', period: '2020 - Atual', desc: '' }];
+  EuGeroPdfExport.drawBlocks(doc, cursor, blocks, 16, 178, palette, { fontPt: 10.5, lineHeightMult: 1.3 }, false);
+  const idxTitulo = calls.findIndex((c) => c.method === 'text' && c.args[0] === 'Cargo');
+  const fontesAntesDoTitulo = calls.slice(0, idxTitulo + 1).filter((c) => c.method === 'setFontSize');
+  const tamanhoFonteDoTitulo = fontesAntesDoTitulo[fontesAntesDoTitulo.length - 1].args[0];
+  assert(tamanhoFonteDoTitulo === 12, 'A ultima fonte definida antes de desenhar o titulo e a do titulo (fontPt + 1.5), nao a do periodo');
+}
+
+// --- Correcao 3: drawContactLine centraliza a logica repetida das 4 familias ---
+console.log('\nPDF - drawContactLine (helper compartilhado):');
+
+{
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const personal = { email: 'ana@teste.com', phone: '11 99999-0000', location: 'São Paulo', linkedinUrl: 'https://linkedin.com/in/ana-teste' };
+  EuGeroPdfExport.drawContactLine(doc, personal, palette, 100, 30, { align: 'center' });
+  const link = calls.find((c) => c.method === 'textWithLink');
+  assert(!!link, 'drawContactLine desenha o LinkedIn com textWithLink quando preenchido');
+  assert(link.args[3].url === personal.linkedinUrl, 'drawContactLine preserva a URL completa no href do link');
+}
+
+// --- Correcao 4: URL longa do LinkedIn e truncada apenas no texto exibido ---
+console.log('\nPDF - truncamento do texto exibido do LinkedIn:');
+
+{
+  const urlLonga = 'https://www.linkedin.com/in/um-nome-de-usuario-bem-comprido-para-teste';
+  const exibido = EuGeroPdfExport.truncateLinkedinDisplay(urlLonga);
+  assert(exibido.length === 40, 'Texto exibido do LinkedIn e truncado para 40 caracteres (37 + "...")');
+  assert(exibido.endsWith('...'), 'Texto truncado termina com reticencias');
+  assert(urlLonga.startsWith(exibido.slice(0, 37)), 'Texto truncado preserva o inicio da URL original');
+
+  const { doc, calls } = createFakeDoc();
+  const palette = EuGeroPdfExport.accentPalette('#334155');
+  const personal = { email: 'ana@teste.com', linkedinUrl: urlLonga };
+  EuGeroPdfExport.drawContactLine(doc, personal, palette, 16, 30, { align: 'left' });
+  const link = calls.find((c) => c.method === 'textWithLink');
+  assert(!!link, 'drawContactLine desenha o link mesmo com URL longa');
+  assert(link.args[0] === exibido, 'Texto exibido no PDF e a versao truncada da URL');
+  assert(link.args[3].url === urlLonga, 'href do link continua sendo a URL completa, sem truncar');
+}
+
 setTimeout(() => {
   assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
   finishTests();
