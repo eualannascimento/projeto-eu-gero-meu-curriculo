@@ -835,6 +835,12 @@
     min-width: 44px;
     min-height: 44px;
   }
+  /* Evita arredondamento subpixel abaixo de 44px em viewports estreitos. */
+  #btn-gal-prev,
+  #btn-gal-next {
+    min-width: 45px;
+    min-height: 45px;
+  }
   .home-how > summary,
   .seg-opt,
   .checkbox-label {

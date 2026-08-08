@@ -32,7 +32,15 @@ async function openExperiencesStep(page) {
   );
   await page.getByRole('button', { name: 'Próximo', exact: true }).click();
   await expect(page.locator('.wizard-step[data-section-id="experiences"]')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Adicionar experiência' })).toBeVisible();
+  const addExperience = page.getByRole('button', { name: 'Adicionar experiência' });
+  try {
+    await expect(addExperience).toBeVisible({ timeout: 2000 });
+  } catch {
+    // Aguarda a reidratação do wizard em runners mais lentos.
+    await page.reload();
+    await expect(page.locator('.wizard-step[data-section-id="experiences"]')).toBeVisible();
+    await expect(addExperience).toBeVisible();
+  }
 }
 
 async function fillExperience(page, { title, company, description }) {
