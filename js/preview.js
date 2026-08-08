@@ -1,5 +1,5 @@
 /**
- * Preview ao vivo do currículo nos templates Clássico e Moderno.
+ * Prévia ao vivo do currículo nas cinco famílias estruturais.
  */
 const EuGeroPreview = (function () {
   const { getSkillsFromState, getActiveSections, SECTION_LABELS } = EuGeroConfig;
@@ -118,7 +118,7 @@ const EuGeroPreview = (function () {
   }
 
   function buildContent(state, enabledSections, options) {
-    const modernLayout = options?.modernLayout === true;
+    const sidebarLayout = options?.sidebarLayout === true;
     const showSkeleton = options?.mode !== 'export';
     const enabled = enabledSections || getActiveSections(state.enabledSections);
     const enabledSet = new Set(enabled.map(s => s.id));
@@ -129,8 +129,8 @@ const EuGeroPreview = (function () {
         : (showSkeleton ? renderSkeletonSection('Resumo') : ''),
       experiences: renderExperiences(state.experiences, showSkeleton),
       education: renderEducation(state.education, showSkeleton),
-      skills: modernLayout ? '' : renderSkills(state, showSkeleton),
-      languages: modernLayout ? '' : renderLanguages(state.languages, showSkeleton),
+      skills: sidebarLayout ? '' : renderSkills(state, showSkeleton),
+      languages: sidebarLayout ? '' : renderLanguages(state.languages, showSkeleton),
       certifications: renderGenericList('Certificados', state.certifications, ['name'], c => `
         <article class="cv-item"><strong>${escapeHtml(c.name)}</strong><div class="cv-item-sub">${escapeHtml(c.issuer || '')}${(c.year || c.date) ? ` · ${escapeHtml(c.year || fmtDate(c.date))}` : ''}</div></article>
       `, showSkeleton),
@@ -159,7 +159,7 @@ const EuGeroPreview = (function () {
   }
 
   function renderSidebarLayout(state, enabledSections, templateId, mode) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: true, mode });
+    const { personal, content } = buildContent(state, enabledSections, { sidebarLayout: true, mode });
     const showSkeleton = mode !== 'export';
     const skills = getSkillsFromState(state);
     const enabled = enabledSections || getActiveSections(state.enabledSections);
@@ -203,12 +203,10 @@ const EuGeroPreview = (function () {
   }
 
   function renderCenteredLayout(state, enabledSections, templateId, mode) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
+    const { personal, content } = buildContent(state, enabledSections, { sidebarLayout: false, mode });
     const contacts = buildContactParts(personal);
-    const extraClass = templateId === 'elegant' ? ' cv-elegant' : '';
-
     return `
-      <div class="cv cv-classic cv-centered${extraClass} template-${templateId}">
+      <div class="cv cv-classic cv-centered template-${templateId}">
         <header class="cv-header-classic">
           <h1 class="cv-name">${escapeHtml(personal.fullName) || 'Seu Nome'}</h1>
           <p class="cv-headline">${escapeHtml(personal.headline) || 'Título profissional'}</p>
@@ -220,11 +218,11 @@ const EuGeroPreview = (function () {
   }
 
   function renderBannerLayout(state, enabledSections, templateId, mode) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
+    const { personal, content } = buildContent(state, enabledSections, { sidebarLayout: false, mode });
     const contacts = [personal.email, personal.phone, personal.location].filter(Boolean);
 
     return `
-      <div class="cv cv-executive template-${templateId || 'executive'}">
+      <div class="cv cv-executive template-${templateId || 'marinho'}">
         <header class="cv-banner">
           <h1 class="cv-name">${escapeHtml(personal.fullName) || 'Seu Nome'}</h1>
           <p class="cv-headline">${escapeHtml(personal.headline) || 'Título profissional'}</p>
@@ -236,7 +234,7 @@ const EuGeroPreview = (function () {
   }
 
   function renderLeftLayout(state, enabledSections, templateId, mode) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
+    const { personal, content } = buildContent(state, enabledSections, { sidebarLayout: false, mode });
     const contacts = buildContactParts(personal);
 
     return `
@@ -258,7 +256,7 @@ const EuGeroPreview = (function () {
   }
 
   function renderCreativeLayout(state, enabledSections, templateId, mode) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
+    const { personal, content } = buildContent(state, enabledSections, { sidebarLayout: false, mode });
     const contacts = buildContactParts(personal);
     return `
       <div class="cv cv-creative template-${templateId || 'creative'}">

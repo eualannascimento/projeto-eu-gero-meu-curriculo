@@ -72,8 +72,8 @@ const state = {
 const layouts = {
   centered: 'classic',
   left: 'minimal',
-  banner: 'executive',
-  sidebar: 'modern',
+  banner: 'marinho',
+  sidebar: 'petroleo',
   creative: 'creative'
 };
 

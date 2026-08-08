@@ -1,70 +1,42 @@
-# Arquitetura do Sistema - Eu Gero Meu Currículo
+# Arquitetura do sistema
 
-Este documento descreve a organização técnica, stack tecnológica, fluxo de dados e decisões arquiteturais do projeto **Eu Gero Meu Currículo**.
+## Escopo
 
----
+A aplicação cria currículos brasileiros no navegador. O fluxo contém oito seções: dados pessoais, resumo, experiências, formação, habilidades, idiomas, certificações e projetos. O PDF A4 é gerado localmente, cabe em uma página por padrão e aceita até duas quando o conteúdo exigir.
 
-## 1. Stack Tecnológica
+Não há conta, backend, analytics, sincronização, IA, Word, TXT ou QR Code.
 
-O projeto é construído como uma aplicação web estática, focada em privacidade (zero-server) e compatibilidade offline:
+## Estrutura
 
-- **Frontend Core:** HTML5 semântico, CSS3 com variáveis customizadas para estilização e templates, JavaScript Vanilla (ES6+).
-- **Sem Frameworks:** Nenhum framework SPA (React/Vue), bundler (Webpack/Vite) ou transpilação (Babel) é utilizado. O código roda diretamente no browser.
-- **Bibliotecas Externas (via CDN ou fallback local em `vendor/`):**
-  - **jsPDF (v2.5.1):** Utilizado para renderização e exportação de PDFs A4 no lado do cliente.
-  - **QRCode.js (v1.5.3):** Gera o QR Code dinâmico do perfil do LinkedIn no PDF.
-  - **docx.js (dinâmico):** Carregado sob demanda via CDN para gerar arquivos do Word `.docx`.
-
----
-
-## 2. Visão Geral da Arquitetura e Estrutura de Arquivos
-
-Os arquivos JavaScript do projeto estão estruturados sob o namespace global `EuGero*`, organizados de forma modular e com responsabilidades específicas:
-
-```mermaid
-graph TD
-    index.html --> app.js
-    app.js --> router.js
-    app.js --> storage.js
-    app.js --> config.js
-    app.js --> scoring.js
-    app.js --> validation.js
-    app.js --> preview.js
-    app.js --> export.js
-    app.js --> prompts.js
-    app.js --> linkedin-guide.js
-    preview.js --> cv-data.js
-    export.js --> cv-data.js
-    dates.js --> preview.js
-    dates.js --> export.js
-    a11y.js --> app.js
-    libs.js --> app.js
-    sample-data.js --> app.js
+```text
+index.html
+css/
+  base.css, layout.css, screens.css, responsive.css
+  templates.css, print-preview.css, fonts.css
+js/
+  app.js, config.js, router.js, storage.js
+  validation.js, scoring.js, preview.js, pdf-export.js
+  dates.js, utils.js, a11y.js, sample-data.js, characters.js
+  screens/start.js, screens/wizard.js, screens/review.js
+  vendor/jspdf.umd.min.js, vendor/fonts-barlow.js
 ```
 
-### Detalhe dos Módulos
+`app.js` mantém o estado da SPA e coordena as telas. `config.js` define os campos, as oito seções e as cinco famílias estruturais. `storage.js` mantém o rascunho e o backup JSON no dispositivo. `validation.js` fornece o gate compartilhado pelo wizard, revisão e download. `preview.js` e `pdf-export.js` usam o mesmo estado para mostrar e gerar o currículo.
 
-- **`index.html`:** Ponto de entrada que carrega os estilos CSS, a estrutura HTML básica e todos os scripts JavaScript na ordem adequada.
-- **`js/app.js`:** Controlador e orquestrador principal da aplicação. Gerencia eventos do DOM, ciclo de vida das telas, sincronização do formulário e chamada para os outros módulos.
-- **`js/config.js`:** Contém todas as configurações estáticas das seções do currículo, schemas dos campos, lista de verbos de ação para scoring e metadados dos templates visuais (atsFriendly, layouts).
-- **`js/router.js`:** Roteamento baseado em hash do navegador (`#/`, `#/start`, `#/wizard/:id`, `#/review`, `#/guide`), permitindo navegação por histórico (Voltar/Avançar).
-- **`js/storage.js`:** Controla a persistência no `localStorage`, validação de arquivos carregados e serialização/desserialização do JSON de backup.
-- **`js/validation.js`:** Lógica pura de validação de e-mails, URLs, campos obrigatórios e comprimento mínimo de caracteres.
-- **`js/scoring.js`:** Responsável pela nota de qualidade inline (Fraco/Bom/Ótimo), presença de verbos de ação e números, e a simulação de encaixe (fit) em uma página A4 (contagem de caracteres e itens).
-- **`js/cv-data.js`:** Normaliza e padroniza o estado do formulário em um modelo de dados estruturado único (`CvData`), usado como fonte da verdade no preview e nas exportações.
-- **`js/preview.js`:** Manipula o DOM da aba de preview para exibir o currículo em tempo real formatado pelo CSS do template selecionado.
-- **`js/export.js`:** Implementa a geração cliente-side de PDF (inserindo QR Code), Word (.docx) e arquivos de texto (.txt).
-- **`js/prompts.js`:** Cria prompts estruturados de IA para suporte externo (geral, tradução e seção individual), injetando ou ocultando dados reais.
-- **`js/linkedin-guide.js`:** Formata e exibe os textos prontos para copiar e colar nas caixas correspondentes do perfil LinkedIn.
-- **`js/a11y.js`:** Controla foco em modais e acessibilidade do teclado (Esc, focus trap).
-- **`js/dates.js`:** Funções puras utilitárias para lidar com períodos e datas.
-- **`js/libs.js`:** Detecta dinamicamente a presença de scripts jsPDF e QRCode carregados na janela.
+## Fluxo de dados
 
----
+1. A pessoa começa em branco, retoma um rascunho local ou importa JSON.
+2. O estado em memória é normalizado e salvo no `localStorage` após cada alteração confirmada.
+3. O wizard atualiza a prévia com as seções ativas e a ordem escolhida.
+4. A revisão aplica o mesmo gate de validação e mede as páginas do PDF.
+5. O download usa jsPDF local, fontes locais e uma das cinco famílias estruturais.
 
-## 3. Decisões Arquiteturais e Fluxo de Dados
+## Famílias visuais
 
-1. **Estado Único na Memória:** O estado da aplicação segue o formato gerado por `EuGeroConfig.createEmptyState()`. O `app.js` mantém o estado atualizado em memória e dispara `EuGeroStorage.save()` a cada alteração de input.
-2. **Auto-save Reativo:** Não há botão de "Salvar". Cada digitação ou seleção atualiza o estado em memória e grava no `localStorage`.
-3. **Página Única (SPA) por Hash:** As transições de tela ocultam/exibem containers HTML usando o atributo `hidden`, disparado pelo listener de `hashchange` monitorado pelo `router.js`.
-4. **Isolamento de Lógica e Renderização:** Módulos de cálculo e dados (`validation`, `scoring`, `cv-data`, `prompts`, `storage`) são puramente matemáticos e lógicos, o que viabiliza a execução de testes automatizados unitários no ambiente Node.js sem necessidade de emular o DOM (JSDOM).
+`config.js` mantém uma entrada por estrutura: Clássico, Minimalista, Marinho, Petróleo e Criativo. Cada entrada informa o layout e a cor de destaque. A prévia e o PDF consultam esses metadados, evitando regras duplicadas por cor.
+
+O Clássico é o padrão e usa uma coluna, indicada para leitura por ATS. Petróleo e Criativo mostram uma orientação quando a estrutura pode dificultar essa leitura.
+
+## Qualidade
+
+`node tests/smoke-test.js` executa os testes puros. A suíte cobre validação, persistência, segurança de URLs, catálogo, geração de PDF e o limite de duas páginas.

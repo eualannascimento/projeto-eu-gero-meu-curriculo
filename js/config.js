@@ -123,9 +123,8 @@ const EuGeroConfig = (function () {
     }
   ];
 
-  // 20 modelos. Todos pensados para uma vaga real (estéticos e legíveis); os
-  // marcados atsFriendly: false têm coluna/selo e são os mais "criativos".
-  // thumbAccent tinge o cartão de escolha; a prévia e o PDF usam o CSS do tema.
+  // Cinco famílias estruturais. A cor fica nos metadados, sem duplicar o
+  // layout na prévia ou no PDF.
   const TEMPLATES = {
     classic: {
       id: 'classic', name: 'Clássico', description: 'Limpo, discreto e profissional',
@@ -134,30 +133,6 @@ const EuGeroConfig = (function () {
     minimal: {
       id: 'minimal', name: 'Minimalista', description: 'Simples, leve e alinhado à esquerda',
       layout: 'left', thumbAccent: '#334155', atsFriendly: true
-    },
-    serifado: {
-      id: 'serifado', name: 'Serifado', description: 'Tradicional, com letras serifadas',
-      layout: 'centered', thumbAccent: '#2b2b2d', atsFriendly: true
-    },
-    elegant: {
-      id: 'elegant', name: 'Elegante', description: 'Centralizado, leve e bem espaçado',
-      layout: 'centered', thumbAccent: '#334155', atsFriendly: true
-    },
-    linha: {
-      id: 'linha', name: 'Linha', description: 'Títulos com linhas finas e visual discreto',
-      layout: 'centered', thumbAccent: '#334155', atsFriendly: true
-    },
-    pilar: {
-      id: 'pilar', name: 'Pilar', description: 'Títulos com uma barra lateral de destaque',
-      layout: 'left', thumbAccent: '#334155', atsFriendly: true
-    },
-    grafite: {
-      id: 'grafite', name: 'Grafite', description: 'Tons de grafite e títulos mais marcantes',
-      layout: 'left', thumbAccent: '#374151', atsFriendly: true
-    },
-    esmeralda: {
-      id: 'esmeralda', name: 'Esmeralda', description: 'Centralizado, com detalhes em verde-esmeralda',
-      layout: 'centered', thumbAccent: '#0f766e', atsFriendly: true
     },
     petroleo: {
       id: 'petroleo', name: 'Petróleo', description: 'Barra lateral em azul-petróleo',
@@ -168,48 +143,9 @@ const EuGeroConfig = (function () {
       id: 'marinho', name: 'Marinho', description: 'Faixa superior em azul-marinho',
       layout: 'banner', thumbAccent: '#1e3a5f', atsFriendly: true
     },
-    bordo: {
-      id: 'bordo', name: 'Bordô', description: 'Centralizado, com tom bordô e estilo tradicional',
-      layout: 'centered', thumbAccent: '#7a2230', atsFriendly: true
-    },
-    ambar: {
-      id: 'ambar', name: 'Âmbar', description: 'Alinhado à esquerda, com detalhes em âmbar',
-      layout: 'left', thumbAccent: '#92400e', atsFriendly: true
-    },
-    oliva: {
-      id: 'oliva', name: 'Oliva', description: 'Barra lateral em verde-oliva',
-      layout: 'sidebar', thumbAccent: '#256345', atsFriendly: false,
-      atsNote: 'Este modelo divide o conteúdo em mais de uma área visual. Alguns sistemas podem misturar a ordem das informações. Para uma leitura mais segura, prefira um modelo de uma coluna.'
-    },
-    modern: {
-      id: 'modern', name: 'Moderno', description: 'Barra lateral clara, com detalhes em azul',
-      layout: 'sidebar', thumbAccent: '#5980a6', atsFriendly: false,
-      atsNote: 'Este modelo divide o conteúdo em mais de uma área visual. Alguns sistemas podem misturar a ordem das informações. Para uma leitura mais segura, prefira um modelo de uma coluna.'
-    },
-    executive: {
-      id: 'executive', name: 'Executivo', description: 'Faixa superior escura e visual formal',
-      layout: 'banner', thumbAccent: '#1d2d3d', atsFriendly: true
-    },
-    carvao: {
-      id: 'carvao', name: 'Carvão', description: 'Faixa superior em preto-carvão',
-      layout: 'banner', thumbAccent: '#1f2937', atsFriendly: true
-    },
-    faixa: {
-      id: 'faixa', name: 'Faixa Clara', description: 'Faixa superior suave em azul-claro',
-      layout: 'banner', thumbAccent: '#c9dcf0', atsFriendly: true
-    },
-    violeta: {
-      id: 'violeta', name: 'Violeta', description: 'Centralizado, com detalhes em violeta',
-      layout: 'centered', thumbAccent: '#573a8a', atsFriendly: true
-    },
     creative: {
       id: 'creative', name: 'Criativo', description: 'Coluna única, com selo de iniciais',
       layout: 'creative', thumbAccent: '#5980a6', atsFriendly: false,
-      atsNote: 'Este modelo usa um elemento gráfico no topo. Alguns sistemas podem ignorar ou reorganizar essa parte do conteúdo.'
-    },
-    rosado: {
-      id: 'rosado', name: 'Rosado', description: 'Selo de iniciais em tom rosé, indicado para portfólios',
-      layout: 'creative', thumbAccent: '#9f2544', atsFriendly: false,
       atsNote: 'Este modelo usa um elemento gráfico no topo. Alguns sistemas podem ignorar ou reorganizar essa parte do conteúdo.'
     }
   };

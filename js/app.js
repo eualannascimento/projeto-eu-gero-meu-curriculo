@@ -30,7 +30,6 @@
       activeSections,
       saveState,
       showToast,
-      showPrompt: (type, sectionId, trigger) => EuGeroPromptModal.show(type, sectionId, trigger),
       openModal,
       navigateTo,
       goToStart,
@@ -52,7 +51,6 @@
     EuGeroStartScreen.init(ctx);
     EuGeroWizardScreen.init(ctx);
     EuGeroReviewScreen.init(ctx);
-    EuGeroPromptModal.init(ctx);
   }
 
   function init() {
@@ -91,16 +89,10 @@
     els.reviewContent = document.getElementById('review-content');
     els.reviewTemplateGallery = document.getElementById('review-template-gallery');
     els.guideContent = document.getElementById('guide-content');
-    els.modalPrompt = document.getElementById('modal-prompt');
-    els.promptText = document.getElementById('prompt-text');
     els.modalTemplate = document.getElementById('modal-template');
-    els.modalMobileMenu = document.getElementById('modal-mobile-menu');
     els.fileImport = document.getElementById('file-import');
     els.toast = document.getElementById('toast');
     els.previewOverlay = document.getElementById('preview-overlay');
-    els.includeDataCheckbox = document.getElementById('include-data-checkbox');
-    els.jobDescriptionTextarea = document.getElementById('job-description-textarea');
-    els.privacyPromptWarning = document.getElementById('privacy-prompt-warning');
     els.savedIndicator = document.getElementById('saved-indicator');
     els.previewMobileDock = document.getElementById('preview-mobile-dock');
     els.toastMessage = document.getElementById('toast-message');
@@ -267,7 +259,6 @@
 
     document.getElementById('btn-start-wizard')?.addEventListener('click', startWizard);
     document.getElementById('btn-back-start')?.addEventListener('click', () => navigateTo('characters'));
-    document.getElementById('btn-change-template-wizard')?.addEventListener('click', (e) => openModal(els.modalTemplate, e.currentTarget));
     document.getElementById('btn-prev-template-start')?.addEventListener('click', () => cycleTemplate(-1));
     document.getElementById('btn-next-template-start')?.addEventListener('click', () => cycleTemplate(1));
     document.getElementById('btn-prev-template')?.addEventListener('click', () => cycleTemplate(-1));
@@ -299,17 +290,6 @@
     document.getElementById('btn-import-start')?.addEventListener('click', () => els.fileImport?.click());
     els.fileImport?.addEventListener('change', handleImport);
 
-    document.getElementById('btn-prompt-general')?.addEventListener('click', (e) => EuGeroPromptModal.show('general', null, e.currentTarget));
-    document.getElementById('btn-prompt-general-review')?.addEventListener('click', (e) => EuGeroPromptModal.show('general', null, e.currentTarget));
-    document.getElementById('btn-prompt-translation')?.addEventListener('click', (e) => EuGeroPromptModal.show('translation', null, e.currentTarget));
-    document.getElementById('btn-prompt-translation-guide')?.addEventListener('click', (e) => EuGeroPromptModal.show('translation', null, e.currentTarget));
-    document.getElementById('btn-copy-prompt')?.addEventListener('click', EuGeroPromptModal.copyPrompt);
-    els.includeDataCheckbox?.addEventListener('change', () => {
-      EuGeroPromptModal.refreshPromptText();
-      EuGeroPromptModal.updatePrivacyWarning();
-    });
-    els.jobDescriptionTextarea?.addEventListener('input', EuGeroPromptModal.refreshPromptText);
-
     document.querySelectorAll('.modal-close').forEach((btn) => {
       btn.addEventListener('click', () => closeModal(btn.closest('.modal')));
     });
@@ -332,24 +312,6 @@
       if (e.target === els.previewOverlay) {
         closePreviewOverlay();
       }
-    });
-
-    document.getElementById('btn-wizard-menu')?.addEventListener('click', (e) => openModal(els.modalMobileMenu, e.currentTarget));
-    document.getElementById('btn-mobile-change-template')?.addEventListener('click', (e) => {
-      closeModal(els.modalMobileMenu);
-      openModal(els.modalTemplate, e.currentTarget);
-    });
-    document.getElementById('btn-mobile-export-json')?.addEventListener('click', () => {
-      closeModal(els.modalMobileMenu);
-      exportJson();
-    });
-    document.getElementById('btn-mobile-import-json')?.addEventListener('click', () => {
-      closeModal(els.modalMobileMenu);
-      els.fileImport?.click();
-    });
-    document.getElementById('btn-mobile-prompt')?.addEventListener('click', (e) => {
-      closeModal(els.modalMobileMenu);
-      EuGeroPromptModal.show('general', null, e.currentTarget);
     });
 
     window.addEventListener('resize', debounce(scaleReviewPreviews, 150));

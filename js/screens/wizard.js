@@ -94,14 +94,6 @@ const EuGeroWizardScreen = (function () {
     actionsRow.style.cssText = 'margin-top: 18px; display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: center;';
     const mutedGhost = 'font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 55%, transparent);';
 
-    const aiBtn = document.createElement('button');
-    aiBtn.type = 'button';
-    aiBtn.className = 'btn btn-ghost btn-ai-section';
-    aiBtn.style.cssText = mutedGhost;
-    aiBtn.textContent = 'Precisa de ideias? Peça ajuda a uma IA →';
-    aiBtn.addEventListener('click', (e) => ctx.showPrompt('section', section.id, e.currentTarget));
-    actionsRow.appendChild(aiBtn);
-
     const clearBtn = document.createElement('button');
     clearBtn.type = 'button';
     clearBtn.className = 'btn btn-ghost';

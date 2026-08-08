@@ -448,7 +448,6 @@
 }
 
 .btn-mobile-preview { display: none; }
-.btn-mobile-menu { display: none; }
 
 body.modal-open {
   overflow: hidden;

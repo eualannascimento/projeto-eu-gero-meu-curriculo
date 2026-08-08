@@ -3,7 +3,7 @@
 /* Mesmo ponto de quebra do .cv-aside (base.css): quando a previa lateral
    sai da tela, os gatilhos mobile de previa/modelo precisam aparecer. */
 @media (max-width: 900px) {
-  .btn-mobile-preview, .btn-mobile-menu { display: inline-flex; }
+  .btn-mobile-preview { display: inline-flex; }
 }
 
 @media (max-width: 768px) {
@@ -54,8 +54,7 @@
   .field-group input,
   .field-group textarea,
   .field-group select,
-  .guide-entry-content,
-  .prompt-textarea {
+  .guide-entry-content {
     font-size: 16px;
   }
 
@@ -162,28 +161,8 @@
     padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
   }
 
-  .modal-sheet .modal-content {
-    margin: 0;
-  }
-
-  .mobile-menu-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-  }
-
-  .mobile-menu-btn {
-    width: 100%;
-    min-height: 48px;
-    justify-content: flex-start;
-  }
-
   .modal-template-grid {
     grid-template-columns: 1fr;
-  }
-
-  .prompt-textarea {
-    min-height: 160px;
   }
 
   @keyframes slideUp {

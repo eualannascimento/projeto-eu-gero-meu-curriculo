@@ -20,7 +20,6 @@ loadScript('js/dates.js');
 loadScript('js/scoring.js');
 loadScript('js/validation.js');
 loadScript('js/storage.js');
-loadScript('js/prompts.js');
 loadScript('js/router.js');
 loadScript('js/sample-data.js');
 
@@ -109,9 +108,7 @@ assert(
   'Detecção de verbo de ação funciona'
 );
 
-// --- Prompts ---
-console.log('\nGeração de prompts IA:');
-
+// --- Estado de teste ---
 const emptyState = EuGeroConfig.createEmptyState();
 const filledState = {
   ...emptyState,
@@ -126,36 +123,22 @@ const filledState = {
   summary: 'Profissional com experiência em desenvolvimento.'
 };
 
-const promptWithData = EuGeroPrompts.buildGeneralPrompt(filledState, true);
-const promptWithoutData = EuGeroPrompts.buildGeneralPrompt(filledState, false);
-
-assert(promptWithData.includes('Maria Teste'), 'Prompt geral com dados inclui nome');
-assert(!promptWithoutData.includes('maria@test.com'), 'Prompt geral sem dados não inclui e-mail');
-assert(promptWithoutData.includes('Não incluí meus dados'), 'Prompt sem dados indica ausência de dados pessoais');
-
-const sectionPrompt = EuGeroPrompts.buildSectionPrompt('experiences', filledState, true);
-assert(sectionPrompt.toLowerCase().includes('experiência'), 'Prompt por seção contém contexto da seção');
-
-const translationPrompt = EuGeroPrompts.buildTranslationPrompt(filledState, true);
-assert(translationPrompt.includes('português') && translationPrompt.includes('inglês'), 'Prompt de tradução contém instrução correta');
-assert(translationPrompt.includes('Maria Teste'), 'Prompt de tradução inclui dados quando marcado');
-
 // --- JSON serialize/deserialize ---
 console.log('\nExport/Import JSON:');
 
 const stateToExport = {
   ...filledState,
-  template: 'modern',
+  template: 'petroleo',
   experiences: [{ company: 'Tech Co', title: 'Dev', startDate: '2020', endDate: '2023', description: 'Implementei features.' }]
 };
 
 const serialized = EuGeroStorage.serialize(stateToExport);
-assert(serialized.includes('"template": "modern"'), 'JSON contém template selecionado');
+assert(serialized.includes('"template": "petroleo"'), 'JSON contém template selecionado');
 assert(serialized.includes('Tech Co'), 'JSON contém dados de experiência');
 
 const deserialized = EuGeroStorage.deserialize(serialized);
 assert(deserialized.valid === true, 'Import de JSON válido aceito');
-assert(deserialized.data.template === 'modern', 'Template restaurado corretamente');
+assert(deserialized.data.template === 'petroleo', 'Template restaurado corretamente');
 assert(deserialized.data.experiences[0].company === 'Tech Co', 'Experiências restauradas');
 
 const invalidResult = EuGeroStorage.validateImportData({ foo: 'bar' });
@@ -291,10 +274,10 @@ else global.localStorage = previousLocalStorage;
 console.log('\nTroca de template:');
 
 const beforeSwitch = EuGeroStorage.mergeWithDefaults({ ...stateToExport, template: 'classic' });
-const afterSwitch = { ...beforeSwitch, template: 'modern' };
+const afterSwitch = { ...beforeSwitch, template: 'petroleo' };
 assert(beforeSwitch.personal.fullName === afterSwitch.personal.fullName, 'Troca de template preserva dados pessoais');
 assert(beforeSwitch.experiences.length === afterSwitch.experiences.length, 'Troca de template preserva listas');
-assert(beforeSwitch.template === 'classic' && afterSwitch.template === 'modern', 'Template alterado sem perder dados');
+assert(beforeSwitch.template === 'classic' && afterSwitch.template === 'petroleo', 'Template alterado sem perder dados');
 
 // --- Aggregate scoring ---
 console.log('\nPontuação agregada:');
@@ -582,12 +565,13 @@ EuGeroWizardScreen.init({
   goToStep() {},
   saveState() {},
   showToast() {},
-  showPrompt() {},
   debouncedUpdatePreviews() {},
   escapeHtml: EuGeroUtils.escapeHtml,
   escapeAttr: EuGeroUtils.escapeAttr
 });
 EuGeroWizardScreen.renderWizardStep();
+assert(wizardSteps.querySelectorAll('.btn-ai-section').length === 0,
+  'Wizard não oferece acionador de IA');
 wizardSteps.querySelectorAll('.list-tab')[1].click();
 const experienceValidation = EuGeroWizardScreen.validateWizardStep('experiences');
 const firstInvalidInput = wizardDom.document.getElementById('field-experiences-0-title');
@@ -628,7 +612,6 @@ const previousAppAnimationFrame = global.requestAnimationFrame;
 const previousStartScreen = global.EuGeroStartScreen;
 const previousWizardScreen = global.EuGeroWizardScreen;
 const previousReviewScreen = global.EuGeroReviewScreen;
-const previousPromptModal = global.EuGeroPromptModal;
 const previousLinkedInGuide = global.EuGeroLinkedInGuide;
 
 const appDom = createWizardDom();
@@ -657,7 +640,6 @@ global.EuGeroStartScreen = {
 };
 global.EuGeroWizardScreen = { init() {}, renderWizardStep() {}, validateCurrentStep() { return true; } };
 global.EuGeroReviewScreen = { init() {}, syncGalleryToTemplate() {}, renderReview() {}, renderReviewGallery() {} };
-global.EuGeroPromptModal = { init() {} };
 global.EuGeroLinkedInGuide = { renderGuide() {} };
 
 ['screen-characters', 'screen-start', 'screen-wizard', 'screen-review', 'screen-guide',
@@ -707,7 +689,6 @@ global.requestAnimationFrame = previousAppAnimationFrame;
 global.EuGeroStartScreen = previousStartScreen;
 global.EuGeroWizardScreen = previousWizardScreen;
 global.EuGeroReviewScreen = previousReviewScreen;
-global.EuGeroPromptModal = previousPromptModal;
 global.EuGeroLinkedInGuide = previousLinkedInGuide;
 
 // --- Datas ---
@@ -735,7 +716,7 @@ assert(sample.experiences.length > 0, 'Sample tem experiencias');
 console.log('\nTemplates ATS:');
 
 assert(EuGeroConfig.getTemplateMeta('classic').atsFriendly === true, 'Classico amigavel ATS');
-assert(EuGeroConfig.getTemplateMeta('modern').atsFriendly === false, 'Moderno aviso ATS');
+assert(EuGeroConfig.getTemplateMeta('petroleo').atsFriendly === false, 'Petróleo avisa sobre ATS');
 
 // --- Progresso de Preenchimento ---
 console.log('\nProgresso de Preenchimento:');
@@ -818,7 +799,11 @@ assert(
 // --- Templates completos ---
 console.log('\nCatalogo de templates:');
 
-assert(EuGeroConfig.TEMPLATE_IDS.length === 20, 'Catalogo tem 20 templates');
+assert(
+  [...EuGeroConfig.TEMPLATE_IDS].sort().join(',') === 'classic,creative,marinho,minimal,petroleo',
+  'Catalogo mantém cinco famílias estruturais'
+);
+assert(EuGeroConfig.createEmptyState().template === 'classic', 'Clássico é o modelo padrão');
 assert(
   EuGeroConfig.TEMPLATE_IDS.every((id) => {
     const t = EuGeroConfig.TEMPLATES[id];
@@ -828,8 +813,8 @@ assert(
   'Todo template tem id, name, description, layout valido e flag atsFriendly booleana'
 );
 assert(
-  EuGeroConfig.TEMPLATE_IDS.filter((id) => EuGeroConfig.TEMPLATES[id].atsFriendly).length >= 12,
-  'Maioria dos modelos e amigavel a ATS (uso em vaga real)'
+  new Set(EuGeroConfig.TEMPLATE_IDS.map((id) => EuGeroConfig.TEMPLATES[id].layout)).size === 5,
+  'Cada família usa uma estrutura visual diferente'
 );
 
 // --- Feedback acionavel por secao ---
@@ -873,7 +858,7 @@ assert(!levelField.options.includes('Nativo'), 'Nivel de idioma nao inclui Nativ
 // --- Sem travessao em textos de UI ---
 console.log('\nTextos sem travessao:');
 
-const uiSources = ['index.html', 'js/config.js', 'js/prompts.js', 'js/characters.js', 'js/linkedin-guide.js'];
+const uiSources = ['index.html', 'js/config.js', 'js/characters.js', 'js/linkedin-guide.js'];
 const withDash = uiSources.filter((p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8').match(/—|–/));
 assert(withDash.length === 0, `Nenhum travessao em textos de UI${withDash.length ? ' (falha: ' + withDash.join(', ') + ')' : ''}`);
 
@@ -998,40 +983,24 @@ assert(projectFields.find(f => f.key === 'description').tip === 'Explique sua pa
 console.log('\nTextos ATS (catalogo de modelos):');
 
 const sidebarNote = 'Este modelo divide o conteúdo em mais de uma área visual. Alguns sistemas podem misturar a ordem das informações. Para uma leitura mais segura, prefira um modelo de uma coluna.';
-['petroleo', 'oliva', 'modern'].forEach((id) => {
+['petroleo'].forEach((id) => {
   assert(EuGeroConfig.TEMPLATES[id].atsNote === sidebarNote, `Nota de ATS revisada para modelo com barra lateral (${id})`);
 });
 const creativeNote = 'Este modelo usa um elemento gráfico no topo. Alguns sistemas podem ignorar ou reorganizar essa parte do conteúdo.';
-['creative', 'rosado'].forEach((id) => {
+['creative'].forEach((id) => {
   assert(EuGeroConfig.TEMPLATES[id].atsNote === creativeNote, `Nota de ATS revisada para modelo com selo gráfico (${id})`);
 });
 
-console.log('\nTextos ATS (prompts de IA):');
-
-assert(EuGeroPrompts.SECTION_PROMPTS.summary.includes('Se eu fornecer uma descrição de vaga'), 'Instrucao de resumo cita descricao da vaga');
-assert(EuGeroPrompts.SECTION_PROMPTS.experiences.includes('Se eu fornecer uma descrição de vaga'), 'Instrucao de experiencia cita descricao da vaga');
-assert(EuGeroPrompts.SECTION_PROMPTS.skills.includes('Se eu incluir uma descrição de vaga'), 'Instrucao de habilidades cita descricao da vaga');
-
-const generalPromptNoData = EuGeroPrompts.buildGeneralPrompt({}, false);
-assert(generalPromptNoData.includes('se eu fornecer uma descrição de vaga, compare o currículo com os requisitos'), 'Introducao geral inclui orientacao sobre descricao da vaga');
-assert(generalPromptNoData.includes('não repita palavras-chave de forma artificial'), 'Introducao geral pede para nao repetir palavras-chave de forma artificial');
-assert(generalPromptNoData.includes('não invente experiências, ferramentas, resultados ou qualificações'), 'Introducao geral reforca nao inventar informacoes');
-
-const sectionPromptNoJob = EuGeroPrompts.buildSectionPrompt('summary', {}, false);
-assert(sectionPromptNoJob.includes('Se houver uma descrição de vaga, use-a apenas como referência'), 'Frase-guia revisada aparece no prompt de secao');
-assert(!sectionPromptNoJob.includes('DESCRIÇÃO DA VAGA'), 'Sem bloco de descricao da vaga quando nao informada');
-
-const sectionPromptWithJob = EuGeroPrompts.buildSectionPrompt('summary', {}, false, 'Vaga de Analista de Dados Senior');
-assert(sectionPromptWithJob.includes('Vaga de Analista de Dados Senior'), 'Descricao da vaga informada entra no prompt de secao');
-
-console.log('\nTextos ATS (index.html):');
+console.log('\nEscopo sem IA (index.html):');
 
 const htmlContent = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 assert(htmlContent.includes('Leitura por ATS'), 'HTML tem o rotulo "Leitura por ATS" na previa do start');
-assert(htmlContent.includes('Descrição da vaga'), 'Modal de IA tem o campo "Descrição da vaga"');
-assert(htmlContent.includes('Cole aqui a descrição da vaga'), 'Placeholder do campo descricao da vaga presente');
-assert(htmlContent.includes('O texto permanece neste dispositivo'), 'Nota de privacidade do campo descricao da vaga presente');
+assert(!htmlContent.includes('modal-prompt') && !htmlContent.includes('btn-mobile-prompt'), 'HTML não oferece acionadores de IA');
+assert(!htmlContent.includes('js/prompts.js') && !htmlContent.includes('js/screens/prompt-modal.js'), 'HTML não carrega módulos de IA');
 assert(htmlContent.includes('Algumas plataformas usam sistemas ATS para ler e organizar currículos'), 'Paragrafo do modal trocar modelo atualizado');
+
+assert(!fs.existsSync(path.join(__dirname, '..', 'js/prompts.js')), 'Módulo de prompts removido');
+assert(!fs.existsSync(path.join(__dirname, '..', 'js/screens/prompt-modal.js')), 'Modal de prompts removido');
 
 console.log('\nTextos ATS (js/app.js):');
 
@@ -1043,6 +1012,7 @@ const appModulesContent = appJsContent + fs.readdirSync(screensDir)
 assert(appModulesContent.includes('Estrutura favorável a ATS'), 'Selo "Estrutura favoravel a ATS" presente em app.js/screens');
 assert(appModulesContent.includes('Pode dificultar a leitura por ATS'), 'Selo "Pode dificultar a leitura por ATS" presente em app.js/screens');
 assert(!appModulesContent.includes('Favorável a ATS'), 'Selo antigo "Favorável a ATS" removido de app.js/screens');
+assert(!appModulesContent.includes('EuGeroPrompt') && !appModulesContent.includes('showPrompt'), 'Aplicação não mantém bindings de IA');
 assert(!appModulesContent.includes('Pode exigir atenção no ATS'), 'Texto antigo de selo removido de app.js/screens');
 assert(appModulesContent.includes('texto do PDF pode ser selecionado e copiado'), 'Checklist pede confirmar texto selecionável no PDF');
 assert(appModulesContent.includes('window.print()'), 'Exportação usa a impressão nativa do navegador');
@@ -1249,14 +1219,14 @@ const unsafePdfState = {
 
 const sidebarUnsafePdfState = {
   ...unsafePdfState,
-  template: 'modern',
+  template: 'petroleo',
   personal: { ...unsafePdfState.personal, linkedinUrl: '' }
 };
 ['javascript:alert(1)', 'data:text/html,alert(1)', 'vbscript:msgbox(1)'].forEach((unsafeUrl) => {
   const sidebarUnsafePdf = EuGeroPdfExport.generatePdf(
     { ...sidebarUnsafePdfState, personal: { ...sidebarUnsafePdfState.personal, linkedinUrl: unsafeUrl } },
     EuGeroConfig.getActiveSections(sidebarUnsafePdfState.enabledSections),
-    'modern'
+    'petroleo'
   );
   const sidebarUnsafePdfBytes = Buffer.from(sidebarUnsafePdf.output('arraybuffer')).toString('latin1');
   assert(!sidebarUnsafePdfBytes.includes('/URI'), `Sidebar não escreve anotação para ${unsafeUrl.split(':')[0]}:`);

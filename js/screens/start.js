@@ -126,7 +126,7 @@ const EuGeroStartScreen = (function () {
           </div>
         `;
       }
-      // Centrado (classic, elegant, serifado, esmeralda, bordo, violeta, linha)
+      // A família Clássico usa a estrutura centralizada.
       const isCreative = layout === 'creative';
       const topo = isCreative
         ? `<div class="thumb-creative-head">

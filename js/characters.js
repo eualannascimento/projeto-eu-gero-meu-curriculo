@@ -8,7 +8,7 @@ const EuGeroCharacters = (function () {
 
   const SHERLOCK = {
     version: '1.0.0',
-    template: 'executive',
+    template: 'marinho',
     margin: 'padrao',
     density: 'condensado',
     currentStep: 0,
@@ -72,7 +72,7 @@ const EuGeroCharacters = (function () {
 
   const MULAN = {
     version: '1.0.0',
-    template: 'executive',
+    template: 'marinho',
     margin: 'padrao',
     density: 'condensado',
     currentStep: 0,
@@ -135,7 +135,7 @@ const EuGeroCharacters = (function () {
 
   const HERCULES = {
     version: '1.0.0',
-    template: 'executive',
+    template: 'marinho',
     margin: 'padrao',
     density: 'condensado',
     currentStep: 0,
@@ -203,7 +203,7 @@ const EuGeroCharacters = (function () {
 
   const CHAPEUZINHO = {
     version: '1.0.0',
-    template: 'executive',
+    template: 'marinho',
     margin: 'padrao',
     density: 'condensado',
     currentStep: 0,
