@@ -57,6 +57,8 @@ js/
   screens/          Telas de início, wizard e revisão
   utils.js          Escape de HTML, sanitizacao de URL e debounce
 tests/smoke-test.js
+tests/e2e/               Jornadas em navegador com Playwright
+scripts/                 Sintaxe, E2E, servidor local e pós-deploy
 ```
 
 ## Privacidade e funcionamento local
@@ -66,16 +68,34 @@ O currículo, a prévia, o PDF e o backup JSON são processados no navegador. O 
 ## Testes
 
 ```bash
-node tests/smoke-test.js
+npm run syntax
+npm run smoke
+npm run pdf
+npm run e2e
 ```
 
-Cobre regras de preenchimento, validação, datas, rotas, PDF, JSON, persistência local, cinco famílias estruturais e dados de exemplo.
+`npm run ci` executa os quatro comandos na mesma ordem. O smoke cobre regras de preenchimento, validação, datas, rotas, PDF, JSON, persistência local, cinco famílias estruturais e dados de exemplo. O teste de PDF requer `pdfinfo` e `pdftotext`, fornecidos pelo Poppler.
+
+Os E2E cobrem a jornada de começar em branco, retomar o rascunho, validar, revisar e exportar o PDF, além dos cenários responsivos. Eles dependem de `@playwright/test` e do Chromium do Playwright. Neste worktree, a dependência não está instalada: `npm run e2e` encerra com uma mensagem explícita até que `npm install` e `npx playwright install chromium` sejam executados.
+
+O repositório ainda não possui `package-lock.json`. A CI instala a versão exata declarada de `@playwright/test` sem criar lockfile no checkout temporário. Antes de uma publicação estável, gere e versione o lockfile para fixar dependências transitivas.
+
+### Verificação pós-deploy
+
+Após publicar, execute:
+
+```bash
+POST_DEPLOY_URL=https://classificavagas.com/resume/ npm run postdeploy-check
+```
+
+O comando busca `index.html`, confirma a raiz da aplicação e verifica o carregamento dos CSS, scripts do HTML e scripts carregados sob demanda pelo PDF. Ele falha se a URL não for informada, se algum arquivo responder com erro HTTP, se a resposta estiver vazia ou se a página não contiver a aplicação.
 
 ## Deploy (GitHub Pages)
 
-1. Push para o GitHub
-2. Settings → Pages → branch `main`, pasta `/ (root)`
-3. URL de producao: https://classificavagas.com/resume/ (o repositorio do site sincroniza este conteudo no deploy; ver `scripts/sync-resume.py` lá)
+1. Abra uma Pull Request. A workflow `.github/workflows/ci.yml` executa sintaxe, smoke, PDF e E2E em Chromium.
+2. Faça o deploy aprovado em `main` pelo repositório do site.
+3. Execute a verificação pós-deploy com a URL publicada.
+4. URL de produção: https://classificavagas.com/resume/ (o repositório do site sincroniza este conteúdo no deploy; ver `scripts/sync-resume.py` lá).
 
 ## Stack
 
