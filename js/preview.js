@@ -1,5 +1,5 @@
 /**
- * Preview ao vivo do currículo nos templates Clássico e Moderno.
+ * Prévia ao vivo do currículo nas cinco famílias estruturais.
  */
 const EuGeroPreview = (function () {
   const { getSkillsFromState, getActiveSections, SECTION_LABELS } = EuGeroConfig;
@@ -118,7 +118,7 @@ const EuGeroPreview = (function () {
   }
 
   function buildContent(state, enabledSections, options) {
-    const modernLayout = options?.modernLayout === true;
+    const sidebarLayout = options?.sidebarLayout === true;
     const showSkeleton = options?.mode !== 'export';
     const enabled = enabledSections || getActiveSections(state.enabledSections);
     const enabledSet = new Set(enabled.map(s => s.id));
@@ -129,8 +129,8 @@ const EuGeroPreview = (function () {
         : (showSkeleton ? renderSkeletonSection('Resumo') : ''),
       experiences: renderExperiences(state.experiences, showSkeleton),
       education: renderEducation(state.education, showSkeleton),
-      skills: modernLayout ? '' : renderSkills(state, showSkeleton),
-      languages: modernLayout ? '' : renderLanguages(state.languages, showSkeleton),
+      skills: sidebarLayout ? '' : renderSkills(state, showSkeleton),
+      languages: sidebarLayout ? '' : renderLanguages(state.languages, showSkeleton),
       certifications: renderGenericList('Certificados', state.certifications, ['name'], c => `
         <article class="cv-item"><strong>${escapeHtml(c.name)}</strong><div class="cv-item-sub">${escapeHtml(c.issuer || '')}${(c.year || c.date) ? ` · ${escapeHtml(c.year || fmtDate(c.date))}` : ''}</div></article>
       `, showSkeleton),
@@ -159,7 +159,7 @@ const EuGeroPreview = (function () {
   }
 
   function renderSidebarLayout(state, enabledSections, templateId, mode) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: true, mode });
+    const { personal, content } = buildContent(state, enabledSections, { sidebarLayout: true, mode });
     const showSkeleton = mode !== 'export';
     const skills = getSkillsFromState(state);
     const enabled = enabledSections || getActiveSections(state.enabledSections);
@@ -203,12 +203,10 @@ const EuGeroPreview = (function () {
   }
 
   function renderCenteredLayout(state, enabledSections, templateId, mode) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
+    const { personal, content } = buildContent(state, enabledSections, { sidebarLayout: false, mode });
     const contacts = buildContactParts(personal);
-    const extraClass = templateId === 'elegant' ? ' cv-elegant' : '';
-
     return `
-      <div class="cv cv-classic cv-centered${extraClass} template-${templateId}">
+      <div class="cv cv-classic cv-centered template-${templateId}">
         <header class="cv-header-classic">
           <h1 class="cv-name">${escapeHtml(personal.fullName) || 'Seu Nome'}</h1>
           <p class="cv-headline">${escapeHtml(personal.headline) || 'Título profissional'}</p>
@@ -220,11 +218,11 @@ const EuGeroPreview = (function () {
   }
 
   function renderBannerLayout(state, enabledSections, templateId, mode) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
+    const { personal, content } = buildContent(state, enabledSections, { sidebarLayout: false, mode });
     const contacts = [personal.email, personal.phone, personal.location].filter(Boolean);
 
     return `
-      <div class="cv cv-executive template-${templateId || 'executive'}">
+      <div class="cv cv-executive template-${templateId || 'marinho'}">
         <header class="cv-banner">
           <h1 class="cv-name">${escapeHtml(personal.fullName) || 'Seu Nome'}</h1>
           <p class="cv-headline">${escapeHtml(personal.headline) || 'Título profissional'}</p>
@@ -236,7 +234,7 @@ const EuGeroPreview = (function () {
   }
 
   function renderLeftLayout(state, enabledSections, templateId, mode) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
+    const { personal, content } = buildContent(state, enabledSections, { sidebarLayout: false, mode });
     const contacts = buildContactParts(personal);
 
     return `
@@ -258,7 +256,7 @@ const EuGeroPreview = (function () {
   }
 
   function renderCreativeLayout(state, enabledSections, templateId, mode) {
-    const { personal, content } = buildContent(state, enabledSections, { modernLayout: false, mode });
+    const { personal, content } = buildContent(state, enabledSections, { sidebarLayout: false, mode });
     const contacts = buildContactParts(personal);
     return `
       <div class="cv cv-creative template-${templateId || 'creative'}">
@@ -289,6 +287,13 @@ const EuGeroPreview = (function () {
   const MM_TO_PX = 96 / 25.4;
   const PAGE_HEIGHT_PX = 297 * MM_TO_PX;
 
+  function getPreviewPageLimit(state) {
+    if (typeof EuGeroPdfExport !== 'undefined' && typeof EuGeroPdfExport.getPageLimit === 'function') {
+      return EuGeroPdfExport.getPageLimit(state);
+    }
+    return state?.pageMode === 'detailed' ? 2 : 1;
+  }
+
   // Mede a altura real renderizada (DOM) contra a altura fisica de uma
   // pagina A4, em vez de estimar por contagem de caracteres (P0.4). So se
   // aplica ao painel de previa principal (dentro de .preview-a4-wrap), onde
@@ -300,27 +305,48 @@ const EuGeroPreview = (function () {
   }
 
   function isOverflowing(container, state, sections) {
+    const pageLimit = getPreviewPageLimit(state);
     if (measuresRealPage(container) && typeof container.scrollHeight === 'number') {
       container.style.width = '210mm';
-      return container.scrollHeight > PAGE_HEIGHT_PX + 1;
+      return container.scrollHeight > PAGE_HEIGHT_PX * pageLimit + 1;
     }
     const pageFit = typeof EuGeroScoring !== 'undefined'
       ? EuGeroScoring.scorePageFit(state, sections)
       : { level: 'ok' };
-    return pageFit.level !== 'ok';
+    return pageFit.level === 'overflow' || (pageLimit === 1 && pageFit.level === 'warning');
+  }
+
+  function applyTemplateAccent(container, templateId) {
+    const meta = EuGeroConfig.getTemplateMeta(templateId);
+    const palette = EuGeroConfig.accentPalette(meta.thumbAccent);
+    if (!container.style?.setProperty) return;
+    const cssRgb = (rgb) => `rgb(${rgb.join(' ')})`;
+    container.style.setProperty('--color-accent', meta.thumbAccent);
+    container.style.setProperty('--color-accent-700', cssRgb(palette.accent700));
+    container.style.setProperty('--color-accent-800', cssRgb(palette.accent800));
+    container.style.setProperty('--color-accent-900', cssRgb(palette.accent900));
+    container.style.setProperty('--color-accent-100', cssRgb(palette.accent100));
+    container.style.setProperty('--color-accent-2-100', cssRgb(palette.accent100));
   }
 
   function updatePreview(container, state, templateId, enabledSections) {
     if (!container) return;
     const sections = enabledSections || getActiveSections(state.enabledSections);
+    const pageLimit = getPreviewPageLimit(state);
+    const pageLabel = pageLimit === 1 ? 'página' : 'páginas';
+    const mainPreview = measuresRealPage(container);
+    if (mainPreview) {
+      container.parentElement.classList.toggle('preview-a4-wrap-two-pages', pageLimit === 2);
+    }
     const inner = render(state, templateId, sections);
     container.innerHTML = `
       <div class="preview-a4-body">${inner}</div>
-      <div class="cv-page-limit" aria-hidden="true"><span>Limite de 1 pagina A4</span></div>
+      <div class="cv-page-limit" aria-hidden="true"><span>Limite de ${pageLimit} ${pageLabel} A4</span></div>
     `;
     const margin = state.margin || 'padrao';
     const density = state.density || 'normal';
-    container.className = `preview-content preview-paper template-${templateId} cv-margin-${margin} cv-density-${density}`;
+    container.className = `preview-content preview-paper template-${templateId} cv-margin-${margin} cv-density-${density} cv-page-limit-${pageLimit}`;
+    applyTemplateAccent(container, templateId);
 
     const overflows = isOverflowing(container, state, sections);
     const body = container.querySelector('.preview-a4-body');
@@ -330,6 +356,7 @@ const EuGeroPreview = (function () {
   return {
     render,
     updatePreview,
+    applyTemplateAccent,
     buildContent,
     escapeHtml
   };

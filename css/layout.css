@@ -209,7 +209,7 @@
   color: #fff;
   border-color: var(--color-success);
 }
-.btn-success:hover { background: #0d9d70; border-color: #0d9d70; }
+.btn-success:hover { background: #066b4c; border-color: #066b4c; }
 
 @media (max-width: 900px) {
   /* No celular os tabs viram fichas numeradas: cabem em qualquer tela,
@@ -448,7 +448,6 @@
 }
 
 .btn-mobile-preview { display: none; }
-.btn-mobile-menu { display: none; }
 
 body.modal-open {
   overflow: hidden;

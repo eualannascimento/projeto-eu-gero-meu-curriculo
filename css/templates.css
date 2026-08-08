@@ -212,31 +212,9 @@
 }
 .cv-sidebar-layout .cv-sidebar-section p { margin: 2px 0; font-size: 0.933em; line-height: 1.3; color: #3a3c3e; }
 .cv-sidebar-layout .cv-main { flex: 1; padding: 1.778em 1.667em; }
-.template-modern .cv-main .cv-section h2,
 .template-creative .cv-main .cv-section h2 { color: var(--color-accent-700); border-bottom: none; }
 
-/* ---- Elegante: centrado, tipografia condensada e fina, acento discreto ---- */
-.cv-elegant .cv-header-classic { text-align: center; border-bottom: none; padding-bottom: 0.444em; margin-bottom: 1.556em; }
-.cv-elegant .cv-name {
-  font-family: var(--font-heading); font-weight: 400;
-  font-size: 2.333em; letter-spacing: 0.14em; text-transform: uppercase;
-}
-.cv-elegant .cv-headline {
-  font-size: 1.056em; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-accent-700);
-  position: relative; padding-top: 1.111em;
-}
-.cv-elegant .cv-header-classic .cv-headline::before {
-  content: ""; position: absolute; top: 0.444em; left: 50%; transform: translateX(-50%);
-  width: 3.333em; height: 1px; background: var(--color-accent);
-}
-.cv-elegant .cv-contacts { font-size: 0.933em; }
-.cv-elegant .cv-section h2 {
-  text-align: center; letter-spacing: 0.28em; color: var(--color-text);
-}
-.cv-elegant .cv-summary, .cv-elegant .cv-desc { text-align: center; }
-.cv-elegant .cv-item-header { justify-content: center; }
-
-/* ---- Executivo: faixa superior escura ---- */
+/* ---- Banner: faixa superior escura ---- */
 .cv-executive .cv-banner {
   background: var(--color-accent-900);
   color: #eef4fa;
@@ -291,145 +269,17 @@
   background: var(--color-accent);
 }
 
-/* ---- Faixa Clara: banner suave accent-100 com texto escuro ---- */
-.template-faixa .cv-banner {
-  background: var(--color-accent-100);
-  color: var(--color-text);
-  border-bottom: 1px solid var(--color-divider);
-}
-.template-faixa .cv-banner .cv-name { color: var(--color-accent-900); }
-.template-faixa .cv-banner .cv-headline { color: var(--color-accent-700); }
-.template-faixa .cv-banner .cv-contacts { color: #6b6d6f; }
-.template-faixa .cv-section h2 { color: var(--color-accent-700); border-bottom: none; }
-
-/* ---- Pilar: titulos de secao com barra lateral de acento ---- */
-.template-pilar .cv-name { text-transform: uppercase; }
-.template-pilar .cv-header-left { border-left: 0.333em solid var(--color-accent); padding-left: 1em; }
-.template-pilar .cv-section h2 {
-  color: var(--color-text);
-  border-left: 0.333em solid var(--color-accent);
-  padding-left: 0.778em;
-  letter-spacing: 0.1em;
-}
-
-/* ---- Serifado: tipografia tradicional com serifa ---- */
-.template-serifado .cv-name,
-.template-serifado .cv-section h2 {
-  font-family: Georgia, 'Times New Roman', serif;
-  color: #2b2b2d;
-}
-.template-serifado .cv-name { text-transform: none; letter-spacing: 0; }
-.template-serifado .cv-headline { color: #5d5d60; text-transform: none; letter-spacing: 0.04em; }
-.template-serifado .cv-section h2 {
-  letter-spacing: 0.08em;
-  border-bottom: 1px solid var(--color-divider);
-  padding-bottom: 0.222em;
-}
-.template-serifado .cv-item-sub { color: #5d5d60; }
-
-/* ==================================================================
-   Temas de cor dos modelos (20 no total).
-   Cada .template-<id> apenas redefine a familia de acento; os layouts
-   (.cv-classic / .cv-minimal / .cv-executive / .cv-sidebar-layout /
-   .cv-creative) e a prévia/PDF herdam essas variaveis automaticamente.
-   Assim a prévia e o PDF (impressao) saem sempre identicos.
-   ================================================================== */
-
-/* Esmeralda — centrado, verde esmeralda */
-.template-esmeralda {
-  --color-accent: #14857a; --color-accent-100: #e8f6f3;
-  --color-accent-700: #0f766e; --color-accent-800: #115e59;
-  --color-accent-900: #134e4a; --color-accent-2-100: #e8f6f3;
-}
-
-/* Violeta — centrado, violeta contemporâneo, fio inferior no titulo */
-.template-violeta {
-  --color-accent: #6d4aa8; --color-accent-100: #f1ecfa;
-  --color-accent-700: #573a8a; --color-accent-800: #46306f;
-  --color-accent-900: #362556; --color-accent-2-100: #f1ecfa;
-}
-.template-violeta .cv-section h2 {
-  border-bottom: 1px solid var(--color-accent);
-  padding-bottom: 0.222em; color: var(--color-accent-700);
-}
-
-/* Bordô — centrado, vinho sobrio com titulos serifados */
-.template-bordo {
-  --color-accent: #9b2c3b; --color-accent-100: #fbecee;
-  --color-accent-700: #7a2230; --color-accent-800: #611a26;
-  --color-accent-900: #4a141d; --color-accent-2-100: #fbecee;
-}
-.template-bordo .cv-name,
-.template-bordo .cv-section h2 { font-family: Georgia, 'Times New Roman', serif; }
-.template-bordo .cv-name { text-transform: none; letter-spacing: 0; }
-.template-bordo .cv-section h2 { letter-spacing: 0.08em; }
-
-/* Linha — centrado, fio fino acima de cada titulo (monoline) */
-.template-linha .cv-section h2 {
-  border-top: 1.5px solid var(--color-accent);
-  padding-top: 0.5em; margin-top: 0.222em;
-  letter-spacing: 0.2em; color: var(--color-text);
-}
-.template-linha .cv-classic .cv-header-classic,
-.template-linha .cv-header-classic { border-bottom-width: 2px; }
-
-/* Grafite — esquerda, cinza grafite com titulos fortes */
-.template-grafite {
-  --color-accent: #4b5563; --color-accent-100: #f1f2f4;
-  --color-accent-700: #374151; --color-accent-800: #1f2937;
-  --color-accent-900: #111827; --color-accent-2-100: #f1f2f4;
-}
-.template-grafite .cv-name { color: var(--color-accent-900); }
-.template-grafite .cv-section h2 {
-  color: var(--color-accent-900); font-weight: 700;
-  border-bottom: 2px solid var(--color-accent-900);
-  padding-bottom: 0.222em; letter-spacing: 0.06em;
-}
-
-/* Âmbar — esquerda, acento âmbar acolhedor com sublinhado no titulo */
-.template-ambar {
-  --color-accent: #b45309; --color-accent-100: #fdf3e7;
-  --color-accent-700: #92400e; --color-accent-800: #78350f;
-  --color-accent-900: #5c290b; --color-accent-2-100: #fdf3e7;
-}
-.template-ambar .cv-section h2 {
-  border-bottom: 1px solid var(--color-accent);
-  padding-bottom: 0.222em;
-}
-
-/* Marinho — faixa superior azul marinho (usa layout .cv-executive) */
+/* A cor complementa a família estrutural sem criar outro layout. */
 .template-marinho {
   --color-accent: #2c5a8a; --color-accent-100: #eaf1f9;
   --color-accent-700: #1e3a5f; --color-accent-800: #182f4d;
   --color-accent-900: #12253d; --color-accent-2-100: #eaf1f9;
 }
 
-/* Carvão — faixa superior preto carvão */
-.template-carvao {
-  --color-accent: #4a4a4d; --color-accent-100: #f0f0f1;
-  --color-accent-700: #2b2b2d; --color-accent-800: #1f1f21;
-  --color-accent-900: #131315; --color-accent-2-100: #f0f0f1;
-}
-
-/* Petróleo — barra lateral azul petróleo */
 .template-petroleo {
   --color-accent: #0e7490; --color-accent-100: #e7f5fa;
   --color-accent-700: #155e75; --color-accent-800: #164e63;
   --color-accent-900: #133f52; --color-accent-2-100: #e7f5fa;
-}
-
-/* Oliva — barra lateral verde oliva */
-.template-oliva {
-  --color-accent: #3f7d4e; --color-accent-100: #edf5ee;
-  --color-accent-700: #256345; --color-accent-800: #1e5138;
-  --color-accent-900: #17402c; --color-accent-2-100: #edf5ee;
-}
-
-/* Rosado — selo de iniciais em rosé (usa layout .cv-creative) */
-.template-rosado {
-  --color-accent: #be3455; --color-accent-100: #fdecf0;
-  --color-accent-700: #9f2544; --color-accent-800: #841d37;
-  --color-accent-900: #66162b; --color-accent-2-100: #fdecf0;
 }
 
 /* ---- Seleção de personagem (estilo escolha de jogo) ---- */

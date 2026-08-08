@@ -57,12 +57,18 @@ const EuGeroRouter = (function () {
     return null;
   }
 
+  function canGoToReview(state) {
+    return typeof EuGeroValidation !== 'undefined'
+      && EuGeroValidation.validateResume(state).valid;
+  }
+
   return {
     VIEWS,
     parseHash,
     buildHash,
     setHash,
     subscribe,
-    getInitialRoute
+    getInitialRoute,
+    canGoToReview
   };
 })();

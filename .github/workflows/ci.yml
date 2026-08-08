@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      postdeploy_url:
+        description: URL publicada a validar depois dos testes
+        required: false
+        type: string
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Instalar Poppler para os testes de PDF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+      # Este repositório ainda não versiona package-lock.json. O comando
+      # evita criar um lockfile no checkout efêmero da CI.
+      - run: npm install --ignore-scripts --no-package-lock
+      - run: npx playwright install --with-deps chromium
+      - run: npm run ci
+
+  postdeploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      POST_DEPLOY_URL: ${{ inputs.postdeploy_url || vars.POST_DEPLOY_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Informar verificação não configurada
+        if: env.POST_DEPLOY_URL == ''
+        run: echo "Verificação pós-deploy ignorada. Informe o input postdeploy_url ou configure a variável POST_DEPLOY_URL."
+      - name: Verificar site publicado
+        if: env.POST_DEPLOY_URL != ''
+        run: npm run postdeploy-check

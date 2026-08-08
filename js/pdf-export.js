@@ -25,27 +25,14 @@ const EuGeroPdfExport = (function () {
     return ns.jsPDF;
   }
 
+  function getPageLimit(state) {
+    return state?.pageMode === 'detailed' ? 2 : 1;
+  }
+
   // ---- Cor: deriva a familia de acento (accent/700/900/100) a partir do
   // thumbAccent do template (unica cor exposta em js/config.js). ----
-  function hexToRgb(hex) {
-    const clean = (hex || '#334155').replace('#', '');
-    const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
-    const n = parseInt(full, 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  }
-
-  function mix(rgb, target, amount) {
-    return rgb.map((c, i) => Math.round(c + (target[i] - c) * amount));
-  }
-
   function accentPalette(hex) {
-    const accent = hexToRgb(hex);
-    return {
-      accent,
-      accent700: mix(accent, [0, 0, 0], 0.28),
-      accent900: mix(accent, [0, 0, 0], 0.5),
-      accent100: mix(accent, [255, 255, 255], 0.9)
-    };
+    return EuGeroConfig.accentPalette(hex);
   }
 
   function registerFonts(doc) {
@@ -251,7 +238,7 @@ const EuGeroPdfExport = (function () {
   function contactLineParts(personal) {
     return {
       base: [personal.email, personal.phone, personal.location].filter(Boolean).join('   ·   '),
-      linkedinUrl: personal.linkedinUrl || ''
+      linkedinUrl: EuGeroUtils.safeUrl(personal.linkedinUrl)
     };
   }
 
@@ -406,11 +393,12 @@ const EuGeroPdfExport = (function () {
     [personal.email, personal.phone, personal.location].filter(Boolean).forEach((line) => {
       drawWrappedText(doc, sideCursor, line, sideCursor.x, sideCursor.colWidth, density.fontPt - 1, 1.3, [58, 60, 62], desenharFundo);
     });
-    if (personal.linkedinUrl) {
+    const linkedinUrl = EuGeroUtils.safeUrl(personal.linkedinUrl);
+    if (linkedinUrl) {
       ensureSpace(doc, sideCursor, 6, desenharFundo);
       setFont(doc, 'Barlow', 'normal', density.fontPt - 1, hasFonts);
       doc.setTextColor(58, 60, 62);
-      doc.textWithLink(truncateLinkedinDisplay(personal.linkedinUrl), sideCursor.x, sideCursor.y + (density.fontPt - 1) * PT_TO_MM * 0.8, { url: personal.linkedinUrl });
+      doc.textWithLink(truncateLinkedinDisplay(linkedinUrl), sideCursor.x, sideCursor.y + (density.fontPt - 1) * PT_TO_MM * 0.8, { url: linkedinUrl });
       sideCursor.y += (density.fontPt - 1) * PT_TO_MM * 1.3;
     }
     sideCursor.y += 4;
@@ -478,18 +466,19 @@ const EuGeroPdfExport = (function () {
     creative: layoutCreative
   };
 
-  function generatePdf(state, enabledSections, templateId, marginKey, densityKey) {
+  function generatePdf(state, enabledSections, templateId, marginKey, densityKey, pageMode) {
+    const exportState = { ...(state || {}), pageMode: pageMode || state?.pageMode || 'compact' };
     const JSPDF = getJsPDF();
     const doc = new JSPDF({ unit: 'mm', format: 'a4', compress: true });
     const hasFonts = registerFonts(doc);
     setFont(doc, 'Barlow', 'normal', 10.5, hasFonts);
 
-    const meta = EuGeroConfig.getTemplateMeta(templateId);
+    const meta = EuGeroConfig.getTemplateMeta(templateId || exportState.template);
     const palette = accentPalette(meta.thumbAccent);
     const margin = MARGIN_MM[marginKey] || MARGIN_MM.padrao;
     const density = DENSITY[densityKey] || DENSITY.normal;
-    const data = buildSectionsData(state, enabledSections);
-    data.state = state;
+    const data = buildSectionsData(exportState, enabledSections);
+    data.state = exportState;
 
     const layoutFn = LAYOUTS[meta.layout] || LAYOUTS.centered;
     layoutFn(doc, data, palette, margin, density, hasFonts);
@@ -497,8 +486,34 @@ const EuGeroPdfExport = (function () {
     return doc;
   }
 
+  function overflowIssue(pages, pageLimit) {
+    if (pageLimit === 1) {
+      return `O PDF tem ${pages} páginas e o limite atual é de 1. Escolha "Até 2 páginas" se o conteúdo for necessário ou reduza o resumo, as experiências e as seções opcionais.`;
+    }
+    return `O PDF tem ${pages} páginas e ultrapassa o limite de 2. Reduza o resumo, as experiências ou as seções opcionais antes de baixar.`;
+  }
+
+  function measureExport(state) {
+    const exportState = { ...(state || {}), pageMode: state?.pageMode || 'compact' };
+    const enabledSections = EuGeroConfig.getActiveSections(exportState.enabledSections);
+    const doc = generatePdf(
+      exportState,
+      enabledSections,
+      exportState.template,
+      exportState.margin,
+      exportState.density,
+      exportState.pageMode
+    );
+    const pages = doc.getNumberOfPages();
+    const pageLimit = getPageLimit(exportState);
+    const issues = pages > pageLimit ? [overflowIssue(pages, pageLimit)] : [];
+    return { pages, issues };
+  }
+
   return {
     generatePdf,
+    getPageLimit,
+    measureExport,
     buildSectionsData,
     accentPalette,
     drawSectionHeading,

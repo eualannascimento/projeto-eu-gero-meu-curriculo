@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Eu Gero Meu Curriculo - plataforma gratuita para criar curriculo e guia LinkedIn, 100% no navegador.">
+  <meta name="description" content="Crie um currículo de uma ou duas páginas no navegador, com dados locais e PDF pronto para enviar.">
   <title>Currículo por ClassificaVagas</title>
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
   <link rel="canonical" href="https://classificavagas.com/resume/">
@@ -11,7 +11,7 @@
   <link rel="icon" href="../assets/images/brand-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/images/icon-192.png">
   <meta property="og:title" content="Crie seu currículo por ClassificaVagas">
-  <meta property="og:description" content="Monte um currículo de uma página no navegador, de graça e sem cadastro. Seus dados ficam no seu dispositivo.">
+  <meta property="og:description" content="Crie um currículo de uma ou duas páginas no navegador, sem cadastro. Seus dados ficam no seu dispositivo.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://classificavagas.com/resume/">
   <meta property="og:image" content="https://classificavagas.com/assets/images/og-image.png">
@@ -19,7 +19,7 @@
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Crie seu currículo por ClassificaVagas">
-  <meta name="twitter:description" content="Currículo de uma página, gratuito, sem cadastro, feito no seu navegador.">
+  <meta name="twitter:description" content="Currículo de uma ou duas páginas, sem cadastro, feito no seu navegador.">
   <meta name="twitter:image" content="https://classificavagas.com/assets/images/og-image.png">
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/base.css">
@@ -52,6 +52,11 @@
       <h1 class="screen-title">Escolha um ponto de partida</h1>
       <p class="screen-lead">Use um exemplo pronto para entender como preencher ou comece com uma página em branco. Você poderá editar tudo depois.</p>
       <div id="character-grid" class="character-grid"></div>
+      <div class="actions-row">
+        <button type="button" class="btn btn-secondary" id="btn-start-new">Começar de novo</button>
+        <button type="button" class="btn btn-ghost btn-text-sm" id="btn-clear-local-data">Apagar dados locais</button>
+      </div>
+      <p class="small-note">Apagar dados locais remove o rascunho e as preferências deste currículo neste navegador. Arquivos JSON já baixados não são apagados.</p>
     </main>
 
     <main id="screen-start" class="screen cv-main" hidden>
@@ -92,7 +97,7 @@
               <div class="gallery-footer">
                 <div>
                   <div class="gallery-label" data-current-template id="start-gallery-label">Clássico</div>
-                  <div class="gallery-counter" id="start-gallery-counter">1 de 20</div>
+                  <div class="gallery-counter" id="start-gallery-counter">1 de 5</div>
                 </div>
               </div>
               <div class="aside-note">
@@ -184,7 +189,7 @@
           <div class="gallery-footer">
             <div>
               <div class="gallery-label" id="review-gallery-label">Clássico</div>
-              <div class="gallery-counter" id="review-gallery-counter">1 de 6</div>
+              <div class="gallery-counter" id="review-gallery-counter">1 de 5</div>
             </div>
           </div>
         </div>
@@ -213,7 +218,6 @@
       
       <div class="actions-row-loose">
         <button type="button" class="btn btn-secondary btn-md" id="btn-back-review">← Voltar à revisão</button>
-        <button type="button" class="btn btn-outline btn-md" id="btn-prompt-translation-guide">Traduzir para o inglês com IA</button>
       </div>
     </main>
 
@@ -242,33 +246,6 @@
       </div>
     </div>
 
-    <!-- Modal: Prompt IA -->
-    <div id="modal-prompt" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-prompt-title">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="modal-prompt-title">Peça ajuda a uma IA</h2>
-          <button type="button" class="modal-close" aria-label="Fechar">✕</button>
-        </div>
-        <div class="notice-box">
-          <span class="notice-mark">!</span>
-          <p class="notice-text">Esta ferramenta <strong>não possui uma IA integrada</strong> e não envia seus dados por conta própria. O texto só é compartilhado quando você o copia e cola em outra ferramenta.</p>
-        </div>
-        <label class="checkbox-label">
-          <input type="checkbox" id="include-data-checkbox" checked>
-          Incluir meus dados no prompt
-        </label>
-        <p id="privacy-prompt-warning" class="privacy-warning" hidden role="alert">
-          Atenção: o prompt pode incluir dados pessoais, como e-mail e telefone. Antes de copiar, revise e remova o que não deseja compartilhar. Consulte também as regras de privacidade da ferramenta escolhida.
-        </p>
-        <label class="form-label" for="job-description-textarea">Descrição da vaga (opcional)</label>
-        <textarea class="form-textarea-plain" id="job-description-textarea" rows="4" placeholder="Cole aqui a descrição da vaga"></textarea>
-        <p class="tiny-note">Use este campo para comparar o currículo com os requisitos da oportunidade. Mantenha somente sugestões que correspondam às suas experiências e habilidades reais.</p>
-        <p class="tiny-note-below">O texto permanece neste dispositivo e só será compartilhado quando você copiar o prompt.</p>
-        <textarea id="prompt-text" class="prompt-textarea" readonly rows="12"></textarea>
-        <button type="button" class="btn btn-primary" id="btn-copy-prompt">Copiar prompt</button>
-      </div>
-    </div>
-
     <!-- Modal: Trocar modelo -->
     <div id="modal-template" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-template-title">
       <div class="modal-content">
@@ -278,22 +255,6 @@
         </div>
         <p class="small-note-below">Algumas plataformas usam sistemas ATS para ler e organizar currículos. Modelos simples, com uma coluna e sem imagens, costumam facilitar essa leitura.</p>
         <div id="modal-template-grid" class="modal-template-grid"></div>
-      </div>
-    </div>
-
-    <!-- Modal: Menu mobile (wizard) -->
-    <div id="modal-mobile-menu" class="modal modal-sheet" hidden role="dialog" aria-modal="true" aria-labelledby="modal-mobile-menu-title">
-      <div class="modal-content modal-sheet-content">
-        <div class="modal-header">
-          <h2 id="modal-mobile-menu-title">Opções</h2>
-          <button type="button" class="modal-close" aria-label="Fechar">✕</button>
-        </div>
-        <div class="mobile-menu-actions">
-          <button type="button" class="btn btn-ghost mobile-menu-btn" id="btn-mobile-change-template">Trocar modelo</button>
-          <button type="button" class="btn btn-ghost mobile-menu-btn" id="btn-mobile-export-json">Salvar rascunho</button>
-          <button type="button" class="btn btn-ghost mobile-menu-btn" id="btn-mobile-import-json">Carregar rascunho</button>
-          <button type="button" class="btn btn-outline mobile-menu-btn" id="btn-mobile-prompt">Pedir ajuda à IA</button>
-        </div>
       </div>
     </div>
 
@@ -312,7 +273,6 @@
   <script src="js/scoring.js"></script>
   <script src="js/validation.js"></script>
   <script src="js/storage.js"></script>
-  <script src="js/prompts.js"></script>
   <script src="js/sample-data.js"></script>
   <script src="js/characters.js"></script>
   <script src="js/preview.js"></script>
@@ -322,7 +282,6 @@
   <script src="js/screens/start.js"></script>
   <script src="js/screens/wizard.js"></script>
   <script src="js/screens/review.js"></script>
-  <script src="js/screens/prompt-modal.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

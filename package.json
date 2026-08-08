@@ -1,0 +1,17 @@
+{
+  "name": "eu-gero-meu-curriculo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gerador estático de currículos em PDF.",
+  "scripts": {
+    "smoke": "node tests/smoke-test.js",
+    "syntax": "node scripts/check-syntax.js",
+    "pdf": "node tests/pdf-layout-validation.js",
+    "e2e": "node scripts/run-e2e.js",
+    "postdeploy-check": "node scripts/check-published-site.js",
+    "ci": "npm run syntax && npm run smoke && npm run pdf && npm run e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.57.0"
+  }
+}

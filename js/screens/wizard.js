@@ -11,6 +11,7 @@ const EuGeroWizardScreen = (function () {
   } = EuGeroConfig;
 
   let ctx = null;
+  const validationResults = {};
 
   function init(context) {
     ctx = context;
@@ -23,7 +24,8 @@ const EuGeroWizardScreen = (function () {
     ctx.els.wizardTimeline.innerHTML = sections.map((section, i) => {
       const label = SHORT_LABELS[section.id] || section.title;
       const isActive = i === state.currentStep;
-      const isDone = i < state.currentStep;
+      const isDone = i < state.currentStep
+        && EuGeroValidation.validateSection(state, section).valid;
       const cls = `timeline-step${isActive ? ' active' : ''}${isDone ? ' done' : ''}`;
       const ariaCurrent = isActive ? ' aria-current="step"' : '';
       return `
@@ -34,7 +36,20 @@ const EuGeroWizardScreen = (function () {
     }).join('');
 
     ctx.els.wizardTimeline.querySelectorAll('.timeline-step').forEach((btn) => {
-      btn.addEventListener('click', () => ctx.goToStep(parseInt(btn.dataset.step, 10)));
+      btn.addEventListener('click', () => {
+        const targetStep = parseInt(btn.dataset.step, 10);
+        if (targetStep > state.currentStep) {
+          const gate = EuGeroValidation.validateResume(state, sections.slice(0, targetStep));
+          if (!gate.valid) {
+            const firstIssue = gate.firstIssue;
+            ctx.goToStep(firstIssue.stepIndex);
+            revealValidationError(firstIssue.sectionId, firstIssue);
+            ctx.showToast('Revise os campos destacados antes de continuar.', { duration: 4000 });
+            return;
+          }
+        }
+        ctx.goToStep(targetStep);
+      });
     });
 
     const activeBtn = ctx.els.wizardTimeline.querySelector('.timeline-step.active');
@@ -89,14 +104,6 @@ const EuGeroWizardScreen = (function () {
     actionsRow.style.cssText = 'margin-top: 18px; display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: center;';
     const mutedGhost = 'font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 55%, transparent);';
 
-    const aiBtn = document.createElement('button');
-    aiBtn.type = 'button';
-    aiBtn.className = 'btn btn-ghost btn-ai-section';
-    aiBtn.style.cssText = mutedGhost;
-    aiBtn.textContent = 'Precisa de ideias? Peça ajuda a uma IA →';
-    aiBtn.addEventListener('click', (e) => ctx.showPrompt('section', section.id, e.currentTarget));
-    actionsRow.appendChild(aiBtn);
-
     const clearBtn = document.createElement('button');
     clearBtn.type = 'button';
     clearBtn.className = 'btn btn-ghost';
@@ -118,6 +125,11 @@ const EuGeroWizardScreen = (function () {
 
     stepEl.appendChild(actionsRow);
     ctx.els.wizardSteps.appendChild(stepEl);
+
+    const validation = validationResults[section.id];
+    if (validation && !validation.valid) {
+      renderValidationFeedback(section, validation);
+    }
 
     const prevBtn = document.getElementById('btn-prev');
     const nextBtn = document.getElementById('btn-next');
@@ -172,59 +184,151 @@ const EuGeroWizardScreen = (function () {
   function clearFieldValidation(scope) {
     scope.querySelectorAll('.field-invalid').forEach((el) => {
       el.classList.remove('field-invalid');
+      el.removeAttribute('aria-invalid');
       el.removeAttribute('aria-describedby');
     });
     scope.querySelectorAll('.field-error').forEach((el) => el.remove());
+    scope.querySelectorAll('.validation-summary').forEach((el) => el.remove());
+  }
+
+  function clearStepValidation(sectionId) {
+    delete validationResults[sectionId];
+    if (ctx.els.wizardSteps) clearFieldValidation(ctx.els.wizardSteps);
   }
 
   function setFieldInvalid(input, errorId, message) {
     input.classList.add('field-invalid');
+    input.setAttribute('aria-invalid', 'true');
     input.setAttribute('aria-describedby', errorId);
     const err = document.createElement('span');
     err.id = errorId;
     err.className = 'field-error';
-    err.setAttribute('role', 'alert');
     err.textContent = message;
     input.closest('.field-group')?.appendChild(err);
   }
 
-  function validateCurrentStep() {
+  function getInputForValidationError(scope, error) {
+    const target = EuGeroValidation.getWizardErrorTarget(error);
+    return scope.querySelector(`#${CSS.escape(target.fieldId)}`);
+  }
+
+  function focusValidationError(error) {
+    const scope = ctx.els.wizardSteps;
+    if (!scope || !error) return;
+    const input = getInputForValidationError(scope, error);
+    input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input?.focus?.();
+  }
+
+  function revealValidationError(stepId, error) {
+    const section = ctx.activeSections().find((candidate) => candidate.id === stepId);
+    if (!section || !error) return;
+    validationResults[section.id] = { valid: false, errors: [error] };
+    const target = EuGeroValidation.getWizardErrorTarget(error);
+    if (target.itemIndex != null && isTabbedListSection(section.id)) {
+      listActiveIndex[section.id] = target.itemIndex;
+    }
+    renderWizardStep();
+    focusValidationError(error);
+  }
+
+  function renderValidationSummary(section, errors) {
+    const scope = ctx.els.wizardSteps;
+    const stepEl = scope?.querySelector(`.wizard-step[data-section-id="${section.id}"]`);
+    if (!stepEl || errors.length === 0) return;
+
+    const summary = document.createElement('section');
+    summary.className = 'validation-summary';
+    summary.setAttribute('role', 'alert');
+    summary.setAttribute('aria-labelledby', `validation-summary-${section.id}`);
+
+    const title = document.createElement('h2');
+    title.id = `validation-summary-${section.id}`;
+    title.className = 'validation-summary-title';
+    title.textContent = 'Revise os campos abaixo';
+    summary.appendChild(title);
+
+    const list = document.createElement('ul');
+    list.className = 'validation-summary-list';
+    errors.forEach((error) => {
+      const target = EuGeroValidation.getWizardErrorTarget(error);
+      const itemLabel = target.itemIndex == null
+        ? ''
+        : `${LIST_ITEM_LABELS[section.id] || 'Item'} ${target.itemIndex + 1}: `;
+      const link = document.createElement('a');
+      link.href = target.summaryHref;
+      link.textContent = `${itemLabel}${error.message}`;
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (target.itemIndex != null && isTabbedListSection(section.id)) {
+          listActiveIndex[section.id] = target.itemIndex;
+          renderWizardStep();
+        }
+        focusValidationError(error);
+      });
+      const item = document.createElement('li');
+      item.appendChild(link);
+      list.appendChild(item);
+    });
+    summary.appendChild(list);
+    stepEl.prepend(summary);
+  }
+
+  function renderValidationFeedback(section, result) {
+    const scope = ctx.els.wizardSteps;
+    if (!scope) return;
+    clearFieldValidation(scope);
+    renderValidationSummary(section, result.errors);
+    result.errors.forEach((error) => {
+      const input = getInputForValidationError(scope, error);
+      if (!input) return;
+      const target = EuGeroValidation.getWizardErrorTarget(error);
+      setFieldInvalid(input, `error-${target.fieldId}`, error.message);
+    });
+  }
+
+  function validateWizardStepState(stepId, state, sections) {
+    const section = sections.find((candidate) => candidate.id === stepId);
+    if (!section) return { valid: true, errors: [] };
+    const result = EuGeroValidation.validateSection(state, section);
+    const errors = result.issues.map((issue) => ({
+      itemId: issue.itemIndex == null ? section.id : `${section.id}-${issue.itemIndex}`,
+      field: issue.fieldKey,
+      message: issue.message
+    }));
+    return { valid: errors.length === 0, errors };
+  }
+
+  function validateWizardStep(stepId) {
     const state = ctx.getState();
     const sections = ctx.activeSections();
-    const section = sections[state.currentStep];
-    if (!section) return true;
+    const section = sections.find((candidate) => candidate.id === stepId);
+    if (!section) return { valid: true, errors: [] };
 
     const scope = ctx.els.wizardSteps;
-    if (!scope) return true;
-
-    clearFieldValidation(scope);
-    const result = EuGeroValidation.validateSection(state, section);
-
-    result.issues.forEach((issue) => {
-      let input;
-      if (issue.itemIndex != null) {
-        const card = scope.querySelector(`.list-item-card[data-index="${issue.itemIndex}"]`);
-        const fieldWrap = card?.querySelector(`[data-field="${issue.fieldKey}"]`);
-        input = fieldWrap?.querySelector('input, textarea, select')
-          || scope.querySelector(`#field-${issue.sectionId}-${issue.itemIndex}-${issue.fieldKey}`);
-      } else {
-        input = scope.querySelector(`#field-${issue.sectionId}-${issue.fieldKey}`)
-          || scope.querySelector(`[data-field="${issue.fieldKey}"] input, [data-field="${issue.fieldKey}"] textarea, [data-field="${issue.fieldKey}"] select`);
-      }
-      if (input) {
-        const errorId = fieldErrorId(section, { key: issue.fieldKey }, issue.itemIndex);
-        setFieldInvalid(input, errorId, issue.message);
-      }
-    });
+    const result = validateWizardStepState(stepId, state, sections);
+    validationResults[section.id] = result;
+    if (!scope) return result;
 
     if (!result.valid) {
+      const firstTarget = EuGeroValidation.getWizardErrorTarget(result.errors[0]);
+      if (firstTarget.itemIndex != null && isTabbedListSection(section.id)) {
+        listActiveIndex[section.id] = firstTarget.itemIndex;
+        renderWizardStep();
+      } else {
+        renderValidationFeedback(section, result);
+      }
       ctx.showToast('Revise os campos destacados antes de continuar.', { duration: 4000 });
-      const firstInvalid = scope.querySelector('.field-invalid');
-      firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      firstInvalid?.focus?.();
-      return false;
+      focusValidationError(result.errors[0]);
     }
-    return true;
+    return result;
+  }
+
+  function validateCurrentStep() {
+    const sections = ctx.activeSections();
+    const section = sections[ctx.getState().currentStep];
+    if (!section) return true;
+    return validateWizardStep(section.id).valid;
   }
 
   function renderField(section, field, options = {}) {
@@ -308,10 +412,22 @@ const EuGeroWizardScreen = (function () {
     input.addEventListener(eventName, () => {
       setFieldValue(section, field, input.value, options.item, options.index);
       if (hintEl) updateFieldHint(hintEl, hintKind, input.value);
-      clearFieldValidation(wrap);
+      clearStepValidation(section.id);
       ctx.debouncedUpdatePreviews();
       ctx.saveState();
     });
+
+    if (field.type === 'url') {
+      input.addEventListener('blur', () => {
+        const result = EuGeroValidation.validateUrl(input.value);
+        if (!result.ok || !result.value || result.value === input.value) return;
+        input.value = result.value;
+        setFieldValue(section, field, result.value, options.item, options.index);
+        clearStepValidation(section.id);
+        ctx.debouncedUpdatePreviews();
+        ctx.saveState();
+      });
+    }
 
     return wrap;
   }
@@ -416,7 +532,7 @@ const EuGeroWizardScreen = (function () {
         setFieldValue(section, field, serialized);
         updateFieldScore(wrap, field, serialized);
       }
-      clearFieldValidation(wrap);
+      clearStepValidation(section.id);
       ctx.debouncedUpdatePreviews();
       ctx.saveState();
     }
@@ -479,7 +595,7 @@ const EuGeroWizardScreen = (function () {
       const text = newTags.map((t) => t.name || t).filter(Boolean).join('; ');
       state.skillsText = text;
       state.skills = newTags;
-      clearFieldValidation(wrap);
+      clearStepValidation(section.id);
       ctx.debouncedUpdatePreviews();
       ctx.saveState();
     }
@@ -655,7 +771,7 @@ const EuGeroWizardScreen = (function () {
     const addBtn = document.createElement('button');
     addBtn.type = 'button';
     addBtn.className = 'btn btn-secondary btn-add-item';
-    addBtn.style.cssText = 'align-self: flex-start; min-height: 42px; margin-top: 16px;';
+    addBtn.style.cssText = 'align-self: flex-start; min-height: 44px; margin-top: 16px;';
     addBtn.textContent = `+ Adicionar ${(LIST_ITEM_LABELS[section.id] || 'item').toLowerCase()}`;
     addBtn.addEventListener('click', () => appendListItem(section.id));
     container.appendChild(addBtn);
@@ -696,7 +812,7 @@ const EuGeroWizardScreen = (function () {
       removeBtn.textContent = '\u00d7';
       removeBtn.setAttribute('aria-label', 'Remover idioma');
       removeBtn.title = 'Remover idioma';
-      removeBtn.style.cssText = 'font-size: 18px; width: 40px; min-height: 40px; padding: 0;';
+      removeBtn.style.cssText = 'font-size: 18px; width: 44px; min-height: 44px; padding: 0;';
       card.appendChild(removeBtn);
       return card;
     }
@@ -833,6 +949,8 @@ const EuGeroWizardScreen = (function () {
     renderWizardTimeline,
     renderWizardStep,
     validateCurrentStep,
+    validateWizardStep,
+    revealValidationError,
     appendListItem,
     removeListItem,
     reorderListItem,

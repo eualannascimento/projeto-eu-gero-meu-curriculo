@@ -30,8 +30,28 @@ const EuGeroStartScreen = (function () {
         <span class="character-cta">Escolher →</span>
       </button>
     `);
-    // "Continuar de onde parei" entra logo ao lado do card "Em branco" (índice 0).
-    cards.splice(1, 0, `
+    const draft = EuGeroStorage.loadDraft();
+    const resumeDraftCard = EuGeroStorage.hasContent(draft) ? `
+      <button type="button" class="character-card character-card-blank" id="btn-resume-draft">
+        ${corners}
+        <span class="character-avatar" aria-hidden="true">↺</span>
+        <span class="character-kicker">Rascunho neste dispositivo</span>
+        <span class="character-name">Continuar de onde parei</span>
+        <span class="character-role">Retome o currículo salvo neste navegador.</span>
+        <span class="character-cta">Continuar →</span>
+      </button>
+    ` : '';
+    const importedDraftCard = ctx.hasPendingImportedDraft?.() ? `
+      <button type="button" class="character-card character-card-blank" id="btn-continue-imported-draft">
+        ${corners}
+        <span class="character-avatar" aria-hidden="true">&#8593;</span>
+        <span class="character-kicker">Rascunho importado</span>
+        <span class="character-name">Continuar rascunho importado</span>
+        <span class="character-role">Revise e complete os dados carregados do arquivo.</span>
+        <span class="character-cta">Continuar &#8594;</span>
+      </button>
+    ` : '';
+    const importDraftCard = `
       <button type="button" class="character-card character-card-blank" id="btn-import-characters">
         ${corners}
         <span class="character-avatar" aria-hidden="true">↑</span>
@@ -40,7 +60,8 @@ const EuGeroStartScreen = (function () {
         <span class="character-role">Carregue um rascunho salvo (.json) e continue de onde parou.</span>
         <span class="character-cta">Carregar arquivo →</span>
       </button>
-    `);
+    `;
+    cards.splice(1, 0, importedDraftCard, resumeDraftCard, importDraftCard);
     grid.innerHTML = cards.join('');
     grid.querySelectorAll('[data-avatar-color]').forEach((el) => {
       el.style.background = el.dataset.avatarColor;
@@ -48,6 +69,8 @@ const EuGeroStartScreen = (function () {
     grid.querySelectorAll('.character-card[data-character]').forEach((card) => {
       card.addEventListener('click', () => pickCharacter(card.dataset.character));
     });
+    grid.querySelector('#btn-resume-draft')?.addEventListener('click', () => ctx.resumeDraft());
+    grid.querySelector('#btn-continue-imported-draft')?.addEventListener('click', () => ctx.continueImportedDraft());
   }
 
   function pickCharacter(id) {
@@ -114,7 +137,7 @@ const EuGeroStartScreen = (function () {
           </div>
         `;
       }
-      // Centrado (classic, elegant, serifado, esmeralda, bordo, violeta, linha)
+      // A família Clássico usa a estrutura centralizada.
       const isCreative = layout === 'creative';
       const topo = isCreative
         ? `<div class="thumb-creative-head">

@@ -5,8 +5,6 @@ const EuGeroValidation = (function () {
   'use strict';
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
-  const URL_RE = /^https?:\/\/.+/i;
-
   function isEmpty(value) {
     if (value == null) return true;
     return String(value).trim().length === 0;
@@ -14,20 +12,15 @@ const EuGeroValidation = (function () {
 
   function validateEmail(value) {
     if (isEmpty(value)) return { ok: false, message: 'Informe um e-mail.' };
-    if (!EMAIL_RE.test(value.trim())) return { ok: false, message: 'Formato de e-mail invalido.' };
+    if (!EMAIL_RE.test(String(value).trim())) return { ok: false, message: 'Formato de e-mail invalido.' };
     return { ok: true, message: '' };
   }
 
   function validateUrl(value) {
-    if (isEmpty(value)) return { ok: true, message: '' };
-    const v = value.trim();
-    if (!URL_RE.test(v)) return { ok: false, message: 'URL deve comecar com http:// ou https://' };
-    try {
-      new URL(v);
-      return { ok: true, message: '' };
-    } catch (e) {
-      return { ok: false, message: 'URL invalida.' };
-    }
+    if (isEmpty(value)) return { ok: true, message: '', value: '' };
+    const normalized = EuGeroUtils.safeUrl(value);
+    if (!normalized) return { ok: false, message: 'URL invalida.', value: '' };
+    return { ok: true, message: '', value: normalized };
   }
 
   function validateRequired(value, label) {
@@ -51,14 +44,15 @@ const EuGeroValidation = (function () {
     return { ok: true, message: '' };
   }
 
-  function validateSection(state, section) {
+  function validateSectionIssues(state, section) {
     const issues = [];
+    const safeState = state && typeof state === 'object' ? state : {};
 
     if (section.list) {
-      const items = state[section.id] || [];
+      const items = Array.isArray(safeState[section.id]) ? safeState[section.id] : [];
       items.forEach((item, index) => {
         section.itemFields.forEach(field => {
-          const value = item[field.key] || '';
+          const value = item && typeof item === 'object' ? item[field.key] ?? '' : '';
           const result = validateField(value, field);
           if (!result.ok) {
             issues.push({
@@ -77,11 +71,11 @@ const EuGeroValidation = (function () {
     } else if (section.fields) {
       section.fields.forEach(field => {
         let value;
-        if (section.id === 'personal') value = (state.personal || {})[field.key] || '';
-        else if (section.id === 'summary') value = state.summary || '';
+        if (section.id === 'personal') value = (safeState.personal || {})[field.key] || '';
+        else if (section.id === 'summary') value = safeState.summary || '';
         else if (section.id === 'skills') {
-          value = state.skillsText || (typeof EuGeroConfig !== 'undefined' ? EuGeroConfig.skillsToText(state) : '');
-        } else value = state[field.key] || '';
+          value = safeState.skillsText || (typeof EuGeroConfig !== 'undefined' ? EuGeroConfig.skillsToText(safeState) : '');
+        } else value = safeState[field.key] || '';
 
         const result = validateField(value, field);
         if (!result.ok) {
@@ -97,7 +91,42 @@ const EuGeroValidation = (function () {
       });
     }
 
+    return issues;
+  }
+
+  function validateSection(state, section) {
+    if (!section || typeof section !== 'object') return { valid: true, issues: [] };
+    const issues = validateSectionIssues(state, section);
     return { valid: issues.length === 0, issues };
+  }
+
+  function validateResume(state, sections) {
+    const activeSections = Array.isArray(sections)
+      ? sections
+      : (typeof EuGeroConfig !== 'undefined'
+        ? EuGeroConfig.getActiveSections(state?.enabledSections)
+        : []);
+    const issues = activeSections.flatMap((section, stepIndex) => validateSectionIssues(state, section)
+      .map((issue) => ({
+        ...issue,
+        itemId: issue.itemIndex == null ? section.id : `${section.id}-${issue.itemIndex}`,
+        field: issue.fieldKey,
+        sectionId: section.id,
+        sectionTitle: section.title,
+        stepIndex
+      })));
+    return { valid: issues.length === 0, issues, firstIssue: issues[0] || null };
+  }
+
+  function getWizardErrorTarget(error) {
+    const itemMatch = String(error?.itemId || '').match(/^(.*)-(\d+)$/);
+    const itemIndex = itemMatch ? Number(itemMatch[2]) : null;
+    const itemId = String(error?.itemId || '');
+    return {
+      itemIndex,
+      fieldId: `field-${itemId}-${error?.field || ''}`,
+      summaryHref: `#field-${itemId}-${error?.field || ''}`
+    };
   }
 
   function resolveStepAdvance(isValid, currentStep, totalSteps) {
@@ -115,6 +144,8 @@ const EuGeroValidation = (function () {
     validateUrl,
     validateField,
     validateSection,
+    validateResume,
+    getWizardErrorTarget,
     isEmpty,
     resolveStepAdvance
   };

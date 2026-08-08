@@ -12,8 +12,9 @@
   let state = EuGeroStorage.load();
   let currentView = 'characters';
   let suppressHash = false;
-  let saveTimer = null;
   let toastTimer = null;
+  let pendingImportedDraft = false;
+  let pendingValidationIssue = null;
 
   const els = {};
   // 210mm convertido para px (unidade CSS absoluta: 96px = 1in = 25.4mm) -
@@ -27,16 +28,18 @@
     return {
       els,
       getState: () => state,
-      replaceState: (next) => { state = next; },
+      replaceState: (next) => { state = next; pendingImportedDraft = false; },
       activeSections,
       saveState,
       showToast,
-      showPrompt: (type, sectionId, trigger) => EuGeroPromptModal.show(type, sectionId, trigger),
       openModal,
       navigateTo,
       goToStart,
       goToStep,
       goToWizard,
+      resumeDraft,
+      continueImportedDraft,
+      hasPendingImportedDraft: () => pendingImportedDraft,
       updateTemplateIndicators,
       switchTemplate,
       renderSectionChecklist: () => EuGeroStartScreen.renderSectionChecklist(),
@@ -52,7 +55,6 @@
     EuGeroStartScreen.init(ctx);
     EuGeroWizardScreen.init(ctx);
     EuGeroReviewScreen.init(ctx);
-    EuGeroPromptModal.init(ctx);
   }
 
   function init() {
@@ -91,16 +93,10 @@
     els.reviewContent = document.getElementById('review-content');
     els.reviewTemplateGallery = document.getElementById('review-template-gallery');
     els.guideContent = document.getElementById('guide-content');
-    els.modalPrompt = document.getElementById('modal-prompt');
-    els.promptText = document.getElementById('prompt-text');
     els.modalTemplate = document.getElementById('modal-template');
-    els.modalMobileMenu = document.getElementById('modal-mobile-menu');
     els.fileImport = document.getElementById('file-import');
     els.toast = document.getElementById('toast');
     els.previewOverlay = document.getElementById('preview-overlay');
-    els.includeDataCheckbox = document.getElementById('include-data-checkbox');
-    els.jobDescriptionTextarea = document.getElementById('job-description-textarea');
-    els.privacyPromptWarning = document.getElementById('privacy-prompt-warning');
     els.savedIndicator = document.getElementById('saved-indicator');
     els.previewMobileDock = document.getElementById('preview-mobile-dock');
     els.toastMessage = document.getElementById('toast-message');
@@ -130,6 +126,10 @@
     return getActiveSections(state.enabledSections);
   }
 
+  function validateResume() {
+    return EuGeroValidation.validateResume(state, activeSections());
+  }
+
   function resolveWizardSectionId(sectionId) {
     const sections = activeSections();
     if (sectionId) {
@@ -144,9 +144,22 @@
 
   function applyRouteState(route) {
     currentView = route.view || 'characters';
+    if (currentView === 'review') {
+      const gate = validateResume();
+      if (gate.valid) return true;
+      const firstIssue = gate.firstIssue;
+      state.currentStep = firstIssue?.stepIndex || 0;
+      const sectionId = firstIssue?.sectionId || resolveWizardSectionId(null);
+      pendingValidationIssue = firstIssue;
+      currentView = 'wizard';
+      EuGeroRouter.setHash('wizard', sectionId, { replace: true });
+      showToast('Revise os campos obrigatórios antes de abrir a revisão.', { error: true });
+      return false;
+    }
     if (currentView === 'wizard') {
       resolveWizardSectionId(route.sectionId);
     }
+    return true;
   }
 
   function navigateTo(view, sectionId, { replace = false } = {}) {
@@ -169,10 +182,64 @@
     navigateTo('start');
   }
 
+  function setRouteWithoutSaving(view, { replace = false } = {}) {
+    currentView = view;
+    render();
+    window.scrollTo(0, 0);
+    suppressHash = true;
+    EuGeroRouter.setHash(view, null, { replace });
+    suppressHash = false;
+  }
+
+  function loadDraft() {
+    const draft = EuGeroStorage.loadDraft();
+    if (!draft || !EuGeroStorage.hasContent(draft)) return null;
+    state = draft;
+    pendingImportedDraft = false;
+    return state;
+  }
+
+  function resumeDraft() {
+    if (!loadDraft()) {
+      showToast('Não há um rascunho disponível para continuar.', { error: true });
+      render();
+      return false;
+    }
+    goToWizard();
+    return true;
+  }
+
+  function clearLocalData() {
+    const cleared = EuGeroStorage.clearLocalData();
+    if (!cleared) {
+      showToast('Não foi possível apagar os dados locais. Tente novamente.', { error: true });
+      return false;
+    }
+    state = EuGeroConfig.createEmptyState();
+    pendingImportedDraft = false;
+    setRouteWithoutSaving('characters', { replace: true });
+    showToast('Dados locais apagados deste navegador.');
+    return true;
+  }
+
+  function startNewDraft() {
+    const confirmed = window.confirm('Começar de novo apagará o rascunho salvo neste navegador. Arquivos JSON já baixados não serão afetados. Deseja continuar?');
+    if (!confirmed || !clearLocalData()) return false;
+    setRouteWithoutSaving('start', { replace: true });
+    return true;
+  }
+
   function startWizard() {
     state.currentStep = 0;
     const sectionId = activeSections()[0]?.id || null;
     navigateTo('wizard', sectionId);
+  }
+
+  function continueImportedDraft() {
+    if (!pendingImportedDraft) return false;
+    pendingImportedDraft = false;
+    goToWizard(state.currentStep);
+    return true;
   }
 
   function goToWizard(step) {
@@ -184,8 +251,18 @@
   }
 
   function goToReview() {
+    const gate = validateResume();
+    if (!gate.valid) {
+      const firstIssue = gate.firstIssue;
+      state.currentStep = firstIssue?.stepIndex || 0;
+      navigateTo('wizard', firstIssue?.sectionId || activeSections()[0]?.id || null, { replace: true });
+      if (firstIssue) EuGeroWizardScreen.revealValidationError(firstIssue.sectionId, firstIssue);
+      showToast('Revise os campos obrigatórios antes de abrir a revisão.', { error: true });
+      return false;
+    }
     EuGeroReviewScreen.syncGalleryToTemplate();
     navigateTo('review');
+    return true;
   }
 
   function goToGuide() {
@@ -198,17 +275,21 @@
     document.getElementById('btn-go-home')?.addEventListener('click', (e) => { e.preventDefault(); navigateTo('characters'); });
     // O mesmo atalho existe como card na galeria de personagens (ver screens/start.js).
     document.getElementById('btn-import-characters')?.addEventListener('click', () => els.fileImport?.click());
+    document.getElementById('btn-start-new')?.addEventListener('click', startNewDraft);
+    document.getElementById('btn-clear-local-data')?.addEventListener('click', () => {
+      const confirmed = window.confirm('Isto apagará o rascunho e as preferências salvos localmente neste navegador. Arquivos JSON já baixados não serão afetados e a ação não pode ser desfeita. Deseja apagar os dados locais?');
+      if (confirmed) clearLocalData();
+    });
 
     document.getElementById('btn-start-wizard')?.addEventListener('click', startWizard);
     document.getElementById('btn-back-start')?.addEventListener('click', () => navigateTo('characters'));
-    document.getElementById('btn-change-template-wizard')?.addEventListener('click', (e) => openModal(els.modalTemplate, e.currentTarget));
     document.getElementById('btn-prev-template-start')?.addEventListener('click', () => cycleTemplate(-1));
     document.getElementById('btn-next-template-start')?.addEventListener('click', () => cycleTemplate(1));
     document.getElementById('btn-prev-template')?.addEventListener('click', () => cycleTemplate(-1));
     document.getElementById('btn-next-template')?.addEventListener('click', () => cycleTemplate(1));
     document.getElementById('btn-prev')?.addEventListener('click', prevStep);
     document.getElementById('btn-next')?.addEventListener('click', nextStep);
-    document.getElementById('btn-finish')?.addEventListener('click', goToReview);
+    document.getElementById('btn-finish')?.addEventListener('click', () => goToReview({ validate: true }));
     document.getElementById('btn-back-wizard')?.addEventListener('click', () => goToWizard());
     document.getElementById('btn-wizard-to-start')?.addEventListener('click', goToStart);
     document.getElementById('btn-gal-prev')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(-1));
@@ -232,17 +313,6 @@
     document.getElementById('btn-import-json-review')?.addEventListener('click', () => els.fileImport?.click());
     document.getElementById('btn-import-start')?.addEventListener('click', () => els.fileImport?.click());
     els.fileImport?.addEventListener('change', handleImport);
-
-    document.getElementById('btn-prompt-general')?.addEventListener('click', (e) => EuGeroPromptModal.show('general', null, e.currentTarget));
-    document.getElementById('btn-prompt-general-review')?.addEventListener('click', (e) => EuGeroPromptModal.show('general', null, e.currentTarget));
-    document.getElementById('btn-prompt-translation')?.addEventListener('click', (e) => EuGeroPromptModal.show('translation', null, e.currentTarget));
-    document.getElementById('btn-prompt-translation-guide')?.addEventListener('click', (e) => EuGeroPromptModal.show('translation', null, e.currentTarget));
-    document.getElementById('btn-copy-prompt')?.addEventListener('click', EuGeroPromptModal.copyPrompt);
-    els.includeDataCheckbox?.addEventListener('change', () => {
-      EuGeroPromptModal.refreshPromptText();
-      EuGeroPromptModal.updatePrivacyWarning();
-    });
-    els.jobDescriptionTextarea?.addEventListener('input', EuGeroPromptModal.refreshPromptText);
 
     document.querySelectorAll('.modal-close').forEach((btn) => {
       btn.addEventListener('click', () => closeModal(btn.closest('.modal')));
@@ -268,24 +338,6 @@
       }
     });
 
-    document.getElementById('btn-wizard-menu')?.addEventListener('click', (e) => openModal(els.modalMobileMenu, e.currentTarget));
-    document.getElementById('btn-mobile-change-template')?.addEventListener('click', (e) => {
-      closeModal(els.modalMobileMenu);
-      openModal(els.modalTemplate, e.currentTarget);
-    });
-    document.getElementById('btn-mobile-export-json')?.addEventListener('click', () => {
-      closeModal(els.modalMobileMenu);
-      exportJson();
-    });
-    document.getElementById('btn-mobile-import-json')?.addEventListener('click', () => {
-      closeModal(els.modalMobileMenu);
-      els.fileImport?.click();
-    });
-    document.getElementById('btn-mobile-prompt')?.addEventListener('click', (e) => {
-      closeModal(els.modalMobileMenu);
-      EuGeroPromptModal.show('general', null, e.currentTarget);
-    });
-
     window.addEventListener('resize', debounce(scaleReviewPreviews, 150));
 
     document.querySelectorAll('.modal').forEach((modal) => {
@@ -298,11 +350,19 @@
   function saveState() {
     state.enabledSections = normalizeEnabledSections(state.enabledSections);
     state.skills = EuGeroConfig.parseSkillsText(state.skillsText);
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      EuGeroStorage.save(state);
+    const saved = EuGeroStorage.save(state);
+    if (saved) {
       flashSavedIndicator();
-    }, 400);
+    } else {
+      hideSavedIndicator();
+      showToast('Não foi possível salvar neste dispositivo. Baixe um backup antes de fechar a página.', {
+        error: true,
+        actionLabel: 'Baixar backup',
+        onAction: exportJson,
+        duration: 8000
+      });
+    }
+    return saved;
   }
 
   function flashSavedIndicator() {
@@ -316,6 +376,15 @@
       el.classList.remove('visible');
       el.hidden = true;
     }, 2000);
+  }
+
+  function hideSavedIndicator() {
+    const el = els.savedIndicator || document.getElementById('saved-indicator');
+    clearTimeout(flashSavedIndicator._timer);
+    flashSavedIndicator._timer = null;
+    if (!el) return;
+    el.classList.remove('visible');
+    el.hidden = true;
   }
 
   const PAGE_MARGINS = [
@@ -337,6 +406,7 @@
     saveState();
     renderPageControls();
     if (els.previewMobileDock) els.previewMobileDock.hidden = currentView !== 'wizard';
+    if (currentView === 'review') EuGeroReviewScreen.renderReview();
     debouncedUpdatePreviews();
   }
 
@@ -431,7 +501,7 @@
     if (decision.action === 'advance') {
       goToStep(decision.step);
     } else if (decision.action === 'review') {
-      goToReview();
+      goToReview({ validate: true });
     }
   }
 
@@ -465,6 +535,11 @@
       debouncedUpdatePreviews();
     } else if (currentView === 'wizard') {
       EuGeroWizardScreen.renderWizardStep();
+      if (pendingValidationIssue) {
+        const issue = pendingValidationIssue;
+        pendingValidationIssue = null;
+        EuGeroWizardScreen.revealValidationError(issue.sectionId, issue);
+      }
       debouncedUpdatePreviews();
     } else if (currentView === 'review') {
       EuGeroReviewScreen.renderReview();
@@ -526,13 +601,19 @@
     const fit = document.getElementById('preview-mobile-fit');
     if (!fit) return;
     const pageFit = EuGeroScoring.scorePageFit(state, activeSections());
-    fit.textContent = pageFit.level === 'ok' ? '1 página' : pageFit.level === 'detailed' ? 'até 2 páginas' : 'revisar';
-    fit.className = `preview-mobile-fit preview-mobile-fit-${pageFit.level}`;
+    const pageLimit = state.pageMode === 'detailed' ? 2 : 1;
+    const requiresReview = pageFit.level === 'overflow' || (pageLimit === 1 && pageFit.level === 'warning');
+    fit.textContent = requiresReview ? 'revisar' : pageLimit === 2 ? 'até 2 páginas' : '1 página';
+    fit.className = `preview-mobile-fit preview-mobile-fit-${requiresReview ? pageFit.level : pageLimit === 2 ? 'detailed' : 'ok'}`;
   }
 
   function exportJson() {
     EuGeroStorage.downloadJson(state);
     showToast('Rascunho salvo em arquivo.');
+  }
+
+  function exportState() {
+    return EuGeroStorage.exportState(state);
   }
 
   function handleImport(e) {
@@ -554,13 +635,13 @@
           return;
         }
         state = result.data;
-        const hasProgress = state.personal?.fullName || state.currentStep > 0;
-        if (hasProgress) {
-          navigateTo('wizard', activeSections()[state.currentStep]?.id, { replace: true });
-        } else {
-          navigateTo('characters', null, { replace: true });
-        }
-        showToast('Rascunho carregado com sucesso.');
+        pendingImportedDraft = true;
+        setRouteWithoutSaving('characters', { replace: true });
+        showToast('Rascunho carregado. Continue quando estiver pronto.', {
+          actionLabel: 'Continuar rascunho',
+          onAction: continueImportedDraft,
+          duration: 8000
+        });
       } catch (err) {
         showToast('Este arquivo está corrompido ou não é válido. Tente outro.', { error: true });
       }
@@ -641,6 +722,7 @@
     getState: () => JSON.parse(JSON.stringify(state)),
     setState: (newState) => {
       state = EuGeroStorage.mergeWithDefaults(newState);
+      pendingImportedDraft = false;
       render();
     },
     switchTemplate: (t) => switchTemplate(t),
@@ -648,8 +730,15 @@
     getActiveSections: () => activeSections(),
     getCurrentView: () => currentView,
     navigateTo,
+    goToReview,
     render,
     saveState,
+    loadDraft,
+    resumeDraft,
+    continueImportedDraft,
+    hasPendingImportedDraft: () => pendingImportedDraft,
+    exportState,
+    clearLocalData,
     showToast,
     debouncedUpdatePreviews
   };
