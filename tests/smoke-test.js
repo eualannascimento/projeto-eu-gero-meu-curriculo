@@ -200,14 +200,14 @@ assert(EuGeroRouter.canGoToReview(resumableDraft) === true, 'Revisão permite cu
 assert(EuGeroRouter.canGoToReview(unknownPersonalDraft) === false, 'Revisão ignora campo pessoal desconhecido');
 
 const listSectionFixtures = {
-  experiences: { label: 'Experiência', item: { title: 'Analista' }, metadata: { period: '2024' } },
+  experiences: { label: 'Experiência', item: { title: 'Analista' }, metadata: { period: '2024' }, hiddenContent: { description: 'Atuação em análise de dados.' } },
   education: { label: 'Formação', item: { degree: 'Administração' }, metadata: { period: '2024' } },
   skills: { label: 'Habilidades', item: { name: 'Excel' } },
   languages: { label: 'Idiomas', item: { language: 'Inglês' }, metadata: { level: 'Fluente' } },
   certifications: { label: 'Certificações', item: { name: 'Curso de Excel' }, metadata: { issuer: 'Escola X' } },
   projects: { label: 'Projetos', item: { name: 'Projeto de dados' }, metadata: { url: 'https://exemplo.com' } }
 };
-Object.entries(listSectionFixtures).forEach(([sectionId, { label, item, metadata }]) => {
+Object.entries(listSectionFixtures).forEach(([sectionId, { label, item, metadata, hiddenContent }]) => {
   const unknownListDraft = {
     ...EuGeroConfig.createEmptyState(),
     personal: {},
@@ -226,6 +226,17 @@ Object.entries(listSectionFixtures).forEach(([sectionId, { label, item, metadata
     draftValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(metadataOnlyDraft));
     assert(EuGeroStorage.hasDraft() === false, `${label} com metadado isolado não torna o rascunho retomável`);
     assert(EuGeroRouter.canGoToReview(metadataOnlyDraft) === false, `${label} com metadado isolado não libera a revisão`);
+  }
+
+  if (hiddenContent) {
+    const hiddenContentDraft = {
+      ...EuGeroConfig.createEmptyState(),
+      personal: {},
+      [sectionId]: [hiddenContent]
+    };
+    draftValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(hiddenContentDraft));
+    assert(EuGeroStorage.hasDraft() === false, `${label} com descrição isolada não torna o rascunho retomável`);
+    assert(EuGeroRouter.canGoToReview(hiddenContentDraft) === false, `${label} com descrição isolada não libera a revisão`);
   }
 
   const knownListDraft = {

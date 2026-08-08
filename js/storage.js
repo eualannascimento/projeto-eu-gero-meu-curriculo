@@ -38,7 +38,7 @@ const EuGeroStorage = (function () {
 
     const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
     const previewContentFields = {
-      experiences: ['title', 'company', 'description'],
+      experiences: ['title', 'company'],
       education: ['degree', 'institution'],
       languages: ['language'],
       certifications: ['name'],
