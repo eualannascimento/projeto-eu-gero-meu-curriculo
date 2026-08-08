@@ -368,6 +368,7 @@
     if (saved) {
       flashSavedIndicator();
     } else {
+      hideSavedIndicator();
       showToast('Não foi possível salvar neste dispositivo. Baixe um backup antes de fechar a página.', {
         error: true,
         actionLabel: 'Baixar backup',
@@ -389,6 +390,15 @@
       el.classList.remove('visible');
       el.hidden = true;
     }, 2000);
+  }
+
+  function hideSavedIndicator() {
+    const el = els.savedIndicator || document.getElementById('saved-indicator');
+    clearTimeout(flashSavedIndicator._timer);
+    flashSavedIndicator._timer = null;
+    if (!el) return;
+    el.classList.remove('visible');
+    el.hidden = true;
   }
 
   const PAGE_MARGINS = [
@@ -729,6 +739,7 @@
     render,
     saveState,
     loadDraft,
+    resumeDraft,
     exportState,
     clearLocalData,
     showToast,

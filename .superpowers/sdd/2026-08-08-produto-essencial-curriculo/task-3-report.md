@@ -23,3 +23,10 @@ Implementados os contratos de persistência, backup e exclusão local. O autosav
 ## Limites
 
 Os testes cobrem o contrato de storage, quota simulada, migração, backup e limpeza. A jornada visual de confirmação no navegador não foi executada manualmente nesta task.
+
+## Correções da revisão
+
+1. Ao falhar o autosave, `hideSavedIndicator()` remove imediatamente o estado visual de sucesso e cancela o timer pendente antes de exibir o toast de erro.
+2. O smoke test usa um DOM mínimo para executar a aplicação. Ele confirma que a falha retorna `false`, oculta o indicador, cancela o timer associado, disponibiliza o backup e que `resumeDraft()` restaura o estado local e abre o wizard.
+3. O teste estático do retorno de `saveState()` foi substituído por essa cobertura comportamental.
+4. Validação final: `node tests/smoke-test.js` concluiu com 290 testes aprovados e 0 falhas. `node --check js/app.js`, `node --check tests/smoke-test.js` e `git diff --check` concluíram sem erro.

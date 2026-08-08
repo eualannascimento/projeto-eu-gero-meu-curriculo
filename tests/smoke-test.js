@@ -279,10 +279,6 @@ assert(EuGeroStorage.save(resumableDraft) === false, 'Quota simulada faz o autos
 console.warn = previousStorageWarning;
 global.localStorage = quotaStorage;
 
-const appCode = fs.readFileSync(path.join(__dirname, '..', 'js/app.js'), 'utf8');
-assert(/const saved = EuGeroStorage\.save\(state\);[\s\S]*?if \(saved\)[\s\S]*?flashSavedIndicator\(\)[\s\S]*?return saved;/.test(appCode),
-  'Autosave só mostra sucesso após armazenamento confirmado e retorna o resultado');
-
 assert(typeof EuGeroStorage.clearLocalData === 'function' && EuGeroStorage.clearLocalData() === true,
   'Limpeza local confirma a remoção do rascunho');
 assert(draftValues.has(EuGeroConfig.STORAGE_KEY) === false, 'Limpeza local remove todos os dados persistidos do currículo');
@@ -525,12 +521,15 @@ function createWizardDom() {
     });
   }
 
+  const listeners = {};
   const document = {
     activeElement: null,
     createElement(tagName) { return new TestElement(tagName, document); },
     getElementById(id) { return document.body.querySelector(`#${id}`); },
     querySelector(selector) { return document.body.querySelector(selector); },
     querySelectorAll(selector) { return document.body.querySelectorAll(selector); },
+    addEventListener(type, listener) { (listeners[type] ||= []).push(listener); },
+    dispatchEvent(type) { (listeners[type] || []).forEach((listener) => listener()); },
     body: null
   };
   document.body = new TestElement('body', document);
@@ -613,6 +612,102 @@ assert(wizardSteps.querySelectorAll('[role="alert"]').length === 1
 
 global.document = previousDocumentForWizard;
 global.CSS = previousCssForWizard;
+
+// --- Autosave e retomada de rascunho ---
+console.log('\nAutosave e retomada de rascunho:');
+
+const previousAppDocument = global.document;
+const previousAppWindow = global.window;
+const previousAppLocation = global.location;
+const previousAppHistory = global.history;
+const previousAppStorage = global.localStorage;
+const previousAppTimeout = global.setTimeout;
+const previousAppClearTimeout = global.clearTimeout;
+const previousAppAnimationFrame = global.requestAnimationFrame;
+const previousStartScreen = global.EuGeroStartScreen;
+const previousWizardScreen = global.EuGeroWizardScreen;
+const previousReviewScreen = global.EuGeroReviewScreen;
+const previousPromptModal = global.EuGeroPromptModal;
+const previousLinkedInGuide = global.EuGeroLinkedInGuide;
+
+const appDom = createWizardDom();
+const appTimers = new Map();
+let appTimerId = 0;
+const appStorageValues = new Map();
+global.document = appDom.document;
+global.window = { addEventListener() {}, scrollTo() {} };
+global.location = { hash: '', pathname: '/', search: '' };
+global.history = { replaceState(_state, _title, url) { global.location.hash = url.slice(url.indexOf('#')); } };
+global.localStorage = {
+  getItem(key) { return appStorageValues.has(key) ? appStorageValues.get(key) : null; },
+  setItem(key, value) { appStorageValues.set(key, String(value)); },
+  removeItem(key) { appStorageValues.delete(key); }
+};
+global.setTimeout = (callback) => {
+  const id = ++appTimerId;
+  appTimers.set(id, callback);
+  return id;
+};
+global.clearTimeout = (id) => appTimers.delete(id);
+global.requestAnimationFrame = () => 0;
+global.EuGeroStartScreen = {
+  init() {}, renderCharacterGrid() {}, renderTemplatePickers() {}, renderSectionChecklist() {},
+  updateTemplatePreviewMinis() {}
+};
+global.EuGeroWizardScreen = { init() {}, renderWizardStep() {}, validateCurrentStep() { return true; } };
+global.EuGeroReviewScreen = { init() {}, syncGalleryToTemplate() {}, renderReview() {}, renderReviewGallery() {} };
+global.EuGeroPromptModal = { init() {} };
+global.EuGeroLinkedInGuide = { renderGuide() {} };
+
+['screen-characters', 'screen-start', 'screen-wizard', 'screen-review', 'screen-guide',
+  'saved-indicator', 'toast', 'toast-message', 'toast-action'].forEach((id) => {
+  const element = appDom.document.createElement('div');
+  element.id = id;
+  appDom.document.body.appendChild(element);
+});
+appDom.document.getElementById('toast-action').hidden = true;
+
+loadScript('js/app.js');
+appDom.document.dispatchEvent('DOMContentLoaded');
+
+const app = global.window.EuGeroApp;
+const savedIndicator = appDom.document.getElementById('saved-indicator');
+const toastAction = appDom.document.getElementById('toast-action');
+const originalAppSave = EuGeroStorage.save;
+app.saveState();
+const savedIndicatorTimer = appTimerId;
+EuGeroStorage.save = () => false;
+assert(app.saveState() === false, 'Falha de autosave retorna false pela interface pública');
+assert(savedIndicator.hidden === true && !savedIndicator.classList.contains('visible') && !appTimers.has(savedIndicatorTimer),
+  'Falha de autosave oculta imediatamente o indicador e cancela seu timer');
+assert(toastAction.hidden === false && toastAction.textContent === 'Baixar backup',
+  'Falha de autosave oferece backup acionável');
+EuGeroStorage.save = originalAppSave;
+
+const resumableAppDraft = {
+  ...EuGeroConfig.createEmptyState(),
+  personal: { ...EuGeroConfig.createEmptyState().personal, fullName: 'Rascunho Retomado' }
+};
+appStorageValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(resumableAppDraft));
+assert(typeof app.resumeDraft === 'function', 'Aplicação expõe a retomada do rascunho para a tela inicial');
+const resumed = typeof app.resumeDraft === 'function' && app.resumeDraft();
+assert(resumed === true && app.getState().personal.fullName === 'Rascunho Retomado'
+  && app.getCurrentView() === 'wizard', 'Retomada restaura o estado local e abre o wizard');
+
+global.document = previousAppDocument;
+global.window = previousAppWindow;
+global.location = previousAppLocation;
+global.history = previousAppHistory;
+if (previousAppStorage === undefined) delete global.localStorage;
+else global.localStorage = previousAppStorage;
+global.setTimeout = previousAppTimeout;
+global.clearTimeout = previousAppClearTimeout;
+global.requestAnimationFrame = previousAppAnimationFrame;
+global.EuGeroStartScreen = previousStartScreen;
+global.EuGeroWizardScreen = previousWizardScreen;
+global.EuGeroReviewScreen = previousReviewScreen;
+global.EuGeroPromptModal = previousPromptModal;
+global.EuGeroLinkedInGuide = previousLinkedInGuide;
 
 // --- Datas ---
 console.log('\nDatas estruturadas:');
