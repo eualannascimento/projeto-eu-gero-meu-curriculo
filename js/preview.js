@@ -289,6 +289,13 @@ const EuGeroPreview = (function () {
   const MM_TO_PX = 96 / 25.4;
   const PAGE_HEIGHT_PX = 297 * MM_TO_PX;
 
+  function getPreviewPageLimit(state) {
+    if (typeof EuGeroPdfExport !== 'undefined' && typeof EuGeroPdfExport.getPageLimit === 'function') {
+      return EuGeroPdfExport.getPageLimit(state);
+    }
+    return state?.pageMode === 'detailed' ? 2 : 1;
+  }
+
   // Mede a altura real renderizada (DOM) contra a altura fisica de uma
   // pagina A4, em vez de estimar por contagem de caracteres (P0.4). So se
   // aplica ao painel de previa principal (dentro de .preview-a4-wrap), onde
@@ -300,23 +307,26 @@ const EuGeroPreview = (function () {
   }
 
   function isOverflowing(container, state, sections) {
+    const pageLimit = getPreviewPageLimit(state);
     if (measuresRealPage(container) && typeof container.scrollHeight === 'number') {
       container.style.width = '210mm';
-      return container.scrollHeight > PAGE_HEIGHT_PX + 1;
+      return container.scrollHeight > PAGE_HEIGHT_PX * pageLimit + 1;
     }
     const pageFit = typeof EuGeroScoring !== 'undefined'
       ? EuGeroScoring.scorePageFit(state, sections)
       : { level: 'ok' };
-    return pageFit.level !== 'ok';
+    return pageFit.level === 'overflow' || (pageLimit === 1 && pageFit.level === 'warning');
   }
 
   function updatePreview(container, state, templateId, enabledSections) {
     if (!container) return;
     const sections = enabledSections || getActiveSections(state.enabledSections);
+    const pageLimit = getPreviewPageLimit(state);
+    const pageLabel = pageLimit === 1 ? 'página' : 'páginas';
     const inner = render(state, templateId, sections);
     container.innerHTML = `
       <div class="preview-a4-body">${inner}</div>
-      <div class="cv-page-limit" aria-hidden="true"><span>Limite de 1 pagina A4</span></div>
+      <div class="cv-page-limit" aria-hidden="true"><span>Limite de ${pageLimit} ${pageLabel} A4</span></div>
     `;
     const margin = state.margin || 'padrao';
     const density = state.density || 'normal';

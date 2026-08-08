@@ -108,12 +108,30 @@ const EuGeroReviewScreen = (function () {
       </div>`;
 
     const currentTemplate = TEMPLATES[state.template];
-    const pageTitle = pageFit.level === 'ok' ? 'Cabe em uma página' : pageFit.level === 'detailed' ? 'Modo detalhado: até duas páginas' : 'Revise a extensão';
+    const pageLimit = state.pageMode === 'detailed' ? 2 : 1;
+    const pageTitle = pageFit.level === 'ok'
+      ? 'Cabe em uma página'
+      : pageFit.level === 'detailed' && pageLimit === 2
+        ? 'Modo detalhado: até duas páginas'
+        : 'Revise a extensão';
     const pageText = pageFit.level === 'ok'
       ? 'O conteúdo está em uma extensão adequada para uma página.'
       : pageFit.level === 'detailed'
-        ? 'Duas páginas são aceitáveis quando a experiência e os resultados forem relevantes para a vaga.'
-        : 'Prefira cortar repetições e conteúdo pouco relevante. Se tudo for necessário, escolha "Até 2 páginas".';
+        ? 'Duas páginas são aceitáveis quando a experiência e os resultados forem relevantes para a vaga. O PDF será bloqueado acima desse limite.'
+        : pageLimit === 1
+          ? 'Prefira cortar repetições e conteúdo pouco relevante. Se tudo for necessário, escolha "Até 2 páginas".'
+          : 'Reduza repetições e conteúdo pouco relevante. O PDF será bloqueado acima de duas páginas.';
+    const reductionActions = pageFit.level === 'ok' ? '' : sections
+      .filter((section) => ['summary', 'experiences', 'projects'].includes(section.id))
+      .map((section) => {
+        const stepIndex = sections.findIndex((item) => item.id === section.id);
+        const label = section.id === 'summary'
+          ? 'Reduzir resumo'
+          : section.id === 'experiences'
+            ? 'Revisar experiências'
+            : 'Revisar projetos';
+        return `<button type="button" class="rf-tip link-btn" data-step="${stepIndex}">${label}</button>`;
+      }).join('');
     const checklist = [
       state.personal.email ? 'E-mail preenchido' : 'Revise o e-mail de contato',
       state.personal.location ? 'Cidade informada sem endereço completo' : 'Informe cidade e estado',
@@ -125,6 +143,7 @@ const EuGeroReviewScreen = (function () {
       <p class="review-block-title-tight">Extensão e checagem final</p>
       <p class="review-block-text">${ctx.escapeHtml(pageText)}</p>
       <ul class="review-block-list">${checklist.map((item) => `<li>${ctx.escapeHtml(item)}</li>`).join('')}</ul>
+      ${reductionActions ? `<div class="rf-tips">${reductionActions}</div>` : ''}
     </div>`;
 
     // Painel de leitura por ATS: considera apenas a estrutura do modelo escolhido.
@@ -211,8 +230,8 @@ const EuGeroReviewScreen = (function () {
 
   /** Nome-base do arquivo: CV_<NOME>_<CARGO>, sem acento nem simbolo. */
 
-  function cvFileBaseName() {
-    const state = ctx.getState();
+  function cvFileBaseName(stateOverride) {
+    const state = stateOverride || ctx.getState();
     const clean = (t) => (t || '')
       .normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '')
       .replace(/[^a-zA-Z0-9]+/g, '-')
@@ -251,16 +270,19 @@ const EuGeroReviewScreen = (function () {
     return pdfVendorPromise;
   }
 
-  async function downloadPdf() {
-    const state = ctx.getState();
-    const sections = ctx.activeSections();
+  async function downloadPdf(stateOverride) {
+    const hasStateOverride = stateOverride && typeof stateOverride === 'object' && stateOverride.personal;
+    const state = hasStateOverride ? stateOverride : ctx.getState();
+    const sections = hasStateOverride
+      ? EuGeroConfig.getActiveSections(state.enabledSections)
+      : ctx.activeSections();
     const validationErrors = getReviewValidationErrors(state, sections);
     if (validationErrors.length > 0) {
       const firstError = validationErrors[0];
       ctx.goToWizard(firstError.stepIndex);
       EuGeroWizardScreen.revealValidationError(firstError.sectionId, firstError);
       ctx.showToast?.('Revise os campos obrigatórios antes de baixar o PDF.', { error: true });
-      return;
+      return false;
     }
 
     const btn = document.getElementById('btn-export-pdf');
@@ -268,10 +290,24 @@ const EuGeroReviewScreen = (function () {
     if (btn) { btn.disabled = true; btn.textContent = 'Gerando PDF...'; }
     try {
       await loadPdfVendor();
-      const doc = EuGeroPdfExport.generatePdf(state, sections, state.template, state.margin || 'padrao', state.density || 'normal');
-      doc.save(`${cvFileBaseName()}.pdf`);
+      const measurement = EuGeroPdfExport.measureExport(state);
+      if (measurement.issues.length > 0) {
+        ctx.showToast?.(measurement.issues[0], { error: true });
+        return false;
+      }
+      const doc = EuGeroPdfExport.generatePdf(
+        state,
+        sections,
+        state.template,
+        state.margin || 'padrao',
+        state.density || 'normal',
+        state.pageMode || 'compact'
+      );
+      doc.save(`${cvFileBaseName(state)}.pdf`);
+      return true;
     } catch (err) {
       ctx.showToast?.('Não foi possível gerar o PDF. Tente novamente.', { error: true });
+      return false;
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = rotuloOriginal; }
     }

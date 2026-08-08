@@ -420,6 +420,7 @@
     saveState();
     renderPageControls();
     if (els.previewMobileDock) els.previewMobileDock.hidden = currentView !== 'wizard';
+    if (currentView === 'review') EuGeroReviewScreen.renderReview();
     debouncedUpdatePreviews();
   }
 
@@ -609,8 +610,10 @@
     const fit = document.getElementById('preview-mobile-fit');
     if (!fit) return;
     const pageFit = EuGeroScoring.scorePageFit(state, activeSections());
-    fit.textContent = pageFit.level === 'ok' ? '1 página' : pageFit.level === 'detailed' ? 'até 2 páginas' : 'revisar';
-    fit.className = `preview-mobile-fit preview-mobile-fit-${pageFit.level}`;
+    const pageLimit = state.pageMode === 'detailed' ? 2 : 1;
+    const requiresReview = pageFit.level === 'overflow' || (pageLimit === 1 && pageFit.level === 'warning');
+    fit.textContent = requiresReview ? 'revisar' : pageLimit === 2 ? 'até 2 páginas' : '1 página';
+    fit.className = `preview-mobile-fit preview-mobile-fit-${requiresReview ? pageFit.level : pageLimit === 2 ? 'detailed' : 'ok'}`;
   }
 
   function exportJson() {

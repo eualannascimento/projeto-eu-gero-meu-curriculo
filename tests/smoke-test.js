@@ -48,6 +48,7 @@ loadScript('js/pdf-export.js');
 
 let passed = 0;
 let failed = 0;
+let pendingAsyncTests = Promise.resolve();
 
 function assert(condition, message) {
   if (condition) {
@@ -1192,6 +1193,107 @@ assert(!startScreenCode.includes('Página em branco pronta'), 'Escolher ponto de
 assert(!appJsCode.includes('Modelo alterado para'), 'Trocar modelo não abre toast');
 assert(responsiveCss.includes('bottom: max(5.25rem'), 'Toast mobile fica acima da barra fixa');
 
+// --- Limite real de páginas no PDF ---
+console.log('\nPDF - limite real de páginas:');
+
+global.jspdf = require(path.join(__dirname, '..', 'js/vendor/jspdf.umd.min.js'));
+
+const resumeLimitBase = {
+  ...EuGeroConfig.createEmptyState(),
+  personal: {
+    fullName: 'Maria da Silva',
+    headline: 'Analista de Dados',
+    email: 'maria@exemplo.com.br',
+    phone: '(11) 99999-0000',
+    location: 'São Paulo, SP',
+    linkedinUrl: ''
+  },
+  summary: 'Analista de dados com experiência em produtos digitais e melhoria de processos.',
+  experiences: [{
+    title: 'Analista de Dados',
+    company: 'Empresa Exemplo',
+    startDate: '2021-01',
+    endDate: '',
+    endCurrent: true,
+    description: 'Analisei dados de produto, construí relatórios e apoiei decisões com indicadores claros.'
+  }],
+  education: [{
+    degree: 'Bacharelado em Sistemas de Informação',
+    institution: 'Universidade Exemplo',
+    startDate: '2017-01',
+    endDate: '2020-12'
+  }],
+  skillsText: 'SQL; Python; Excel; Power BI',
+  languages: [{ language: 'Inglês', level: 'Intermediário' }]
+};
+
+function measureResumeExport(state) {
+  if (typeof EuGeroPdfExport.measureExport !== 'function') {
+    return { pages: 0, issues: ['Medição do PDF indisponível.'] };
+  }
+  return EuGeroPdfExport.measureExport(state);
+}
+
+function pageLimitFor(state) {
+  return typeof EuGeroPdfExport.getPageLimit === 'function'
+    ? EuGeroPdfExport.getPageLimit(state)
+    : 0;
+}
+
+const minimalResume = {
+  ...EuGeroConfig.createEmptyState(),
+  personal: { ...resumeLimitBase.personal }
+};
+const minimalExport = measureResumeExport(minimalResume);
+assert(pageLimitFor(minimalResume) === 1, 'Conteúdo mínimo usa limite de uma página por padrão');
+assert(minimalExport.pages === 1 && minimalExport.issues.length === 0, 'Conteúdo mínimo gera uma página sem bloqueio');
+
+const typicalExport = measureResumeExport(resumeLimitBase);
+assert(typicalExport.pages === 1 && typicalExport.issues.length === 0, 'Conteúdo típico gera uma página sem bloqueio');
+
+const secondPageResume = {
+  ...resumeLimitBase,
+  pageMode: 'detailed',
+  summary: 'Analisei dados de produto e melhorei processos com resultados mensuráveis. '.repeat(42)
+};
+const secondPageExport = measureResumeExport(secondPageResume);
+assert(pageLimitFor(secondPageResume) === 2, 'Modo detalhado permite duas páginas');
+assert(secondPageExport.pages === 2 && secondPageExport.issues.length === 0, 'Segundo page break é permitido no modo detalhado');
+
+const overflowResume = {
+  ...resumeLimitBase,
+  pageMode: 'detailed',
+  summary: 'Analisei dados de produto e melhorei processos com resultados mensuráveis. '.repeat(140)
+};
+const overflowExport = measureResumeExport(overflowResume);
+assert(overflowExport.pages > 2 && overflowExport.issues.length > 0, 'PDF acima de duas páginas é identificado para bloqueio');
+
+function createPreviewContainer(scrollHeight) {
+  const body = {
+    overflow: null,
+    classList: { toggle(_name, force) { body.overflow = force; } }
+  };
+  return {
+    parentElement: { classList: { contains: (name) => name === 'preview-a4-wrap' } },
+    style: {},
+    scrollHeight,
+    innerHTML: '',
+    className: '',
+    querySelector() { return body; },
+    body
+  };
+}
+
+const compactPreview = createPreviewContainer(1200);
+EuGeroPreview.updatePreview(compactPreview, resumeLimitBase, 'classic');
+assert(compactPreview.body.overflow === true && compactPreview.innerHTML.includes('Limite de 1'),
+  'Prévia compacta sinaliza conteúdo acima de uma página');
+
+const detailedPreview = createPreviewContainer(1200);
+EuGeroPreview.updatePreview(detailedPreview, secondPageResume, 'classic');
+assert(detailedPreview.body.overflow === false && detailedPreview.innerHTML.includes('Limite de 2'),
+  'Prévia detalhada permite conteúdo até a segunda página');
+
 // --- PDF: fidelidade visual (fake doc para testar desenho sem jsPDF real) ---
 console.log('\nPDF - fake doc:');
 
@@ -1422,8 +1524,13 @@ console.log('\nPDF - truncamento do texto exibido do LinkedIn:');
 }
 
 setTimeout(() => {
-  assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
-  finishTests();
+  pendingAsyncTests.then(() => {
+    assert(debounceCalls === 1, 'debounce cancela chamadas anteriores e executa só a última');
+    finishTests();
+  }).catch((error) => {
+    assert(false, `Teste assíncrono falhou: ${error.message}`);
+    finishTests();
+  });
 }, 30);
 
 function finishTests() {
@@ -1455,3 +1562,50 @@ assert(printCss.includes('transition: none !important'), 'impressão desliga tra
 // zerar o padding fazia o Safari cortar o conteudo nas bordas.
 assert(!printCss.includes('padding: 0 !important'), 'impressão preserva o padding interno do documento');
 assert(!reviewJsCode.includes('applyPageMargin'), 'printCv não injeta regra @page dinâmica');
+
+// --- Download bloqueado acima do limite real ---
+console.log('\nPDF - bloqueio do download:');
+
+const previousReviewDocument = global.document;
+const reviewDownloadDom = createWizardDom();
+reviewDownloadDom.document.head = {
+  appendChild(script) { script.onload?.(); }
+};
+global.document = reviewDownloadDom.document;
+const reviewDownloadButton = reviewDownloadDom.document.createElement('button');
+reviewDownloadButton.id = 'btn-export-pdf';
+reviewDownloadButton.textContent = 'Baixar currículo em PDF';
+reviewDownloadDom.document.body.appendChild(reviewDownloadButton);
+const reviewToastMessages = [];
+
+loadScript('js/screens/review.js');
+EuGeroReviewScreen.init({
+  getState: () => overflowResume,
+  activeSections: () => EuGeroConfig.getActiveSections(overflowResume.enabledSections),
+  showToast(message) { reviewToastMessages.push(message); },
+  goToWizard() {},
+  escapeHtml: EuGeroUtils.escapeHtml,
+  saveState() {},
+  updateTemplateIndicators() {},
+  debouncedUpdatePreviews() {},
+  scaleReviewPreviews() {},
+  els: {}
+});
+
+assert(
+  EuGeroReviewScreen.cvFileBaseName({
+    personal: { fullName: 'Ana Sobrescrita', headline: 'Engenheira de Dados' }
+  }) === 'CV_Ana-Sobrescrita_Engenheira-de-Dados',
+  'Download com estado explícito usa o nome do arquivo desse estado'
+);
+
+pendingAsyncTests = (async () => {
+  try {
+    const downloaded = await EuGeroReviewScreen.downloadPdf(overflowResume);
+    assert(downloaded === false, 'Download retorna false quando o PDF ultrapassa duas páginas');
+    assert(reviewToastMessages.some((message) => message.includes('ultrapassa o limite de 2')),
+      'Download bloqueado informa como reduzir o conteúdo');
+  } finally {
+    global.document = previousReviewDocument;
+  }
+})();
