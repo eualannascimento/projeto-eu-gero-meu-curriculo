@@ -200,14 +200,14 @@ assert(EuGeroRouter.canGoToReview(resumableDraft) === true, 'Revisão permite cu
 assert(EuGeroRouter.canGoToReview(unknownPersonalDraft) === false, 'Revisão ignora campo pessoal desconhecido');
 
 const listSectionFixtures = {
-  experiences: { label: 'Experiência', item: { title: 'Analista' } },
-  education: { label: 'Formação', item: { degree: 'Administração' } },
+  experiences: { label: 'Experiência', item: { title: 'Analista' }, metadata: { period: '2024' } },
+  education: { label: 'Formação', item: { degree: 'Administração' }, metadata: { period: '2024' } },
   skills: { label: 'Habilidades', item: { name: 'Excel' } },
-  languages: { label: 'Idiomas', item: { language: 'Inglês' } },
-  certifications: { label: 'Certificações', item: { name: 'Curso de Excel' } },
-  projects: { label: 'Projetos', item: { name: 'Projeto de dados' } }
+  languages: { label: 'Idiomas', item: { language: 'Inglês' }, metadata: { level: 'Fluente' } },
+  certifications: { label: 'Certificações', item: { name: 'Curso de Excel' }, metadata: { issuer: 'Escola X' } },
+  projects: { label: 'Projetos', item: { name: 'Projeto de dados' }, metadata: { url: 'https://exemplo.com' } }
 };
-Object.entries(listSectionFixtures).forEach(([sectionId, { label, item }]) => {
+Object.entries(listSectionFixtures).forEach(([sectionId, { label, item, metadata }]) => {
   const unknownListDraft = {
     ...EuGeroConfig.createEmptyState(),
     personal: {},
@@ -216,6 +216,17 @@ Object.entries(listSectionFixtures).forEach(([sectionId, { label, item }]) => {
   draftValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(unknownListDraft));
   assert(EuGeroStorage.hasDraft() === false, `${label} com campo desconhecido não torna o rascunho retomável`);
   assert(EuGeroRouter.canGoToReview(unknownListDraft) === false, `${label} com campo desconhecido não libera a revisão`);
+
+  if (metadata) {
+    const metadataOnlyDraft = {
+      ...EuGeroConfig.createEmptyState(),
+      personal: {},
+      [sectionId]: [metadata]
+    };
+    draftValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(metadataOnlyDraft));
+    assert(EuGeroStorage.hasDraft() === false, `${label} com metadado isolado não torna o rascunho retomável`);
+    assert(EuGeroRouter.canGoToReview(metadataOnlyDraft) === false, `${label} com metadado isolado não libera a revisão`);
+  }
 
   const knownListDraft = {
     ...EuGeroConfig.createEmptyState(),

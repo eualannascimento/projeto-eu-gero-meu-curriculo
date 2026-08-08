@@ -37,8 +37,13 @@ const EuGeroStorage = (function () {
     if (!data || typeof data !== 'object') return false;
 
     const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
-    const hasKnownItemContent = (item, fields) => item && typeof item === 'object'
-      && fields.some((field) => hasText(item[field.key]));
+    const previewContentFields = {
+      experiences: ['title', 'company', 'description'],
+      education: ['degree', 'institution'],
+      languages: ['language'],
+      certifications: ['name'],
+      projects: ['name']
+    };
 
     const personalKeys = Object.keys(createEmptyState().personal);
     if (personalKeys.some((key) => hasText(data.personal?.[key]))) return true;
@@ -51,10 +56,9 @@ const EuGeroStorage = (function () {
     });
     if (hasLegacySkill) return true;
 
-    return EuGeroConfig.SECTIONS
-      .filter((section) => section.list)
-      .some((section) => Array.isArray(data[section.id])
-        && data[section.id].some((item) => hasKnownItemContent(item, section.itemFields)));
+    return Object.entries(previewContentFields).some(([sectionId, fields]) => Array.isArray(data[sectionId])
+      && data[sectionId].some((item) => item && typeof item === 'object'
+        && fields.some((field) => hasText(item[field]))));
   }
 
   function load() {
