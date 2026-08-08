@@ -16,7 +16,7 @@ async function expectNoHorizontalOverflow(page) {
 }
 
 async function expectVisibleFocus(page, selector) {
-  await page.locator(selector).focus();
+  await page.locator(selector).evaluate((element) => element.focus({ focusVisible: true }));
   await expect.poll(() => page.evaluate((target) => {
     const element = document.querySelector(target);
     const style = getComputedStyle(element);

@@ -26,11 +26,11 @@ async function openExperiencesStep(page) {
   await openBlankStart(page);
   await page.getByRole('button', { name: 'Começar a preencher' }).click();
   await fillRequiredPersonalData(page);
-  await page.getByRole('button', { name: 'Próximo' }).click();
+  await page.getByRole('button', { name: 'Próximo', exact: true }).click();
   await page.getByLabel('Um parágrafo curto sobre você').fill(
     'Analista de dados com experiência em relatórios, automação e melhoria de processos para equipes de produto.'
   );
-  await page.getByRole('button', { name: 'Próximo' }).click();
+  await page.getByRole('button', { name: 'Próximo', exact: true }).click();
   await expect(page.locator('.wizard-step[data-section-id="experiences"]')).toBeVisible();
 }
 
@@ -89,7 +89,7 @@ test.describe('jornada crítica do currículo', () => {
     });
 
     await expect(page.getByRole('tab', { name: 'Experiência 2' })).toHaveAttribute('aria-selected', 'true');
-    await page.getByRole('button', { name: 'Próximo' }).click();
+    await page.getByRole('button', { name: 'Próximo', exact: true }).click();
 
     await expect(page.locator('.wizard-step[data-section-id="experiences"]')).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Experiência 1' })).toHaveAttribute('aria-selected', 'true');
@@ -101,7 +101,7 @@ test.describe('jornada crítica do currículo', () => {
       company: 'Empresa Anterior',
       description: 'Organizei planilhas, conferi dados e ajudei a reduzir erros nos relatórios mensais da equipe.'
     });
-    await page.getByRole('button', { name: 'Próximo' }).click();
+    await page.getByRole('button', { name: 'Próximo', exact: true }).click();
     await expect(page.locator('.wizard-step[data-section-id="education"]')).toBeVisible();
   });
 
@@ -124,7 +124,7 @@ test.describe('jornada crítica do currículo', () => {
     await expect(page.locator('#screen-wizard')).toBeVisible();
     await expect(page.getByLabel('Nome para o currículo')).toHaveValue('Ana Teste');
 
-    await page.getByRole('button', { name: 'Próximo' }).click();
+    await page.getByRole('button', { name: 'Próximo', exact: true }).click();
     await page.getByLabel('Um parágrafo curto sobre você').fill(
       'Analista de dados com experiência em relatórios, automação e melhoria de processos para equipes de produto.'
     );
