@@ -43,8 +43,11 @@ const EuGeroStorage = (function () {
       return false;
     };
 
+    const personalKeys = Object.keys(createEmptyState().personal);
+    if (personalKeys.some((key) => containsValue(data.personal?.[key]))) return true;
+
     const contentKeys = [
-      'personal', 'summary', 'skillsText', 'experiences', 'education', 'skills',
+      'summary', 'skillsText', 'experiences', 'education', 'skills',
       'languages', 'certifications', 'projects', 'volunteering', 'publications',
       'awards', 'organizations', 'courses'
     ];

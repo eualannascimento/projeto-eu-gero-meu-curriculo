@@ -185,12 +185,19 @@ const resumableDraft = {
 assert(EuGeroStorage.hasDraft() === false, 'Sem conteúdo salvo não há rascunho para retomar');
 draftValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(resumableDraft));
 assert(EuGeroStorage.hasDraft() === true, 'Rascunho local com conteúdo pode ser retomado');
+const unknownPersonalDraft = {
+  ...EuGeroConfig.createEmptyState(),
+  personal: { ignored: 'não faz parte do currículo' }
+};
+draftValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(unknownPersonalDraft));
+assert(EuGeroStorage.hasDraft() === false, 'Campo pessoal desconhecido não torna o rascunho retomável');
 assert(EuGeroStorage.clear() === true, 'Limpar rascunho confirma a remoção local');
 assert(EuGeroStorage.hasDraft() === false, 'Rascunho removido deixa de estar disponível');
 
 const emptyReviewState = EuGeroConfig.createEmptyState();
 assert(EuGeroRouter.canGoToReview(emptyReviewState) === false, 'Revisão bloqueia currículo vazio');
 assert(EuGeroRouter.canGoToReview(resumableDraft) === true, 'Revisão permite currículo com conteúdo');
+assert(EuGeroRouter.canGoToReview(unknownPersonalDraft) === false, 'Revisão ignora campo pessoal desconhecido');
 
 if (previousLocalStorage === undefined) delete global.localStorage;
 else global.localStorage = previousLocalStorage;
