@@ -62,25 +62,23 @@ const EuGeroStorage = (function () {
   }
 
   function load() {
+    return loadDraft() || initialState();
+  }
+
+  function loadDraft() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return initialState();
+      if (!raw) return null;
       const parsed = migrate(JSON.parse(raw));
       return mergeWithDefaults(parsed);
     } catch (e) {
       console.warn('Erro ao carregar localStorage:', e);
-      return initialState();
+      return null;
     }
   }
 
   function hasDraft() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return false;
-      return hasContent(mergeWithDefaults(migrate(JSON.parse(raw))));
-    } catch (e) {
-      return false;
-    }
+    return hasContent(loadDraft());
   }
 
   function mergeWithDefaults(data) {
@@ -143,7 +141,7 @@ const EuGeroStorage = (function () {
   }
 
   function downloadJson(state, filename) {
-    const blob = new Blob([serialize(state)], { type: 'application/json' });
+    const blob = exportState(state);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -154,7 +152,11 @@ const EuGeroStorage = (function () {
     URL.revokeObjectURL(url);
   }
 
-  function clear() {
+  function exportState(state) {
+    return new Blob([serialize(state)], { type: 'application/json' });
+  }
+
+  function clearLocalData() {
     try {
       localStorage.removeItem(STORAGE_KEY);
       return true;
@@ -164,18 +166,25 @@ const EuGeroStorage = (function () {
     }
   }
 
+  function clear() {
+    return clearLocalData();
+  }
+
   return {
     SCHEMA_VERSION,
     migrate,
     save,
     load,
+    loadDraft,
     hasContent,
     hasDraft,
     mergeWithDefaults,
     validateImportData,
     serialize,
     deserialize,
+    exportState,
     downloadJson,
+    clearLocalData,
     clear
   };
 })();

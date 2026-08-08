@@ -249,6 +249,44 @@ Object.entries(listSectionFixtures).forEach(([sectionId, { label, item, metadata
   assert(EuGeroRouter.canGoToReview(knownListDraft) === true, `${label} com campo conhecido libera a revisão`);
 });
 
+console.log('\nAutosave, backup e exclusão local:');
+
+assert(typeof EuGeroStorage.loadDraft === 'function', 'Storage expõe carregamento de rascunho ou null');
+assert(typeof EuGeroStorage.exportState === 'function', 'Storage expõe backup JSON como Blob');
+assert(typeof EuGeroStorage.clearLocalData === 'function', 'Storage expõe limpeza completa dos dados locais');
+
+draftValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify({
+  ...resumableDraft,
+  schemaVersion: 0
+}));
+const loadedDraft = typeof EuGeroStorage.loadDraft === 'function' ? EuGeroStorage.loadDraft() : null;
+assert(loadedDraft?.personal.fullName === 'Ana Retomada' && loadedDraft.schemaVersion === EuGeroStorage.SCHEMA_VERSION,
+  'Rascunho local é carregado com migração de schema');
+
+const exportedState = typeof EuGeroStorage.exportState === 'function' ? EuGeroStorage.exportState(resumableDraft) : null;
+assert(exportedState instanceof Blob && exportedState.type === 'application/json',
+  'Backup local é exportado como Blob JSON');
+
+const quotaStorage = global.localStorage;
+const previousStorageWarning = console.warn;
+global.localStorage = {
+  getItem: quotaStorage.getItem.bind(quotaStorage),
+  setItem() { throw new Error('QuotaExceededError'); },
+  removeItem: quotaStorage.removeItem.bind(quotaStorage)
+};
+console.warn = () => {};
+assert(EuGeroStorage.save(resumableDraft) === false, 'Quota simulada faz o autosave informar falha');
+console.warn = previousStorageWarning;
+global.localStorage = quotaStorage;
+
+const appCode = fs.readFileSync(path.join(__dirname, '..', 'js/app.js'), 'utf8');
+assert(/const saved = EuGeroStorage\.save\(state\);[\s\S]*?if \(saved\)[\s\S]*?flashSavedIndicator\(\)[\s\S]*?return saved;/.test(appCode),
+  'Autosave só mostra sucesso após armazenamento confirmado e retorna o resultado');
+
+assert(typeof EuGeroStorage.clearLocalData === 'function' && EuGeroStorage.clearLocalData() === true,
+  'Limpeza local confirma a remoção do rascunho');
+assert(draftValues.has(EuGeroConfig.STORAGE_KEY) === false, 'Limpeza local remove todos os dados persistidos do currículo');
+
 if (previousLocalStorage === undefined) delete global.localStorage;
 else global.localStorage = previousLocalStorage;
 

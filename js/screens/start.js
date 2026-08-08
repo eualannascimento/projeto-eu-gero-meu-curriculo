@@ -30,7 +30,8 @@ const EuGeroStartScreen = (function () {
         <span class="character-cta">Escolher →</span>
       </button>
     `);
-    const resumeDraftCard = EuGeroStorage.hasDraft() ? `
+    const draft = EuGeroStorage.loadDraft();
+    const resumeDraftCard = EuGeroStorage.hasContent(draft) ? `
       <button type="button" class="character-card character-card-blank" id="btn-resume-draft">
         ${corners}
         <span class="character-avatar" aria-hidden="true">↺</span>
@@ -58,7 +59,7 @@ const EuGeroStartScreen = (function () {
     grid.querySelectorAll('.character-card[data-character]').forEach((card) => {
       card.addEventListener('click', () => pickCharacter(card.dataset.character));
     });
-    grid.querySelector('#btn-resume-draft')?.addEventListener('click', () => ctx.goToWizard());
+    grid.querySelector('#btn-resume-draft')?.addEventListener('click', () => ctx.resumeDraft());
   }
 
   function pickCharacter(id) {

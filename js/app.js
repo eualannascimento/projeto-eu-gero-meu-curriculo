@@ -12,7 +12,6 @@
   let state = EuGeroStorage.load();
   let currentView = 'characters';
   let suppressHash = false;
-  let saveTimer = null;
   let toastTimer = null;
 
   const els = {};
@@ -37,6 +36,7 @@
       goToStart,
       goToStep,
       goToWizard,
+      resumeDraft,
       updateTemplateIndicators,
       switchTemplate,
       renderSectionChecklist: () => EuGeroStartScreen.renderSectionChecklist(),
@@ -178,6 +178,51 @@
     navigateTo('start');
   }
 
+  function setRouteWithoutSaving(view, { replace = false } = {}) {
+    currentView = view;
+    render();
+    window.scrollTo(0, 0);
+    suppressHash = true;
+    EuGeroRouter.setHash(view, null, { replace });
+    suppressHash = false;
+  }
+
+  function loadDraft() {
+    const draft = EuGeroStorage.loadDraft();
+    if (!draft || !EuGeroStorage.hasContent(draft)) return null;
+    state = draft;
+    return state;
+  }
+
+  function resumeDraft() {
+    if (!loadDraft()) {
+      showToast('Não há um rascunho disponível para continuar.', { error: true });
+      render();
+      return false;
+    }
+    goToWizard();
+    return true;
+  }
+
+  function clearLocalData() {
+    const cleared = EuGeroStorage.clearLocalData();
+    if (!cleared) {
+      showToast('Não foi possível apagar os dados locais. Tente novamente.', { error: true });
+      return false;
+    }
+    state = EuGeroConfig.createEmptyState();
+    setRouteWithoutSaving('characters', { replace: true });
+    showToast('Dados locais apagados deste navegador.');
+    return true;
+  }
+
+  function startNewDraft() {
+    const confirmed = window.confirm('Começar de novo apagará o rascunho salvo neste navegador. Arquivos JSON já baixados não serão afetados. Deseja continuar?');
+    if (!confirmed || !clearLocalData()) return false;
+    setRouteWithoutSaving('start', { replace: true });
+    return true;
+  }
+
   function startWizard() {
     state.currentStep = 0;
     const sectionId = activeSections()[0]?.id || null;
@@ -214,6 +259,11 @@
     document.getElementById('btn-go-home')?.addEventListener('click', (e) => { e.preventDefault(); navigateTo('characters'); });
     // O mesmo atalho existe como card na galeria de personagens (ver screens/start.js).
     document.getElementById('btn-import-characters')?.addEventListener('click', () => els.fileImport?.click());
+    document.getElementById('btn-start-new')?.addEventListener('click', startNewDraft);
+    document.getElementById('btn-clear-local-data')?.addEventListener('click', () => {
+      const confirmed = window.confirm('Isto apagará o rascunho e as preferências salvos localmente neste navegador. Arquivos JSON já baixados não serão afetados e a ação não pode ser desfeita. Deseja apagar os dados locais?');
+      if (confirmed) clearLocalData();
+    });
 
     document.getElementById('btn-start-wizard')?.addEventListener('click', startWizard);
     document.getElementById('btn-back-start')?.addEventListener('click', () => navigateTo('characters'));
@@ -314,11 +364,18 @@
   function saveState() {
     state.enabledSections = normalizeEnabledSections(state.enabledSections);
     state.skills = EuGeroConfig.parseSkillsText(state.skillsText);
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      EuGeroStorage.save(state);
+    const saved = EuGeroStorage.save(state);
+    if (saved) {
       flashSavedIndicator();
-    }, 400);
+    } else {
+      showToast('Não foi possível salvar neste dispositivo. Baixe um backup antes de fechar a página.', {
+        error: true,
+        actionLabel: 'Baixar backup',
+        onAction: exportJson,
+        duration: 8000
+      });
+    }
+    return saved;
   }
 
   function flashSavedIndicator() {
@@ -551,6 +608,10 @@
     showToast('Rascunho salvo em arquivo.');
   }
 
+  function exportState() {
+    return EuGeroStorage.exportState(state);
+  }
+
   function handleImport(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -667,6 +728,9 @@
     goToReview,
     render,
     saveState,
+    loadDraft,
+    exportState,
+    clearLocalData,
     showToast,
     debouncedUpdatePreviews
   };
