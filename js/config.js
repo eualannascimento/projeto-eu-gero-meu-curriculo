@@ -156,6 +156,23 @@ const EuGeroConfig = (function () {
     return TEMPLATES[templateId] || TEMPLATES.classic;
   }
 
+  function accentPalette(hex) {
+    const clean = (hex || '#334155').replace('#', '');
+    const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
+    const value = parseInt(full, 16);
+    const accent = [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+    const mix = (target, amount) => accent.map((channel, index) =>
+      Math.round(channel + (target[index] - channel) * amount)
+    );
+    return {
+      accent,
+      accent700: mix([0, 0, 0], 0.28),
+      accent800: mix([0, 0, 0], 0.4),
+      accent900: mix([0, 0, 0], 0.5),
+      accent100: mix([255, 255, 255], 0.9)
+    };
+  }
+
   function isSidebarTemplate(templateId) {
     return getTemplateMeta(templateId).layout === 'sidebar';
   }
@@ -260,6 +277,7 @@ const EuGeroConfig = (function () {
     TEMPLATES,
     TEMPLATE_IDS,
     getTemplateMeta,
+    accentPalette,
     isSidebarTemplate,
     STORAGE_KEY,
     APP_VERSION,

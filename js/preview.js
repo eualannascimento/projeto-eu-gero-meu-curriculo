@@ -316,6 +316,19 @@ const EuGeroPreview = (function () {
     return pageFit.level === 'overflow' || (pageLimit === 1 && pageFit.level === 'warning');
   }
 
+  function applyTemplateAccent(container, templateId) {
+    const meta = EuGeroConfig.getTemplateMeta(templateId);
+    const palette = EuGeroConfig.accentPalette(meta.thumbAccent);
+    if (!container.style?.setProperty) return;
+    const cssRgb = (rgb) => `rgb(${rgb.join(' ')})`;
+    container.style.setProperty('--color-accent', meta.thumbAccent);
+    container.style.setProperty('--color-accent-700', cssRgb(palette.accent700));
+    container.style.setProperty('--color-accent-800', cssRgb(palette.accent800));
+    container.style.setProperty('--color-accent-900', cssRgb(palette.accent900));
+    container.style.setProperty('--color-accent-100', cssRgb(palette.accent100));
+    container.style.setProperty('--color-accent-2-100', cssRgb(palette.accent100));
+  }
+
   function updatePreview(container, state, templateId, enabledSections) {
     if (!container) return;
     const sections = enabledSections || getActiveSections(state.enabledSections);
@@ -333,6 +346,7 @@ const EuGeroPreview = (function () {
     const margin = state.margin || 'padrao';
     const density = state.density || 'normal';
     container.className = `preview-content preview-paper template-${templateId} cv-margin-${margin} cv-density-${density} cv-page-limit-${pageLimit}`;
+    applyTemplateAccent(container, templateId);
 
     const overflows = isOverflowing(container, state, sections);
     const body = container.querySelector('.preview-a4-body');

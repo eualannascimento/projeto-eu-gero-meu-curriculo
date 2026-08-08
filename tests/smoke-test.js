@@ -61,6 +61,35 @@ function assert(condition, message) {
 
 console.log('\n=== Eu Gero — Smoke Tests ===\n');
 
+// --- Cor compartilhada entre prévia e PDF ---
+console.log('\nCor dos modelos na prévia e no PDF:');
+
+const previewColorVars = {};
+const previewColorContainer = {
+  parentElement: null,
+  style: { setProperty(name, value) { previewColorVars[name] = value; } },
+  className: '',
+  innerHTML: '',
+  querySelector() { return null; }
+};
+const colorState = EuGeroConfig.createEmptyState();
+['classic', 'minimal'].forEach((templateId) => {
+  Object.keys(previewColorVars).forEach((key) => delete previewColorVars[key]);
+  EuGeroPreview.updatePreview(
+    previewColorContainer,
+    colorState,
+    templateId,
+    EuGeroConfig.getActiveSections(colorState.enabledSections)
+  );
+  const accent = EuGeroConfig.TEMPLATES[templateId].thumbAccent;
+  const sharedPalette = EuGeroConfig.accentPalette(accent);
+  const pdfPalette = EuGeroPdfExport.accentPalette(accent);
+  assert(previewColorVars['--color-accent'] === accent,
+    `Prévia usa thumbAccent do modelo ${templateId}`);
+  assert(JSON.stringify(sharedPalette) === JSON.stringify(pdfPalette),
+    `Prévia e PDF usam a mesma paleta do modelo ${templateId}`);
+});
+
 // --- Scoring ---
 console.log('Pontuação por campo:');
 
@@ -995,6 +1024,9 @@ console.log('\nEscopo sem IA (index.html):');
 
 const htmlContent = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 assert(htmlContent.includes('Leitura por ATS'), 'HTML tem o rotulo "Leitura por ATS" na previa do start');
+assert(htmlContent.includes('currículo de uma ou duas páginas'), 'Meta description informa o limite de até duas páginas');
+assert(htmlContent.includes('Crie um currículo de uma ou duas páginas'), 'Open Graph informa o limite de até duas páginas');
+assert(htmlContent.includes('Currículo de uma ou duas páginas'), 'Twitter informa o limite de até duas páginas');
 assert(!htmlContent.includes('modal-prompt') && !htmlContent.includes('btn-mobile-prompt'), 'HTML não oferece acionadores de IA');
 assert(!htmlContent.includes('js/prompts.js') && !htmlContent.includes('js/screens/prompt-modal.js'), 'HTML não carrega módulos de IA');
 assert(htmlContent.includes('Algumas plataformas usam sistemas ATS para ler e organizar currículos'), 'Paragrafo do modal trocar modelo atualizado');

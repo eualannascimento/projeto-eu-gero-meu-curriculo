@@ -31,25 +31,8 @@ const EuGeroPdfExport = (function () {
 
   // ---- Cor: deriva a familia de acento (accent/700/900/100) a partir do
   // thumbAccent do template (unica cor exposta em js/config.js). ----
-  function hexToRgb(hex) {
-    const clean = (hex || '#334155').replace('#', '');
-    const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
-    const n = parseInt(full, 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  }
-
-  function mix(rgb, target, amount) {
-    return rgb.map((c, i) => Math.round(c + (target[i] - c) * amount));
-  }
-
   function accentPalette(hex) {
-    const accent = hexToRgb(hex);
-    return {
-      accent,
-      accent700: mix(accent, [0, 0, 0], 0.28),
-      accent900: mix(accent, [0, 0, 0], 0.5),
-      accent100: mix(accent, [255, 255, 255], 0.9)
-    };
+    return EuGeroConfig.accentPalette(hex);
   }
 
   function registerFonts(doc) {
