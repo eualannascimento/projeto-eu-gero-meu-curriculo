@@ -5,6 +5,7 @@ const draftKey = 'eugero-curriculo-state';
 
 async function openBlankStart(page) {
   await page.goto(`${baseUrl}/index.html`);
+  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Começar de novo' }).click();
   await expect(page.locator('#screen-start')).toBeVisible();
 }
@@ -14,6 +15,24 @@ async function fillRequiredPersonalData(page) {
   await page.getByLabel('Cargo ou área desejada').fill('Analista de Dados');
   await page.getByLabel('E-mail').fill('ana.teste@exemplo.com.br');
   await page.getByLabel('Cidade').fill('São Paulo, SP');
+}
+
+async function openExperiencesStep(page) {
+  await openBlankStart(page);
+  await page.getByRole('button', { name: 'Começar a preencher' }).click();
+  await fillRequiredPersonalData(page);
+  await page.getByRole('button', { name: 'Próximo' }).click();
+  await page.getByLabel('Um parágrafo curto sobre você').fill(
+    'Analista de dados com experiência em relatórios, automação e melhoria de processos para equipes de produto.'
+  );
+  await page.getByRole('button', { name: 'Próximo' }).click();
+  await expect(page.locator('.wizard-step[data-section-id="experiences"]')).toBeVisible();
+}
+
+async function fillExperience(page, { title, company, description }) {
+  await page.getByLabel('Cargo ou função').fill(title);
+  await page.getByLabel('Empresa, organização ou projeto').fill(company);
+  await page.getByLabel('Atividades e resultados').fill(description);
 }
 
 test.describe('jornada crítica do currículo', () => {
@@ -51,5 +70,34 @@ test.describe('jornada crítica do currículo', () => {
     await page.getByRole('button', { name: 'Baixar currículo em PDF' }).click();
     const pdf = await download;
     expect(pdf.suggestedFilename()).toMatch(/^CV_Ana-Teste_Analista-de-Dados\.pdf$/);
+  });
+
+  test('bloqueia avanço, seleciona a primeira experiência inválida e permite corrigi-la', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript((key) => localStorage.removeItem(key), draftKey);
+
+    await openExperiencesStep(page);
+    await page.getByRole('tab', { name: 'Adicionar experiência' }).click();
+    await fillExperience(page, {
+      title: 'Analista de Dados',
+      company: 'Empresa Exemplo',
+      description: 'Analisei indicadores, automatizei relatórios e apresentei resultados para a equipe de produto.'
+    });
+
+    await expect(page.getByRole('tab', { name: 'Experiência 2' })).toHaveAttribute('aria-selected', 'true');
+    await page.getByRole('button', { name: 'Próximo' }).click();
+
+    await expect(page.locator('.wizard-step[data-section-id="experiences"]')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Experiência 1' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#field-experiences-0-title')).toBeFocused();
+    await expect(page.locator('#field-experiences-0-title')).toHaveAttribute('aria-invalid', 'true');
+
+    await fillExperience(page, {
+      title: 'Assistente de Dados',
+      company: 'Empresa Anterior',
+      description: 'Organizei planilhas, conferi dados e ajudei a reduzir erros nos relatórios mensais da equipe.'
+    });
+    await page.getByRole('button', { name: 'Próximo' }).click();
+    await expect(page.locator('.wizard-step[data-section-id="education"]')).toBeVisible();
   });
 });

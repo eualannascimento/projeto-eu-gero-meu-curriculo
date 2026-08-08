@@ -4,6 +4,7 @@ const baseUrl = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173';
 
 async function openStart(page) {
   await page.goto(`${baseUrl}/index.html`);
+  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Começar de novo' }).click();
   await expect(page.locator('#screen-start')).toBeVisible();
 }
