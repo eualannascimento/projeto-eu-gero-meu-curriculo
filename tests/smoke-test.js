@@ -373,6 +373,55 @@ assert(!EuGeroValidation.validateEmail('invalido').ok, 'E-mail invalido rejeitad
 assert(EuGeroValidation.validateEmail('a@b.co').ok, 'E-mail valido aceito');
 assert(!EuGeroValidation.validateUrl('ftp://x').ok || EuGeroValidation.validateUrl('https://linkedin.com/in/x').ok, 'URL http(s) valida');
 
+// --- Validação de listas no wizard ---
+console.log('\nValidação acessível de listas no wizard:');
+
+const experiencesWithFirstInvalidItem = {
+  ...EuGeroConfig.createEmptyState(),
+  experiences: [
+    {
+      title: '',
+      company: 'Empresa válida',
+      period: '2024',
+      description: 'Atuei em projetos relevantes para a operação e para as pessoas atendidas.'
+    },
+    {
+      title: 'Analista de dados',
+      company: 'Outra empresa válida',
+      period: '2023',
+      description: 'Organizei relatórios e acompanhei indicadores para apoiar decisões da equipe.'
+    }
+  ]
+};
+const experienceValidation = typeof EuGeroValidation.validateWizardStep === 'function'
+  ? EuGeroValidation.validateWizardStep(
+    'experiences',
+    experiencesWithFirstInvalidItem,
+    EuGeroConfig.SECTIONS
+  )
+  : { valid: true, errors: [] };
+
+assert(experienceValidation.valid === false, 'Duas experiências com erro na primeira bloqueiam a etapa');
+assert(
+  experienceValidation.errors.length === 1
+    && experienceValidation.errors[0].itemId === 'experiences-0'
+    && experienceValidation.errors[0].field === 'title',
+  'Erro da primeira experiência identifica o item e o campo inválido'
+);
+assert(
+  experienceValidation.errors[0]?.message === 'Cargo ou função e obrigatorio.',
+  'Erro da lista preserva a mensagem de validação em português'
+);
+const firstExperienceErrorTarget = typeof EuGeroValidation.getWizardErrorTarget === 'function'
+  ? EuGeroValidation.getWizardErrorTarget(experienceValidation.errors[0])
+  : {};
+assert(
+  firstExperienceErrorTarget.itemIndex === 0
+    && firstExperienceErrorTarget.fieldId === 'field-experiences-0-title'
+    && firstExperienceErrorTarget.summaryHref === '#field-experiences-0-title',
+  'Resumo aponta para o primeiro campo inválido e permite mover o foco para ele'
+);
+
 // --- Datas ---
 console.log('\nDatas estruturadas:');
 

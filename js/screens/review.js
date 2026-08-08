@@ -14,12 +14,33 @@ const EuGeroReviewScreen = (function () {
     ctx = context;
   }
 
+  function getReviewValidationErrors(state, sections) {
+    return sections.flatMap((section, stepIndex) => {
+      const result = EuGeroValidation.validateWizardStep(section.id, state, sections);
+      return result.errors.map((error) => ({ ...error, sectionId: section.id, stepIndex, sectionTitle: section.title }));
+    });
+  }
+
+  function renderValidationSummary(errors) {
+    if (errors.length === 0) return '';
+    return `
+      <section class="review-validation-summary" role="alert" aria-labelledby="review-validation-title">
+        <h2 id="review-validation-title" class="review-validation-title">Há campos obrigatórios para revisar</h2>
+        <ul class="review-validation-list">
+          ${errors.map((error, index) => `
+            <li><a class="review-validation-link" href="#" data-error-index="${index}">${ctx.escapeHtml(error.sectionTitle)}: ${ctx.escapeHtml(error.message)}</a></li>
+          `).join('')}
+        </ul>
+      </section>`;
+  }
+
   function renderReview() {
     const state = ctx.getState();
     const sections = ctx.activeSections();
     const results = EuGeroScoring.scoreState(state, sections, ACTION_VERBS);
     const pageFit = EuGeroScoring.scorePageFit(state, sections);
     const aggregate = EuGeroScoring.aggregateScore(results, pageFit);
+    const validationErrors = getReviewValidationErrors(state, sections);
 
     const pct = aggregate.overall;
     let scoreLabel = 'Em andamento';
@@ -33,7 +54,7 @@ const EuGeroReviewScreen = (function () {
     }
 
     const muted = 'color-mix(in srgb, var(--color-text) 55%, transparent)';
-    let html = `
+    let html = renderValidationSummary(validationErrors) + `
       <p class="review-intro">Esta análise considera apenas o preenchimento do currículo. Ela não avalia seu perfil nem garante resultados em processos seletivos.</p>
       <div class="review-score-row">
         <div>
@@ -139,6 +160,15 @@ const EuGeroReviewScreen = (function () {
         ctx.goToWizard(parseInt(btn.dataset.step, 10));
       });
     });
+    ctx.els.reviewContent.querySelectorAll('.review-validation-link').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        const error = validationErrors[parseInt(link.dataset.errorIndex, 10)];
+        if (!error) return;
+        ctx.goToWizard(error.stepIndex);
+        EuGeroWizardScreen.revealValidationError(error.sectionId, error);
+      });
+    });
 
     renderReviewGallery();
     syncPrintCv();
@@ -215,13 +245,22 @@ const EuGeroReviewScreen = (function () {
   }
 
   async function downloadPdf() {
+    const state = ctx.getState();
+    const sections = ctx.activeSections();
+    const validationErrors = getReviewValidationErrors(state, sections);
+    if (validationErrors.length > 0) {
+      const firstError = validationErrors[0];
+      ctx.goToWizard(firstError.stepIndex);
+      EuGeroWizardScreen.revealValidationError(firstError.sectionId, firstError);
+      ctx.showToast?.('Revise os campos obrigatórios antes de baixar o PDF.', { error: true });
+      return;
+    }
+
     const btn = document.getElementById('btn-export-pdf');
     const rotuloOriginal = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = 'Gerando PDF...'; }
     try {
       await loadPdfVendor();
-      const state = ctx.getState();
-      const sections = ctx.activeSections();
       const doc = EuGeroPdfExport.generatePdf(state, sections, state.template, state.margin || 'padrao', state.density || 'normal');
       doc.save(`${cvFileBaseName()}.pdf`);
     } catch (err) {
