@@ -1247,6 +1247,21 @@ const unsafePdfState = {
   assert(!unsafePdfBytes.includes('/URI'), `PDF real não escreve anotação para ${unsafeUrl.split(':')[0]}:`);
 });
 
+const sidebarUnsafePdfState = {
+  ...unsafePdfState,
+  template: 'modern',
+  personal: { ...unsafePdfState.personal, linkedinUrl: '' }
+};
+['javascript:alert(1)', 'data:text/html,alert(1)', 'vbscript:msgbox(1)'].forEach((unsafeUrl) => {
+  const sidebarUnsafePdf = EuGeroPdfExport.generatePdf(
+    { ...sidebarUnsafePdfState, personal: { ...sidebarUnsafePdfState.personal, linkedinUrl: unsafeUrl } },
+    EuGeroConfig.getActiveSections(sidebarUnsafePdfState.enabledSections),
+    'modern'
+  );
+  const sidebarUnsafePdfBytes = Buffer.from(sidebarUnsafePdf.output('arraybuffer')).toString('latin1');
+  assert(!sidebarUnsafePdfBytes.includes('/URI'), `Sidebar não escreve anotação para ${unsafeUrl.split(':')[0]}:`);
+});
+
 const schemelessPdf = EuGeroPdfExport.generatePdf(
   { ...unsafePdfState, personal: { ...unsafePdfState.personal, linkedinUrl: 'linkedin.com/in/maria-da-silva' } },
   EuGeroConfig.getActiveSections(unsafePdfState.enabledSections),
