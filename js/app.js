@@ -13,6 +13,8 @@
   let currentView = 'characters';
   let suppressHash = false;
   let toastTimer = null;
+  let pendingImportedDraft = false;
+  let pendingValidationIssue = null;
 
   const els = {};
   // 210mm convertido para px (unidade CSS absoluta: 96px = 1in = 25.4mm) -
@@ -26,7 +28,7 @@
     return {
       els,
       getState: () => state,
-      replaceState: (next) => { state = next; },
+      replaceState: (next) => { state = next; pendingImportedDraft = false; },
       activeSections,
       saveState,
       showToast,
@@ -36,6 +38,8 @@
       goToStep,
       goToWizard,
       resumeDraft,
+      continueImportedDraft,
+      hasPendingImportedDraft: () => pendingImportedDraft,
       updateTemplateIndicators,
       switchTemplate,
       renderSectionChecklist: () => EuGeroStartScreen.renderSectionChecklist(),
@@ -122,6 +126,10 @@
     return getActiveSections(state.enabledSections);
   }
 
+  function validateResume() {
+    return EuGeroValidation.validateResume(state, activeSections());
+  }
+
   function resolveWizardSectionId(sectionId) {
     const sections = activeSections();
     if (sectionId) {
@@ -136,12 +144,16 @@
 
   function applyRouteState(route) {
     currentView = route.view || 'characters';
-    if (currentView === 'review' && !EuGeroRouter.canGoToReview(state)) {
-      state.currentStep = 0;
-      const sectionId = resolveWizardSectionId(null);
+    if (currentView === 'review') {
+      const gate = validateResume();
+      if (gate.valid) return true;
+      const firstIssue = gate.firstIssue;
+      state.currentStep = firstIssue?.stepIndex || 0;
+      const sectionId = firstIssue?.sectionId || resolveWizardSectionId(null);
+      pendingValidationIssue = firstIssue;
       currentView = 'wizard';
       EuGeroRouter.setHash('wizard', sectionId, { replace: true });
-      showToast('Preencha ao menos um dado do currículo antes de revisar.', { error: true });
+      showToast('Revise os campos obrigatórios antes de abrir a revisão.', { error: true });
       return false;
     }
     if (currentView === 'wizard') {
@@ -183,6 +195,7 @@
     const draft = EuGeroStorage.loadDraft();
     if (!draft || !EuGeroStorage.hasContent(draft)) return null;
     state = draft;
+    pendingImportedDraft = false;
     return state;
   }
 
@@ -203,6 +216,7 @@
       return false;
     }
     state = EuGeroConfig.createEmptyState();
+    pendingImportedDraft = false;
     setRouteWithoutSaving('characters', { replace: true });
     showToast('Dados locais apagados deste navegador.');
     return true;
@@ -221,6 +235,13 @@
     navigateTo('wizard', sectionId);
   }
 
+  function continueImportedDraft() {
+    if (!pendingImportedDraft) return false;
+    pendingImportedDraft = false;
+    goToWizard(state.currentStep);
+    return true;
+  }
+
   function goToWizard(step) {
     const sections = activeSections();
     if (typeof step === 'number') {
@@ -229,11 +250,14 @@
     navigateTo('wizard', sections[state.currentStep]?.id || null);
   }
 
-  function goToReview({ validate = false } = {}) {
-    if (validate && !EuGeroRouter.canGoToReview(state)) {
-      state.currentStep = 0;
-      navigateTo('wizard', activeSections()[0]?.id || null, { replace: true });
-      showToast('Preencha ao menos um dado do currículo antes de revisar.', { error: true });
+  function goToReview() {
+    const gate = validateResume();
+    if (!gate.valid) {
+      const firstIssue = gate.firstIssue;
+      state.currentStep = firstIssue?.stepIndex || 0;
+      navigateTo('wizard', firstIssue?.sectionId || activeSections()[0]?.id || null, { replace: true });
+      if (firstIssue) EuGeroWizardScreen.revealValidationError(firstIssue.sectionId, firstIssue);
+      showToast('Revise os campos obrigatórios antes de abrir a revisão.', { error: true });
       return false;
     }
     EuGeroReviewScreen.syncGalleryToTemplate();
@@ -511,6 +535,11 @@
       debouncedUpdatePreviews();
     } else if (currentView === 'wizard') {
       EuGeroWizardScreen.renderWizardStep();
+      if (pendingValidationIssue) {
+        const issue = pendingValidationIssue;
+        pendingValidationIssue = null;
+        EuGeroWizardScreen.revealValidationError(issue.sectionId, issue);
+      }
       debouncedUpdatePreviews();
     } else if (currentView === 'review') {
       EuGeroReviewScreen.renderReview();
@@ -606,13 +635,13 @@
           return;
         }
         state = result.data;
-        const hasProgress = state.personal?.fullName || state.currentStep > 0;
-        if (hasProgress) {
-          navigateTo('wizard', activeSections()[state.currentStep]?.id, { replace: true });
-        } else {
-          navigateTo('characters', null, { replace: true });
-        }
-        showToast('Rascunho carregado com sucesso.');
+        pendingImportedDraft = true;
+        setRouteWithoutSaving('characters', { replace: true });
+        showToast('Rascunho carregado. Continue quando estiver pronto.', {
+          actionLabel: 'Continuar rascunho',
+          onAction: continueImportedDraft,
+          duration: 8000
+        });
       } catch (err) {
         showToast('Este arquivo está corrompido ou não é válido. Tente outro.', { error: true });
       }
@@ -693,6 +722,7 @@
     getState: () => JSON.parse(JSON.stringify(state)),
     setState: (newState) => {
       state = EuGeroStorage.mergeWithDefaults(newState);
+      pendingImportedDraft = false;
       render();
     },
     switchTemplate: (t) => switchTemplate(t),
@@ -705,6 +735,8 @@
     saveState,
     loadDraft,
     resumeDraft,
+    continueImportedDraft,
+    hasPendingImportedDraft: () => pendingImportedDraft,
     exportState,
     clearLocalData,
     showToast,

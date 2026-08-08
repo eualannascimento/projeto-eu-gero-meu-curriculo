@@ -76,7 +76,9 @@ npm run e2e
 
 `npm run ci` executa os quatro comandos na mesma ordem. O smoke cobre regras de preenchimento, validação, datas, rotas, PDF, JSON, persistência local, cinco famílias estruturais e dados de exemplo. O teste de PDF requer `pdfinfo` e `pdftotext`, fornecidos pelo Poppler.
 
-Os E2E cobrem a jornada de começar em branco, retomar o rascunho, validar, revisar e exportar o PDF, além dos cenários responsivos. Eles dependem de `@playwright/test` e do Chromium do Playwright. Neste worktree, a dependência não está instalada: `npm run e2e` encerra com uma mensagem explícita até que `npm install` e `npx playwright install chromium` sejam executados.
+Os E2E cobrem a jornada de começar em branco, retomar o rascunho, validar, revisar e exportar o PDF, além dos cenários responsivos em 320 CSS px. Eles dependem de `@playwright/test` e do Chromium do Playwright. `npm run e2e` encerra com uma mensagem explícita quando um deles não está instalado. Para preparar o ambiente local, execute `npm install --no-package-lock` e `npx playwright install chromium`.
+
+O Playwright é uma dependência apenas de desenvolvimento, sob a licença Apache-2.0. Ele foi escolhido porque os testes precisam de um Chromium real para verificar foco, downloads, persistência entre recargas, medidas de alvos de toque e o layout em 320 CSS px. O pacote e os binários de navegador não integram os arquivos publicados da aplicação.
 
 O repositório ainda não possui `package-lock.json`. A CI instala a versão exata declarada de `@playwright/test` sem criar lockfile no checkout temporário. Antes de uma publicação estável, gere e versione o lockfile para fixar dependências transitivas.
 
@@ -90,11 +92,13 @@ POST_DEPLOY_URL=https://classificavagas.com/resume/ npm run postdeploy-check
 
 O comando busca `index.html`, confirma a raiz da aplicação e verifica o carregamento dos CSS, scripts do HTML e scripts carregados sob demanda pelo PDF. Ele falha se a URL não for informada, se algum arquivo responder com erro HTTP, se a resposta estiver vazia ou se a página não contiver a aplicação.
 
+A workflow aceita a URL pelo input manual `postdeploy_url` ou pela variável de repositório `POST_DEPLOY_URL`. Com uma URL configurada, o job `postdeploy` executa a verificação depois do job de validação. Sem uma URL, o job informa explicitamente que a verificação foi ignorada. A CI instala `poppler-utils` antes de `npm run pdf`.
+
 ## Deploy (GitHub Pages)
 
-1. Abra uma Pull Request. A workflow `.github/workflows/ci.yml` executa sintaxe, smoke, PDF e E2E em Chromium.
+1. Abra uma Pull Request. A workflow `.github/workflows/ci.yml` instala Poppler e executa sintaxe, smoke, PDF e E2E em Chromium.
 2. Faça o deploy aprovado em `main` pelo repositório do site.
-3. Execute a verificação pós-deploy com a URL publicada.
+3. Execute a workflow manual com `postdeploy_url` ou configure `POST_DEPLOY_URL` para validar a URL publicada.
 4. URL de produção: https://classificavagas.com/resume/ (o repositório do site sincroniza este conteúdo no deploy; ver `scripts/sync-resume.py` lá).
 
 ## Stack

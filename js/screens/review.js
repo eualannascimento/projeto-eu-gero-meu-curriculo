@@ -16,17 +16,7 @@ const EuGeroReviewScreen = (function () {
   }
 
   function getReviewValidationErrors(state, sections) {
-    return sections.flatMap((section, stepIndex) => {
-      const result = EuGeroValidation.validateSection(state, section);
-      return result.issues.map((issue) => ({
-        itemId: issue.itemIndex == null ? section.id : `${section.id}-${issue.itemIndex}`,
-        field: issue.fieldKey,
-        message: issue.message,
-        sectionId: section.id,
-        stepIndex,
-        sectionTitle: section.title
-      }));
-    });
+    return EuGeroValidation.validateResume(state, sections).issues;
   }
 
   function renderValidationSummary(errors) {
@@ -397,9 +387,7 @@ const EuGeroReviewScreen = (function () {
     state.template = TEMPLATE_IDS[reviewGalleryIndex];
     ctx.saveState();
     ctx.updateTemplateIndicators();
-    ctx.debouncedUpdatePreviews();
-    renderReviewGallery();
-    syncPrintCv();
+    renderReview();
   }
   return {
     init,

@@ -24,7 +24,8 @@ const EuGeroWizardScreen = (function () {
     ctx.els.wizardTimeline.innerHTML = sections.map((section, i) => {
       const label = SHORT_LABELS[section.id] || section.title;
       const isActive = i === state.currentStep;
-      const isDone = i < state.currentStep;
+      const isDone = i < state.currentStep
+        && EuGeroValidation.validateSection(state, section).valid;
       const cls = `timeline-step${isActive ? ' active' : ''}${isDone ? ' done' : ''}`;
       const ariaCurrent = isActive ? ' aria-current="step"' : '';
       return `
@@ -37,7 +38,16 @@ const EuGeroWizardScreen = (function () {
     ctx.els.wizardTimeline.querySelectorAll('.timeline-step').forEach((btn) => {
       btn.addEventListener('click', () => {
         const targetStep = parseInt(btn.dataset.step, 10);
-        if (targetStep > state.currentStep && !validateCurrentStep()) return;
+        if (targetStep > state.currentStep) {
+          const gate = EuGeroValidation.validateResume(state, sections.slice(0, targetStep));
+          if (!gate.valid) {
+            const firstIssue = gate.firstIssue;
+            ctx.goToStep(firstIssue.stepIndex);
+            revealValidationError(firstIssue.sectionId, firstIssue);
+            ctx.showToast('Revise os campos destacados antes de continuar.', { duration: 4000 });
+            return;
+          }
+        }
         ctx.goToStep(targetStep);
       });
     });
@@ -406,6 +416,18 @@ const EuGeroWizardScreen = (function () {
       ctx.debouncedUpdatePreviews();
       ctx.saveState();
     });
+
+    if (field.type === 'url') {
+      input.addEventListener('blur', () => {
+        const result = EuGeroValidation.validateUrl(input.value);
+        if (!result.ok || !result.value || result.value === input.value) return;
+        input.value = result.value;
+        setFieldValue(section, field, result.value, options.item, options.index);
+        clearStepValidation(section.id);
+        ctx.debouncedUpdatePreviews();
+        ctx.saveState();
+      });
+    }
 
     return wrap;
   }
@@ -790,7 +812,7 @@ const EuGeroWizardScreen = (function () {
       removeBtn.textContent = '\u00d7';
       removeBtn.setAttribute('aria-label', 'Remover idioma');
       removeBtn.title = 'Remover idioma';
-      removeBtn.style.cssText = 'font-size: 18px; width: 40px; min-height: 40px; padding: 0;';
+      removeBtn.style.cssText = 'font-size: 18px; width: 44px; min-height: 44px; padding: 0;';
       card.appendChild(removeBtn);
       return card;
     }

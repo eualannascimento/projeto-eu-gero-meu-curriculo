@@ -58,7 +58,8 @@ const EuGeroRouter = (function () {
   }
 
   function canGoToReview(state) {
-    return typeof EuGeroStorage !== 'undefined' && EuGeroStorage.hasContent(state);
+    return typeof EuGeroValidation !== 'undefined'
+      && EuGeroValidation.validateResume(state).valid;
   }
 
   return {

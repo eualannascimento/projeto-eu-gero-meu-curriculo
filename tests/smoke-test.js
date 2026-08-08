@@ -176,6 +176,49 @@ assert(invalidResult.valid === false, 'JSON inválido rejeitado');
 const corrupted = EuGeroStorage.validateImportData(null);
 assert(corrupted.valid === false, 'Dados nulos rejeitados');
 
+const nullListItemImport = EuGeroStorage.validateImportData({
+  personal: {},
+  experiences: [null]
+});
+assert(
+  nullListItemImport.valid === false && nullListItemImport.error.includes('experiences[0]'),
+  'Import rejeita item nulo com o caminho do dado inválido'
+);
+
+const invalidNestedFieldImport = EuGeroStorage.validateImportData({
+  personal: {},
+  experiences: [{ title: null }]
+});
+assert(
+  invalidNestedFieldImport.valid === false && invalidNestedFieldImport.error.includes('experiences[0].title'),
+  'Import valida recursivamente os campos dos itens'
+);
+
+const normalizedNullListItem = EuGeroStorage.mergeWithDefaults({
+  personal: {},
+  experiences: [null]
+});
+assert(
+  normalizedNullListItem.experiences[0]
+    && typeof normalizedNullListItem.experiences[0] === 'object'
+    && normalizedNullListItem.experiences[0].title === '',
+  'Merge defensivo normaliza item nulo antes da validação do currículo'
+);
+
+let normalizedNullListValidation = null;
+try {
+  normalizedNullListValidation = EuGeroValidation.validateSection(
+    normalizedNullListItem,
+    EuGeroConfig.SECTIONS.find((section) => section.id === 'experiences')
+  );
+} catch (_) {
+  normalizedNullListValidation = null;
+}
+assert(
+  normalizedNullListValidation?.valid === false && normalizedNullListValidation.issues.length > 0,
+  'Validação relata o item normalizado sem lançar exceção'
+);
+
 // --- Rascunho local e entrada na revisão ---
 console.log('\nRascunho local e revisão:');
 
@@ -209,8 +252,37 @@ assert(EuGeroStorage.hasDraft() === false, 'Rascunho removido deixa de estar dis
 
 const emptyReviewState = EuGeroConfig.createEmptyState();
 assert(EuGeroRouter.canGoToReview(emptyReviewState) === false, 'Revisão bloqueia currículo vazio');
-assert(EuGeroRouter.canGoToReview(resumableDraft) === true, 'Revisão permite currículo com conteúdo');
+assert(EuGeroRouter.canGoToReview(resumableDraft) === false, 'Revisão bloqueia rascunho incompleto com conteúdo');
 assert(EuGeroRouter.canGoToReview(unknownPersonalDraft) === false, 'Revisão ignora campo pessoal desconhecido');
+
+const completeReviewState = {
+  ...EuGeroConfig.createEmptyState(),
+  enabledSections: ['personal'],
+  personal: {
+    ...EuGeroConfig.createEmptyState().personal,
+    fullName: 'Ana Completa',
+    headline: 'Analista de Dados',
+    email: 'ana.completa@exemplo.com.br',
+    location: 'São Paulo, SP'
+  }
+};
+assert(EuGeroRouter.canGoToReview(completeReviewState) === true, 'Revisão aceita todas as seções ativas válidas');
+
+const missingSummaryState = {
+  ...completeReviewState,
+  enabledSections: ['personal', 'summary'],
+  summary: ''
+};
+const missingSummaryGate = typeof EuGeroValidation.validateResume === 'function'
+  ? EuGeroValidation.validateResume(
+    missingSummaryState,
+    EuGeroConfig.getActiveSections(missingSummaryState.enabledSections)
+  )
+  : { valid: true, issues: [] };
+assert(
+  missingSummaryGate.valid === false && missingSummaryGate.issues[0]?.sectionId === 'summary',
+  'Gate global identifica a primeira seção ativa inválida'
+);
 
 const listSectionFixtures = {
   experiences: { label: 'Experiência', item: { title: 'Analista' }, metadata: { period: '2024' }, hiddenContent: { description: 'Atuação em análise de dados.' } },
@@ -259,7 +331,7 @@ Object.entries(listSectionFixtures).forEach(([sectionId, { label, item, metadata
   };
   draftValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(knownListDraft));
   assert(EuGeroStorage.hasDraft() === true, `${label} com campo conhecido torna o rascunho retomável`);
-  assert(EuGeroRouter.canGoToReview(knownListDraft) === true, `${label} com campo conhecido libera a revisão`);
+  assert(EuGeroRouter.canGoToReview(knownListDraft) === false, `${label} isolada não libera um currículo incompleto`);
 });
 
 console.log('\nAutosave, backup e exclusão local:');
@@ -418,7 +490,13 @@ console.log('\nValidacao de campos:');
 
 assert(!EuGeroValidation.validateEmail('invalido').ok, 'E-mail invalido rejeitado');
 assert(EuGeroValidation.validateEmail('a@b.co').ok, 'E-mail valido aceito');
-assert(!EuGeroValidation.validateUrl('ftp://x').ok || EuGeroValidation.validateUrl('https://linkedin.com/in/x').ok, 'URL http(s) valida');
+assert(!EuGeroValidation.validateUrl('ftp://x').ok, 'URL com protocolo não permitido é rejeitada');
+assert(EuGeroValidation.validateUrl('https://linkedin.com/in/x').ok, 'URL HTTPS válida é aceita');
+const urlWithoutScheme = EuGeroValidation.validateUrl('linkedin.com/in/x');
+assert(
+  urlWithoutScheme.ok && urlWithoutScheme.value === 'https://linkedin.com/in/x',
+  'Validação aceita URL sem esquema e devolve o valor HTTPS normalizado'
+);
 
 // --- Validação de listas no wizard ---
 console.log('\nValidação acessível de listas no wizard:');
@@ -490,7 +568,14 @@ function createWizardDom() {
     getAttribute(name) { return Object.hasOwn(this.attributes, name) ? this.attributes[name] : null; }
     removeAttribute(name) { delete this.attributes[name]; }
     addEventListener(type, listener) { (this.listeners[type] ||= []).push(listener); }
-    click() { (this.listeners.click || []).forEach((listener) => listener({ preventDefault() {} })); }
+    click() {
+      const event = { preventDefault() {} };
+      (this.listeners.click || []).forEach((listener) => listener(event));
+      this.onclick?.(event);
+    }
+    dispatch(type, event = {}) {
+      (this.listeners[type] || []).forEach((listener) => listener({ target: this, ...event }));
+    }
     focus() { this.ownerDocument.activeElement = this; }
     scrollIntoView() { this.scrolledIntoView = true; }
     closest(selector) {
@@ -624,6 +709,33 @@ assert(wizardSteps.querySelectorAll('[role="alert"]').length === 1
   && wizardSteps.querySelector('.field-error')?.getAttribute('role') === null,
   'Resumo é o único canal role=alert e o erro de campo fica associado por aria-describedby');
 
+const urlWizardState = {
+  ...completeReviewState,
+  currentStep: 0,
+  personal: { ...completeReviewState.personal, linkedinUrl: '' }
+};
+EuGeroWizardScreen.init({
+  els: { wizardSteps, wizardTimeline },
+  getState: () => urlWizardState,
+  activeSections: () => EuGeroConfig.getActiveSections(urlWizardState.enabledSections),
+  goToStep() {},
+  saveState() {},
+  showToast() {},
+  debouncedUpdatePreviews() {},
+  escapeHtml: EuGeroUtils.escapeHtml,
+  escapeAttr: EuGeroUtils.escapeAttr
+});
+EuGeroWizardScreen.renderWizardStep();
+const linkedinInput = wizardDom.document.getElementById('field-personal-linkedinUrl');
+linkedinInput.value = 'linkedin.com/in/ana-completa';
+linkedinInput.dispatch('input');
+linkedinInput.dispatch('blur');
+assert(
+  linkedinInput.value === 'https://linkedin.com/in/ana-completa'
+    && urlWizardState.personal.linkedinUrl === 'https://linkedin.com/in/ana-completa',
+  'Campo de URL normaliza o valor na sessão atual ao perder o foco'
+);
+
 global.document = previousDocumentForWizard;
 global.CSS = previousCssForWizard;
 
@@ -638,6 +750,7 @@ const previousAppStorage = global.localStorage;
 const previousAppTimeout = global.setTimeout;
 const previousAppClearTimeout = global.clearTimeout;
 const previousAppAnimationFrame = global.requestAnimationFrame;
+const previousFileReader = global.FileReader;
 const previousStartScreen = global.EuGeroStartScreen;
 const previousWizardScreen = global.EuGeroWizardScreen;
 const previousReviewScreen = global.EuGeroReviewScreen;
@@ -647,8 +760,12 @@ const appDom = createWizardDom();
 const appTimers = new Map();
 let appTimerId = 0;
 const appStorageValues = new Map();
+const appWindowListeners = {};
 global.document = appDom.document;
-global.window = { addEventListener() {}, scrollTo() {} };
+global.window = {
+  addEventListener(type, listener) { (appWindowListeners[type] ||= []).push(listener); },
+  scrollTo() {}
+};
 global.location = { hash: '', pathname: '/', search: '' };
 global.history = { replaceState(_state, _title, url) { global.location.hash = url.slice(url.indexOf('#')); } };
 global.localStorage = {
@@ -663,16 +780,27 @@ global.setTimeout = (callback) => {
 };
 global.clearTimeout = (id) => appTimers.delete(id);
 global.requestAnimationFrame = () => 0;
+global.FileReader = class TestFileReader {
+  readAsText(file) {
+    this.result = file.content;
+    this.onload();
+  }
+};
 global.EuGeroStartScreen = {
   init() {}, renderCharacterGrid() {}, renderTemplatePickers() {}, renderSectionChecklist() {},
   updateTemplatePreviewMinis() {}
 };
-global.EuGeroWizardScreen = { init() {}, renderWizardStep() {}, validateCurrentStep() { return true; } };
+global.EuGeroWizardScreen = {
+  init() {},
+  renderWizardStep() {},
+  validateCurrentStep() { return true; },
+  revealValidationError() {}
+};
 global.EuGeroReviewScreen = { init() {}, syncGalleryToTemplate() {}, renderReview() {}, renderReviewGallery() {} };
 global.EuGeroLinkedInGuide = { renderGuide() {} };
 
 ['screen-characters', 'screen-start', 'screen-wizard', 'screen-review', 'screen-guide',
-  'saved-indicator', 'toast', 'toast-message', 'toast-action'].forEach((id) => {
+  'saved-indicator', 'toast', 'toast-message', 'toast-action', 'file-import'].forEach((id) => {
   const element = appDom.document.createElement('div');
   element.id = id;
   appDom.document.body.appendChild(element);
@@ -706,6 +834,56 @@ const resumed = typeof app.resumeDraft === 'function' && app.resumeDraft();
 assert(resumed === true && app.getState().personal.fullName === 'Rascunho Retomado'
   && app.getCurrentView() === 'wizard', 'Retomada restaura o estado local e abre o wizard');
 
+const incompleteReview = app.goToReview();
+assert(
+  incompleteReview === false && app.getCurrentView() === 'wizard'
+    && app.getState().currentStep === 0,
+  'Ação de revisão usa o gate completo e abre a primeira seção inválida'
+);
+
+app.setState(completeReviewState);
+assert(app.goToReview() === true && app.getCurrentView() === 'review', 'Ação de revisão aceita currículo completo');
+
+app.setState(resumableAppDraft);
+global.location.hash = '#/review';
+(appWindowListeners.hashchange || []).forEach((listener) => listener());
+assert(
+  app.getCurrentView() === 'wizard' && app.getState().currentStep === 0,
+  'Deep link de revisão bloqueia currículo incompleto e abre a primeira seção inválida'
+);
+
+const localDraftBeforeImport = {
+  ...completeReviewState,
+  personal: { ...completeReviewState.personal, fullName: 'Rascunho local preservado' }
+};
+appStorageValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(localDraftBeforeImport));
+const partialImport = {
+  ...EuGeroConfig.createEmptyState(),
+  enabledSections: ['personal', 'summary'],
+  summary: 'Rascunho importado parcialmente, pronto para continuar sem recarregar a página.'
+};
+const fileImport = appDom.document.getElementById('file-import');
+fileImport.files = [{ name: 'rascunho-parcial.json', content: JSON.stringify(partialImport) }];
+fileImport.dispatch('change');
+const storedBeforeContinue = JSON.parse(appStorageValues.get(EuGeroConfig.STORAGE_KEY));
+assert(
+  app.getCurrentView() === 'characters'
+    && app.getState().summary === partialImport.summary
+    && toastAction.hidden === false
+    && toastAction.textContent === 'Continuar rascunho',
+  'Import parcial mostra imediatamente a ação de continuar o estado em memória'
+);
+assert(
+  storedBeforeContinue.personal.fullName === 'Rascunho local preservado',
+  'Import parcial não sobrescreve o rascunho local antes da confirmação'
+);
+toastAction.click();
+assert(
+  app.getCurrentView() === 'wizard'
+    && JSON.parse(appStorageValues.get(EuGeroConfig.STORAGE_KEY)).summary === partialImport.summary,
+  'Ação de continuar abre e salva o rascunho importado sem recarregar'
+);
+
 global.document = previousAppDocument;
 global.window = previousAppWindow;
 global.location = previousAppLocation;
@@ -715,6 +893,8 @@ else global.localStorage = previousAppStorage;
 global.setTimeout = previousAppTimeout;
 global.clearTimeout = previousAppClearTimeout;
 global.requestAnimationFrame = previousAppAnimationFrame;
+if (previousFileReader === undefined) delete global.FileReader;
+else global.FileReader = previousFileReader;
 global.EuGeroStartScreen = previousStartScreen;
 global.EuGeroWizardScreen = previousWizardScreen;
 global.EuGeroReviewScreen = previousReviewScreen;
@@ -1176,7 +1356,7 @@ assert(reviewJsCode.includes('EuGeroPdfExport.generatePdf('), 'downloadPdf usa o
 assert(reviewJsCode.includes('function printCv'), 'printCv continua disponível para Ctrl+P');
 assert(
   skillsSuggestTitleRule && /color:\s*var\(--color-text-muted\)/.test(skillsSuggestTitleRule[0]),
-  'Título “Sugestões para adicionar” usa token de texto auxiliar com contraste AA'
+  'Título "Sugestões para adicionar" usa token de texto auxiliar com contraste AA'
 );
 // A altura da caixa de impressao nao pode ser fixada em milimetros: era o
 // min-height 297mm herdado de templates.css que gerava a pagina em branco.
@@ -1786,6 +1966,35 @@ pendingAsyncTests = (async () => {
       reviewMeasureStatus.textContent.includes('ultrapassa o limite de 2') && reviewMeasureActions.hidden === false,
       'Revisão exibe a medição real e libera ações antes do download'
     );
+
+    const originalMeasureExport = EuGeroPdfExport.measureExport;
+    const originalTemplate = overflowResume.template;
+    const measuredTemplates = [];
+    try {
+      overflowResume.template = 'classic';
+      EuGeroPdfExport.measureExport = (measuredState) => {
+        measuredTemplates.push(measuredState.template);
+        return {
+          pages: measuredState.template === 'minimal' ? 1 : 2,
+          issues: []
+        };
+      };
+      EuGeroReviewScreen.syncGalleryToTemplate();
+      EuGeroReviewScreen.renderReview();
+      await Promise.resolve();
+      await Promise.resolve();
+      EuGeroReviewScreen.galleryStep(1);
+      await Promise.resolve();
+      await Promise.resolve();
+      assert(
+        measuredTemplates.at(-1) === 'minimal'
+          && reviewMeasureStatus.textContent === 'PDF confirmado com 1 página.',
+        'Troca de modelo na galeria mede novamente o PDF e atualiza a mensagem visível'
+      );
+    } finally {
+      EuGeroPdfExport.measureExport = originalMeasureExport;
+      overflowResume.template = originalTemplate;
+    }
   } finally {
     global.document = previousReviewDocument;
   }

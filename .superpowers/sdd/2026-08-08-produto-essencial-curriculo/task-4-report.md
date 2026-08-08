@@ -19,7 +19,7 @@ O exportador agora define o limite pelo estado: uma página no modo compacto e d
 2. Red da prévia: 297 testes aprovados e 1 falha para a segunda página no modo detalhado.
 3. Red do download: 298 testes aprovados e 2 falhas para o bloqueio e a mensagem de orientação ausentes.
 4. Red do nome do arquivo com estado explícito: 300 testes aprovados e 1 falha.
-5. Green final: `node tests/smoke-test.js` terminou com 302 testes aprovados e 0 falhas.
+5. Green final: `node tests/smoke-test.js` terminou com 303 testes aprovados e 0 falhas.
 6. Sintaxe: `node --check js/pdf-export.js`, `node --check js/app.js`, `node --check js/screens/review.js`, `node --check js/preview.js` e `node --check tests/smoke-test.js` concluíram sem erro.
 7. Qualidade do diff: `git diff --check` concluiu sem erro.
 

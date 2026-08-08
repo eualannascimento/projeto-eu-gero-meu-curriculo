@@ -460,8 +460,8 @@ textarea.cv-input { min-height: 104px; resize: vertical; line-height: 1.5; }
     position: absolute;
     top: 42%;
     z-index: 5;
-    width: 40px !important;
-    height: 40px !important;
+    width: 44px !important;
+    height: 44px !important;
     background: color-mix(in srgb, var(--color-bg) 88%, transparent);
     backdrop-filter: blur(4px);
   }

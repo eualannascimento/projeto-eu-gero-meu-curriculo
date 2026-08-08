@@ -7,14 +7,25 @@ const EuGeroStorage = (function () {
   // Versao do formato do rascunho. Sem ela, uma mudanca futura de estrutura
   // corromperia silenciosamente o rascunho de quem ja usa a ferramenta.
   const SCHEMA_VERSION = 1;
+  const LIST_KEYS = ['experiences', 'education', 'skills', 'languages', 'certifications',
+    'projects', 'volunteering', 'publications', 'awards', 'organizations', 'courses'];
+
+  function isRecord(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  function textOrEmpty(value) {
+    return typeof value === 'string' ? value : '';
+  }
 
   function normalizeUrls(state) {
-    if (!state || typeof state !== 'object') return state;
+    if (!isRecord(state)) return state;
+    const personal = isRecord(state.personal) ? state.personal : {};
     return {
       ...state,
       personal: {
-        ...(state.personal || {}),
-        linkedinUrl: EuGeroUtils.safeUrl(state.personal?.linkedinUrl)
+        ...personal,
+        linkedinUrl: EuGeroUtils.safeUrl(personal.linkedinUrl)
       }
     };
   }
@@ -94,18 +105,51 @@ const EuGeroStorage = (function () {
 
   function mergeWithDefaults(data) {
     const defaults = createEmptyState();
-    if (!data || typeof data !== 'object') return defaults;
+    if (!isRecord(data)) return defaults;
 
     const merged = { ...defaults, ...data };
-    merged.personal = { ...defaults.personal, ...(data.personal || {}) };
+    const personal = isRecord(data.personal) ? data.personal : {};
+    merged.personal = Object.fromEntries(Object.keys(defaults.personal).map((key) => [
+      key,
+      textOrEmpty(personal[key])
+    ]));
     merged.personal.linkedinUrl = EuGeroUtils.safeUrl(merged.personal.linkedinUrl);
 
-    const listKeys = ['experiences', 'education', 'skills', 'languages', 'certifications',
-      'projects', 'volunteering', 'publications', 'awards', 'organizations', 'courses'];
-
-    listKeys.forEach(key => {
-      merged[key] = Array.isArray(data[key]) ? data[key] : defaults[key];
+    LIST_KEYS.forEach((key) => {
+      if (!Array.isArray(data[key])) {
+        merged[key] = defaults[key];
+        return;
+      }
+      if (key === 'skills') {
+        merged.skills = data.skills.map((skill) => {
+          if (typeof skill === 'string') return skill.trim();
+          return isRecord(skill) ? { ...skill, name: textOrEmpty(skill.name) } : { name: '' };
+        });
+        return;
+      }
+      const section = EuGeroConfig.SECTIONS.find((candidate) => candidate.id === key);
+      merged[key] = data[key].map((item) => {
+        if (!section?.itemFields) return isRecord(item) ? { ...item } : {};
+        if (!isRecord(item)) return EuGeroConfig.createEmptyListItem(key);
+        const normalized = { ...item };
+        section.itemFields.forEach((field) => {
+          const value = textOrEmpty(item[field.key]);
+          normalized[field.key] = field.type === 'url' ? EuGeroUtils.safeUrl(value) : value;
+        });
+        ['startDate', 'endDate'].forEach((field) => {
+          if (Object.hasOwn(item, field)) normalized[field] = textOrEmpty(item[field]);
+        });
+        normalized.endCurrent = item.endCurrent === true;
+        return normalized;
+      });
     });
+
+    merged.summary = textOrEmpty(data.summary);
+    merged.skillsText = textOrEmpty(data.skillsText);
+    merged.currentStep = Number.isInteger(data.currentStep) && data.currentStep >= 0 ? data.currentStep : 0;
+    merged.margin = ['estreita', 'padrao', 'confortavel'].includes(data.margin) ? data.margin : defaults.margin;
+    merged.density = ['normal', 'condensado'].includes(data.density) ? data.density : defaults.density;
+    merged.pageMode = ['compact', 'detailed'].includes(data.pageMode) ? data.pageMode : defaults.pageMode;
 
     merged.template = EuGeroConfig.TEMPLATE_IDS.includes(merged.template) ? merged.template : 'classic';
 
@@ -124,16 +168,74 @@ const EuGeroStorage = (function () {
   }
 
   function validateImportData(data) {
-    if (!data || typeof data !== 'object') {
+    if (!isRecord(data)) {
       return { valid: false, error: 'Arquivo inválido: formato não reconhecido.' };
     }
 
-    if (!data.personal || typeof data.personal !== 'object') {
+    if (!isRecord(data.personal)) {
       return { valid: false, error: 'Arquivo inválido: faltam os dados pessoais.' };
     }
 
     if (data.version && typeof data.version !== 'string') {
       return { valid: false, error: 'Arquivo inválido: versão não compatível.' };
+    }
+
+    const invalidPath = (path) => ({
+      valid: false,
+      error: `Arquivo inválido: ${path} contém um valor não reconhecido.`
+    });
+
+    for (const key of Object.keys(createEmptyState().personal)) {
+      if (Object.hasOwn(data.personal, key) && typeof data.personal[key] !== 'string') {
+        return invalidPath(`personal.${key}`);
+      }
+    }
+
+    for (const key of ['summary', 'skillsText', 'template', 'margin', 'density', 'pageMode']) {
+      if (Object.hasOwn(data, key) && typeof data[key] !== 'string') return invalidPath(key);
+    }
+
+    if (Object.hasOwn(data, 'currentStep')
+      && (!Number.isInteger(data.currentStep) || data.currentStep < 0)) {
+      return invalidPath('currentStep');
+    }
+
+    if (Object.hasOwn(data, 'enabledSections')
+      && (!Array.isArray(data.enabledSections)
+        || data.enabledSections.some((sectionId) => typeof sectionId !== 'string'))) {
+      return invalidPath('enabledSections');
+    }
+
+    for (const key of LIST_KEYS) {
+      if (!Object.hasOwn(data, key)) continue;
+      if (!Array.isArray(data[key])) return invalidPath(key);
+      for (let index = 0; index < data[key].length; index++) {
+        const item = data[key][index];
+        if (key === 'skills' && typeof item === 'string') continue;
+        if (!isRecord(item)) return invalidPath(`${key}[${index}]`);
+
+        if (key === 'skills') {
+          if (Object.hasOwn(item, 'name') && typeof item.name !== 'string') {
+            return invalidPath(`${key}[${index}].name`);
+          }
+          continue;
+        }
+
+        const section = EuGeroConfig.SECTIONS.find((candidate) => candidate.id === key);
+        for (const field of section?.itemFields || []) {
+          if (Object.hasOwn(item, field.key) && typeof item[field.key] !== 'string') {
+            return invalidPath(`${key}[${index}].${field.key}`);
+          }
+        }
+        for (const field of ['startDate', 'endDate']) {
+          if (Object.hasOwn(item, field) && typeof item[field] !== 'string') {
+            return invalidPath(`${key}[${index}].${field}`);
+          }
+        }
+        if (Object.hasOwn(item, 'endCurrent') && typeof item.endCurrent !== 'boolean') {
+          return invalidPath(`${key}[${index}].endCurrent`);
+        }
+      }
     }
 
     return { valid: true, data: mergeWithDefaults(data) };

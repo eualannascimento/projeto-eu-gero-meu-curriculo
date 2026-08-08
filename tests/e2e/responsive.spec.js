@@ -108,5 +108,45 @@ test.describe('jornada responsiva acessível', () => {
     await page.keyboard.press('Escape');
     await expect(page.locator('#preview-overlay')).toBeHidden();
     await expect(page.locator('#btn-toggle-preview-start')).toBeFocused();
+
+    await page.evaluate(() => {
+      const next = window.EuGeroApp.getState();
+      next.enabledSections = ['personal', 'experiences'];
+      next.currentStep = 1;
+      next.personal = {
+        fullName: 'Ana Mobile',
+        headline: 'Analista de Dados',
+        email: 'ana.mobile@exemplo.com.br',
+        phone: '',
+        location: 'São Paulo, SP',
+        linkedinUrl: ''
+      };
+      next.experiences = [{ title: '', company: '', description: '' }];
+      window.EuGeroApp.setState(next);
+      window.EuGeroApp.navigateTo('wizard', 'experiences');
+    });
+    await expectTouchTarget(page, '.list-tab-add');
+    await expectTouchTarget(page, '.btn-remove-item');
+
+    await page.evaluate(() => {
+      const next = window.EuGeroApp.getState();
+      next.enabledSections = ['personal', 'languages'];
+      next.currentStep = 1;
+      next.languages = [{ language: 'Inglês', level: 'Intermediário' }];
+      window.EuGeroApp.setState(next);
+      window.EuGeroApp.navigateTo('wizard', 'languages');
+    });
+    await expectTouchTarget(page, '.btn-add-item');
+    await expectTouchTarget(page, '.btn-remove-item');
+
+    await page.evaluate(() => {
+      const next = window.EuGeroApp.getState();
+      next.enabledSections = ['personal'];
+      window.EuGeroApp.setState(next);
+      window.EuGeroApp.goToReview();
+    });
+    await expect(page.locator('#screen-review')).toBeVisible();
+    await expectTouchTarget(page, '#btn-gal-prev');
+    await expectTouchTarget(page, '#btn-gal-next');
   });
 });

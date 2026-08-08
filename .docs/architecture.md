@@ -43,9 +43,11 @@ O Clássico é o padrão e usa uma coluna, indicada para leitura por ATS. Petró
 
 `npm run e2e` usa Playwright e sobe o servidor estático local quando `E2E_BASE_URL` não é informado. A jornada crítica percorre início em branco, persistência e retomada local, validação, revisão e download do PDF. A jornada responsiva cobre desktop e 320 CSS px. O script verifica `@playwright/test` e o Chromium antes de executar. Se um dos dois estiver ausente, falha com mensagem específica; isso evita reportar E2E como executável sem ambiente de navegador.
 
-`.github/workflows/ci.yml` roda em Pull Requests. Ela instala as dependências declaradas, instala o Chromium do Playwright e chama `npm run ci`. O repositório ainda não versiona `package-lock.json`, portanto a instalação da CI não fixa dependências transitivas. Esta limitação está documentada e deve ser removida com um lockfile versionado.
+`.github/workflows/ci.yml` roda em Pull Requests e por acionamento manual. Ela instala Poppler, as dependências declaradas e o Chromium do Playwright antes de chamar `npm run ci`. O repositório ainda não versiona `package-lock.json`, portanto a instalação da CI não fixa dependências transitivas. Esta limitação está documentada e deve ser removida com um lockfile versionado.
 
-`npm run postdeploy-check` recebe `POST_DEPLOY_URL`. Ele busca a página publicada, confirma a raiz da aplicação e valida os CSS, scripts do HTML e scripts de PDF carregados sob demanda. A verificação ocorre depois do deploy porque a CI de Pull Request não publica a aplicação.
+`npm run postdeploy-check` recebe `POST_DEPLOY_URL`. Ele busca a página publicada, confirma a raiz da aplicação e valida os CSS, scripts do HTML e scripts de PDF carregados sob demanda. O job `postdeploy` usa o input manual `postdeploy_url` ou a variável de repositório `POST_DEPLOY_URL`. Se nenhum valor estiver configurado, o job registra explicitamente que a verificação foi ignorada.
+
+O Playwright permanece restrito ao ambiente de desenvolvimento e teste, sob a licença Apache-2.0. O navegador real é necessário para verificar foco, download, persistência, alvos de toque e o viewport de 320 CSS px. O pacote e os binários do Chromium não fazem parte da aplicação estática publicada.
 
 ## Limitações conhecidas
 

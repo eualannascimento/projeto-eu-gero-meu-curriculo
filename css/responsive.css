@@ -823,9 +823,21 @@
   }
   .btn-icon-28,
   .list-tab,
+  .btn-add-item,
+  .btn-remove-item,
+  .skills-tag-chip,
+  .skills-suggest-btn,
   .list-item-actions .btn-reorder,
-  .section-move-actions button {
+  .section-move-actions button,
+  #btn-gal-prev,
+  #btn-gal-next,
+  .cv-help {
     min-width: 44px;
+    min-height: 44px;
+  }
+  .home-how > summary,
+  .seg-opt,
+  .checkbox-label {
     min-height: 44px;
   }
 }

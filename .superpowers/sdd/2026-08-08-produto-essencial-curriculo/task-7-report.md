@@ -5,7 +5,7 @@
 - Ajustados os tokens de texto auxiliar, acento, sucesso, alerta, erro e desabilitado para contraste WCAG 2.2 AA. As razões verificadas ficam entre 4,71:1 e 14,79:1 nos pares aplicáveis.
 - A prévia móvel usa um drawer com altura dinâmica (`dvh`), rolagem interna e contenção de overscroll. As regras CSS definem 44 CSS px para o botão de fechar e controles móveis críticos.
 - Criado o cenário Playwright `tests/e2e/responsive.spec.js` para 1440 x 900 e 320 x 800. No móvel, ele abre modal e drawer pelos gatilhos visíveis da tela inicial, mede alvos de toque de 44 px e verifica o retorno do foco. O cenário está pronto, mas não foi executado neste worktree.
-- O título “Sugestões para adicionar” passou a usar `--color-text-muted`; há regressão específica no smoke test para impedir o retorno à cor translúcida sem contraste suficiente.
+- O título "Sugestões para adicionar" passou a usar `--color-text-muted`; há regressão específica no smoke test para impedir o retorno à cor translúcida sem contraste suficiente.
 - Corrigida a impressão nativa: `syncPrintCv()` agora aplica a mesma paleta do modelo selecionado à área usada por Ctrl+P. A regressão é exercitada no smoke test com o modelo Petróleo.
 
 ## Validação executada

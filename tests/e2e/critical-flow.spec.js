@@ -10,6 +10,11 @@ async function openBlankStart(page) {
   await expect(page.locator('#screen-start')).toBeVisible();
 }
 
+async function clearDraft(page) {
+  await page.goto(`${baseUrl}/index.html`);
+  await page.evaluate((key) => localStorage.removeItem(key), draftKey);
+}
+
 async function fillRequiredPersonalData(page) {
   await page.getByLabel('Nome para o currículo').fill('Ana Teste');
   await page.getByLabel('Cargo ou área desejada').fill('Analista de Dados');
@@ -38,7 +43,7 @@ async function fillExperience(page, { title, company, description }) {
 test.describe('jornada crítica do currículo', () => {
   test('começa em branco, retoma o rascunho, valida, revisa e exporta', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.addInitScript((key) => localStorage.removeItem(key), draftKey);
+    await clearDraft(page);
 
     await openBlankStart(page);
     await page.getByRole('button', { name: 'Começar a preencher' }).click();
@@ -55,10 +60,9 @@ test.describe('jornada crítica do currículo', () => {
     await expect(page.getByLabel('Nome para o currículo')).toHaveValue('Ana Teste');
 
     await page.getByRole('button', { name: 'Concluir ✓' }).click();
-    await expect(page.locator('#screen-review')).toBeVisible();
-    await expect(page.getByText('Há campos obrigatórios para revisar')).toBeVisible();
-
-    await page.getByRole('link', { name: /Resumo:/ }).click();
+    await expect(page.locator('.wizard-step[data-section-id="summary"]')).toBeVisible();
+    await expect(page.getByLabel('Um parágrafo curto sobre você')).toBeFocused();
+    await expect(page.getByLabel('Um parágrafo curto sobre você')).toHaveAttribute('aria-invalid', 'true');
     await page.getByLabel('Um parágrafo curto sobre você').fill(
       'Analista de dados com experiência em relatórios, automação e melhoria de processos para equipes de produto.'
     );
@@ -74,7 +78,7 @@ test.describe('jornada crítica do currículo', () => {
 
   test('bloqueia avanço, seleciona a primeira experiência inválida e permite corrigi-la', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.addInitScript((key) => localStorage.removeItem(key), draftKey);
+    await clearDraft(page);
 
     await openExperiencesStep(page);
     await page.getByRole('tab', { name: 'Adicionar experiência' }).click();
@@ -99,5 +103,37 @@ test.describe('jornada crítica do currículo', () => {
     });
     await page.getByRole('button', { name: 'Próximo' }).click();
     await expect(page.locator('.wizard-step[data-section-id="education"]')).toBeVisible();
+  });
+
+  test('entra pela tela inicial, retoma e exporta em 320 CSS px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await clearDraft(page);
+    await openBlankStart(page);
+    await page.getByRole('button', { name: 'Começar a preencher' }).click();
+    await fillRequiredPersonalData(page);
+
+    await expect.poll(() => page.evaluate((key) => {
+      const draft = JSON.parse(localStorage.getItem(key) || 'null');
+      return draft?.personal?.fullName;
+    }, draftKey)).toBe('Ana Teste');
+
+    await page.goto(`${baseUrl}/index.html`);
+    await expect(page.locator('#screen-characters')).toBeVisible();
+    await expect(page.locator('#btn-resume-draft')).toBeVisible();
+    await page.locator('#btn-resume-draft').click();
+    await expect(page.locator('#screen-wizard')).toBeVisible();
+    await expect(page.getByLabel('Nome para o currículo')).toHaveValue('Ana Teste');
+
+    await page.getByRole('button', { name: 'Próximo' }).click();
+    await page.getByLabel('Um parágrafo curto sobre você').fill(
+      'Analista de dados com experiência em relatórios, automação e melhoria de processos para equipes de produto.'
+    );
+    await page.getByRole('button', { name: 'Concluir ✓' }).click();
+    await expect(page.locator('#screen-review')).toBeVisible();
+
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Baixar currículo em PDF' }).click();
+    const pdf = await download;
+    expect(pdf.suggestedFilename()).toBe('CV_Ana-Teste_Analista-de-Dados.pdf');
   });
 });
