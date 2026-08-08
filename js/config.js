@@ -145,7 +145,7 @@ const EuGeroConfig = (function () {
     },
     creative: {
       id: 'creative', name: 'Criativo', description: 'Coluna única, com selo de iniciais',
-      layout: 'creative', thumbAccent: '#5980a6', atsFriendly: false,
+      layout: 'creative', thumbAccent: '#416180', atsFriendly: false,
       atsNote: 'Este modelo usa um elemento gráfico no topo. Alguns sistemas podem ignorar ou reorganizar essa parte do conteúdo.'
     }
   };

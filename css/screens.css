@@ -814,6 +814,32 @@
   margin: 0 0 6px;
 }
 
+/* Textos auxiliares permanecem legíveis também em telas claras: os tons
+   translúcidos anteriores ficavam abaixo de 4.5:1. */
+.brand-by,
+.label-caps,
+.hint-text,
+.gallery-counter,
+.aside-note-title,
+.btn-link-back,
+.step-counter,
+.progress-label,
+.label-caps-loose,
+.small-note,
+.small-note-below,
+.tiny-note,
+.tiny-note-below,
+.guide-entry-tag-muted,
+.wizard-field-hint,
+.review-intro,
+.review-score-caption,
+.review-block-title,
+.review-block-title-tight,
+.review-block-note,
+.review-ats-title {
+  color: var(--color-text-muted);
+}
+
 /* Linha do checklist de secoes. As duas partes que antes eram string montada
    (fundo e cursor) viram regra: as classes que decidiam o valor ja estao no
    elemento. A ordem importa: obrigatoria vem depois de ativa, para o cursor

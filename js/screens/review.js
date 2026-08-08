@@ -241,6 +241,7 @@ const EuGeroReviewScreen = (function () {
     const state = ctx.getState();
     el.innerHTML = EuGeroPreview.render(state, state.template, ctx.activeSections(), 'export');
     el.className = `preview-content template-${state.template} cv-margin-${state.margin || 'padrao'} cv-density-${state.density || 'normal'}`;
+    EuGeroPreview.applyTemplateAccent(el, state.template);
   }
 
   function renderReviewGallery() {

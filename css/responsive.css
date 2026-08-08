@@ -187,12 +187,15 @@
 
   .preview-overlay-inner {
     max-height: 88vh;
+    max-height: 88dvh;
     height: 88vh;
+    height: 88dvh;
     border-radius: 20px 20px 0 0;
     display: flex;
     flex-direction: column;
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.25);
     overflow: hidden;
+    overscroll-behavior: contain;
   }
 
   .preview-overlay:not([hidden]) .preview-overlay-inner {
@@ -243,8 +246,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    min-width: 44px;
+    min-height: 44px;
     border-radius: 50%;
     background: var(--color-bg);
     border: 1px solid var(--color-border);
@@ -252,8 +255,10 @@
 
   .preview-overlay .preview-paper-wrap {
     flex: 1;
+    min-height: 0;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding: 0.75rem;
   }
 
@@ -685,7 +690,7 @@
 .rf-otimo { color: #2E6B47; border-color: color-mix(in srgb, #2E6B47 45%, transparent); background: color-mix(in srgb, #2E6B47 8%, transparent); }
 .rf-bom { color: var(--color-accent-700); border-color: color-mix(in srgb, var(--color-accent) 45%, transparent); background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
 .rf-fraco { color: #8C4A2E; border-color: color-mix(in srgb, #8C4A2E 45%, transparent); background: color-mix(in srgb, #8C4A2E 8%, transparent); }
-.rf-vazio { color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.rf-vazio { color: var(--color-text-muted); }
 .rf-title { font-family: var(--font-heading); font-weight: 600; font-size: 15px; text-transform: uppercase; }
 .rf-tips { display: flex; flex-direction: column; gap: 3px; padding-left: 72px; }
 .rf-tip {
@@ -773,7 +778,7 @@
   .home-action-kicker { font-size: 9.5px !important; }
   .home-action-title { font-size: 15px !important; line-height: 1.12; }
   .home-action-desc { font-size: 12px !important; line-height: 1.38; }
-  .home-action-card .btn { margin-top: 8px !important; font-size: 12px !important; min-height: 40px !important; padding: 6px 8px; }
+  .home-action-card .btn { margin-top: 8px !important; font-size: 12px !important; min-height: 44px !important; padding: 6px 8px; }
 
   .home-footer { flex-direction: column; align-items: stretch; gap: 8px; margin: auto 0 0 !important; padding-top: 12px; }
   .home-privacy { text-align: left; min-width: 0; font-size: 11.5px !important; }
@@ -815,5 +820,12 @@
   .btn-ghost {
     padding-top: 10px;
     padding-bottom: 10px;
+  }
+  .btn-icon-28,
+  .list-tab,
+  .list-item-actions .btn-reorder,
+  .section-move-actions button {
+    min-width: 44px;
+    min-height: 44px;
   }
 }

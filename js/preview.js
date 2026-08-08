@@ -356,6 +356,7 @@ const EuGeroPreview = (function () {
   return {
     render,
     updatePreview,
+    applyTemplateAccent,
     buildContent,
     escapeHtml
   };

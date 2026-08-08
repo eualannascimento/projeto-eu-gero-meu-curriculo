@@ -1679,6 +1679,47 @@ reviewDownloadDom.document.body.appendChild(reviewDownloadButton);
 const reviewToastMessages = [];
 
 loadScript('js/screens/review.js');
+
+// --- Regressão: Ctrl+P preserva a paleta do modelo selecionado ---
+console.log('\nImpressão nativa com paleta do modelo:');
+
+const previousPrintSyncDocument = global.document;
+const previousPrintSyncWindow = global.window;
+const printSyncDom = createWizardDom();
+const printCvElement = printSyncDom.document.createElement('div');
+const printPaletteVars = {};
+printCvElement.id = 'print-cv';
+printCvElement.style.setProperty = (name, value) => { printPaletteVars[name] = value; };
+printSyncDom.document.body.appendChild(printCvElement);
+global.document = printSyncDom.document;
+global.window = { print() {} };
+
+const printPaletteState = {
+  ...EuGeroConfig.createEmptyState(),
+  template: 'petroleo'
+};
+EuGeroReviewScreen.init({
+  getState: () => printPaletteState,
+  activeSections: () => EuGeroConfig.getActiveSections(printPaletteState.enabledSections),
+  showToast() {},
+  goToWizard() {},
+  escapeHtml: EuGeroUtils.escapeHtml,
+  saveState() {},
+  updateTemplateIndicators() {},
+  debouncedUpdatePreviews() {},
+  scaleReviewPreviews() {},
+  els: {}
+});
+EuGeroReviewScreen.printCv();
+assert(
+  printPaletteVars['--color-accent'] === EuGeroConfig.TEMPLATES.petroleo.thumbAccent,
+  'Ctrl+P aplica à área impressa a paleta compartilhada do modelo selecionado'
+);
+
+global.document = previousPrintSyncDocument;
+if (previousPrintSyncWindow === undefined) delete global.window;
+else global.window = previousPrintSyncWindow;
+
 EuGeroReviewScreen.init({
   getState: () => overflowResume,
   activeSections: () => EuGeroConfig.getActiveSections(overflowResume.enabledSections),
