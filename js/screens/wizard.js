@@ -771,7 +771,7 @@ const EuGeroWizardScreen = (function () {
     const addBtn = document.createElement('button');
     addBtn.type = 'button';
     addBtn.className = 'btn btn-secondary btn-add-item';
-    addBtn.style.cssText = 'align-self: flex-start; min-height: 42px; margin-top: 16px;';
+    addBtn.style.cssText = 'align-self: flex-start; min-height: 44px; margin-top: 16px;';
     addBtn.textContent = `+ Adicionar ${(LIST_ITEM_LABELS[section.id] || 'item').toLowerCase()}`;
     addBtn.addEventListener('click', () => appendListItem(section.id));
     container.appendChild(addBtn);

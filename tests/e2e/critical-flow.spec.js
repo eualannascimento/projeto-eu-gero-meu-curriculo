@@ -32,6 +32,7 @@ async function openExperiencesStep(page) {
   );
   await page.getByRole('button', { name: 'Próximo', exact: true }).click();
   await expect(page.locator('.wizard-step[data-section-id="experiences"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Adicionar experiência' })).toBeVisible();
 }
 
 async function fillExperience(page, { title, company, description }) {
@@ -81,7 +82,7 @@ test.describe('jornada crítica do currículo', () => {
     await clearDraft(page);
 
     await openExperiencesStep(page);
-    await page.getByRole('tab', { name: 'Adicionar experiência' }).click();
+    await page.getByRole('button', { name: 'Adicionar experiência' }).click();
     await fillExperience(page, {
       title: 'Analista de Dados',
       company: 'Empresa Exemplo',

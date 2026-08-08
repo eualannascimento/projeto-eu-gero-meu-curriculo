@@ -16,11 +16,20 @@ async function expectNoHorizontalOverflow(page) {
 }
 
 async function expectVisibleFocus(page, selector) {
-  await page.locator(selector).evaluate((element) => element.focus({ focusVisible: true }));
+  const locator = page.locator(selector);
+  await page.evaluate(() => document.activeElement?.blur());
+  // Navega pelo teclado para ativar :focus-visible de forma consistente,
+  // inclusive dentro dos focus traps de modal e drawer.
+  for (let i = 0; i < 40; i += 1) {
+    await page.keyboard.press('Tab');
+    if (await locator.evaluate((element) => document.activeElement === element)) break;
+  }
+  await expect(locator).toBeFocused();
   await expect.poll(() => page.evaluate((target) => {
     const element = document.querySelector(target);
     const style = getComputedStyle(element);
     return document.activeElement === element
+      && element.matches(':focus-visible')
       && (style.outlineStyle !== 'none' || style.boxShadow !== 'none');
   }, selector)).toBe(true);
 }
