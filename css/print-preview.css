@@ -111,7 +111,7 @@
 }
 .skills-suggest-title {
   font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  color: var(--color-text-muted);
   margin: 26px 0 10px;
 }
 .skills-suggest-row { display: flex; flex-wrap: wrap; gap: 8px; }

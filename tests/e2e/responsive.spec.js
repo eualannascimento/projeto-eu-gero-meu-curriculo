@@ -24,6 +24,13 @@ async function expectVisibleFocus(page, selector) {
   }, selector)).toBe(true);
 }
 
+async function expectTouchTarget(page, selector) {
+  const box = await page.locator(selector).boundingBox();
+  expect(box, `${selector} está visível para toque`).not.toBeNull();
+  expect(box.width, `${selector} tem largura mínima de 44 px`).toBeGreaterThanOrEqual(44);
+  expect(box.height, `${selector} tem altura mínima de 44 px`).toBeGreaterThanOrEqual(44);
+}
+
 async function colorContrast(page) {
   return page.evaluate(() => {
     const root = getComputedStyle(document.documentElement);
@@ -58,7 +65,7 @@ async function colorContrast(page) {
 }
 
 test.describe('jornada responsiva acessível', () => {
-  test('desktop mantém prévia, modal e foco utilizáveis em 1440 x 900', async ({ page }) => {
+  test('desktop mantém prévia, galeria e foco utilizáveis em 1440 x 900', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openStart(page);
 
@@ -70,24 +77,35 @@ test.describe('jornada responsiva acessível', () => {
       expect(ratio, `${state} mantém contraste AA`).toBeGreaterThanOrEqual(4.5);
     }
 
-    await page.locator('#btn-change-template-start').evaluate((button) => button.click());
-    await expect(page.locator('#modal-template')).toBeVisible();
-    await expectVisibleFocus(page, '#modal-template .modal-close');
-    await page.keyboard.press('Escape');
-    await expect(page.locator('#modal-template')).toBeHidden();
+    const label = page.locator('#start-gallery-label');
+    const templateBefore = await label.textContent();
+    await page.locator('#btn-next-template-start').click();
+    await expect(label).not.toHaveText(templateBefore || '');
   });
 
-  test('mobile abre o drawer da prévia sem overflow e preserva foco em 320 x 800', async ({ page }) => {
+  test('mobile abre o modal e o drawer pelos gatilhos visíveis em 320 x 800', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 800 });
     await openStart(page);
 
     await expectNoHorizontalOverflow(page);
-    await page.locator('#btn-expand-mobile-preview').click();
+    await expectTouchTarget(page, '#btn-change-template-start');
+    await expectTouchTarget(page, '#btn-toggle-preview-start');
+
+    await page.locator('#btn-change-template-start').click();
+    await expect(page.locator('#modal-template')).toBeVisible();
+    await expectTouchTarget(page, '#modal-template .modal-close');
+    await expectVisibleFocus(page, '#modal-template .modal-close');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#modal-template')).toBeHidden();
+    await expect(page.locator('#btn-change-template-start')).toBeFocused();
+
+    await page.locator('#btn-toggle-preview-start').click();
     await expect(page.locator('#preview-overlay')).toBeVisible();
     await expect(page.locator('.preview-overlay-inner')).toHaveCSS('overflow', 'hidden');
+    await expectTouchTarget(page, '#btn-close-preview');
     await expectVisibleFocus(page, '#btn-close-preview');
     await page.keyboard.press('Escape');
     await expect(page.locator('#preview-overlay')).toBeHidden();
-    await expect(page.locator('#btn-expand-mobile-preview')).toBeFocused();
+    await expect(page.locator('#btn-toggle-preview-start')).toBeFocused();
   });
 });

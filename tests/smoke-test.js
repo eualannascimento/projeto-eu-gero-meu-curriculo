@@ -1165,6 +1165,7 @@ console.log('\nExportação de PDF:');
 
 const reviewJsCode = fs.readFileSync(path.join(__dirname, '..', 'js/screens/review.js'), 'utf8');
 const printCss = fs.readFileSync(path.join(__dirname, '..', 'css/print-preview.css'), 'utf8');
+const skillsSuggestTitleRule = printCss.match(/\.skills-suggest-title\s*\{[^}]*\}/);
 // Decisao revista em 2026-07-26 (ver .docs/specs/feat-pdf-direto-como-unico-caminho.md):
 // o botao passa a baixar um PDF gerado por jsPDF em vez de abrir o dialogo de
 // impressao. O dialogo aplicava margem e escala proprias de cada navegador, e
@@ -1173,6 +1174,10 @@ assert(reviewJsCode.includes('function downloadPdf'), 'review.js define download
 assert(appJsCode.includes('EuGeroReviewScreen.downloadPdf'), 'Botão de exportação chama downloadPdf');
 assert(reviewJsCode.includes('EuGeroPdfExport.generatePdf('), 'downloadPdf usa o gerador jsPDF');
 assert(reviewJsCode.includes('function printCv'), 'printCv continua disponível para Ctrl+P');
+assert(
+  skillsSuggestTitleRule && /color:\s*var\(--color-text-muted\)/.test(skillsSuggestTitleRule[0]),
+  'Título “Sugestões para adicionar” usa token de texto auxiliar com contraste AA'
+);
 // A altura da caixa de impressao nao pode ser fixada em milimetros: era o
 // min-height 297mm herdado de templates.css que gerava a pagina em branco.
 assert(printCss.includes('min-height: 0 !important'), 'Caixa de impressão não impõe altura de folha');
