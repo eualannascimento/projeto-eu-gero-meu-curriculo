@@ -13,3 +13,4 @@ Thumbs.db
 
 # Diario de execucao e transitorio (.rules/context-management.md, secao 5)
 .docs/journal/
+.worktrees/
