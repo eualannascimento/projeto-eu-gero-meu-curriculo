@@ -201,7 +201,6 @@ const EuGeroWizardScreen = (function () {
     const err = document.createElement('span');
     err.id = errorId;
     err.className = 'field-error';
-    err.setAttribute('role', 'alert');
     err.textContent = message;
     input.closest('.field-group')?.appendChild(err);
   }
@@ -286,6 +285,18 @@ const EuGeroWizardScreen = (function () {
     });
   }
 
+  function validateWizardStepState(stepId, state, sections) {
+    const section = sections.find((candidate) => candidate.id === stepId);
+    if (!section) return { valid: true, errors: [] };
+    const result = EuGeroValidation.validateSection(state, section);
+    const errors = result.issues.map((issue) => ({
+      itemId: issue.itemIndex == null ? section.id : `${section.id}-${issue.itemIndex}`,
+      field: issue.fieldKey,
+      message: issue.message
+    }));
+    return { valid: errors.length === 0, errors };
+  }
+
   function validateWizardStep(stepId) {
     const state = ctx.getState();
     const sections = ctx.activeSections();
@@ -293,7 +304,7 @@ const EuGeroWizardScreen = (function () {
     if (!section) return { valid: true, errors: [] };
 
     const scope = ctx.els.wizardSteps;
-    const result = EuGeroValidation.validateWizardStep(stepId, state, sections);
+    const result = validateWizardStepState(stepId, state, sections);
     validationResults[section.id] = result;
     if (!scope) return result;
 

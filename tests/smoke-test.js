@@ -376,8 +376,151 @@ assert(!EuGeroValidation.validateUrl('ftp://x').ok || EuGeroValidation.validateU
 // --- Validação de listas no wizard ---
 console.log('\nValidação acessível de listas no wizard:');
 
-const experiencesWithFirstInvalidItem = {
+function createWizardDom() {
+  const escapeText = (value) => String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  class TestElement {
+    constructor(tagName, ownerDocument) {
+      this.tagName = tagName.toUpperCase();
+      this.ownerDocument = ownerDocument;
+      this.children = [];
+      this.parentElement = null;
+      this.dataset = {};
+      this.style = {};
+      this.attributes = {};
+      this.listeners = {};
+      this._className = '';
+      this._innerHTML = '';
+      this._textContent = '';
+      this.classList = {
+        add: (...names) => { this.className = `${this.className} ${names.join(' ')}`.trim(); },
+        remove: (...names) => {
+          this.className = this.className.split(/\s+/).filter((name) => name && !names.includes(name)).join(' ');
+        },
+        toggle: (name, force) => {
+          const has = this.classList.contains(name);
+          const next = force == null ? !has : force;
+          if (next && !has) this.classList.add(name);
+          if (!next && has) this.classList.remove(name);
+          return next;
+        },
+        contains: (name) => this.className.split(/\s+/).includes(name)
+      };
+    }
+
+    get className() { return this._className; }
+    set className(value) { this._className = String(value || '').trim().replace(/\s+/g, ' '); }
+    get textContent() { return this._textContent; }
+    set textContent(value) { this._textContent = value == null ? '' : String(value); this._innerHTML = ''; }
+    get innerHTML() { return this._innerHTML || (this.children.length ? '' : escapeText(this._textContent)); }
+    set innerHTML(value) { this._innerHTML = String(value || ''); this._textContent = ''; this.children = []; }
+
+    appendChild(child) {
+      child.parentElement = this;
+      this.children.push(child);
+      return child;
+    }
+
+    prepend(child) {
+      child.parentElement = this;
+      this.children.unshift(child);
+      return child;
+    }
+
+    remove() {
+      if (!this.parentElement) return;
+      const siblings = this.parentElement.children;
+      siblings.splice(siblings.indexOf(this), 1);
+      this.parentElement = null;
+    }
+
+    setAttribute(name, value) { this.attributes[name] = String(value); }
+    getAttribute(name) { return Object.hasOwn(this.attributes, name) ? this.attributes[name] : null; }
+    removeAttribute(name) { delete this.attributes[name]; }
+    addEventListener(type, listener) { (this.listeners[type] ||= []).push(listener); }
+    click() { (this.listeners.click || []).forEach((listener) => listener({ preventDefault() {} })); }
+    focus() { this.ownerDocument.activeElement = this; }
+    scrollIntoView() { this.scrolledIntoView = true; }
+    closest(selector) {
+      let current = this;
+      while (current) {
+        if (matchesSelector(current, selector)) return current;
+        current = current.parentElement;
+      }
+      return null;
+    }
+    querySelector(selector) { return findElements(this, selector)[0] || null; }
+    querySelectorAll(selector) { return findElements(this, selector); }
+  }
+
+  function matchesSelector(element, selector) {
+    if (selector === 'input, textarea, select') return ['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName);
+    if (selector.startsWith('#')) return element.id === selector.slice(1);
+    const attribute = selector.match(/^\.([\w-]+)\[data-section-id="([\w-]+)"\]$/);
+    if (attribute) return element.classList.contains(attribute[1]) && element.dataset.sectionId === attribute[2];
+    if (selector.startsWith('.')) return selector.slice(1).split('.').every((name) => element.classList.contains(name));
+    if (selector === 'a') return element.tagName === 'A';
+    if (selector === '[role="alert"]') return element.getAttribute('role') === 'alert';
+    return false;
+  }
+
+  function findElements(root, selector) {
+    const parts = selector.split(/\s+/);
+    const descendants = [];
+    const walk = (node) => node.children.forEach((child) => { descendants.push(child); walk(child); });
+    walk(root);
+    if (parts.length === 1) return descendants.filter((element) => matchesSelector(element, parts[0]));
+    return descendants.filter((element) => {
+      if (!matchesSelector(element, parts.at(-1))) return false;
+      let parent = element.parentElement;
+      for (let index = parts.length - 2; index >= 0; index--) {
+        while (parent && !matchesSelector(parent, parts[index])) parent = parent.parentElement;
+        if (!parent) return false;
+        parent = parent.parentElement;
+      }
+      return true;
+    });
+  }
+
+  const document = {
+    activeElement: null,
+    createElement(tagName) { return new TestElement(tagName, document); },
+    getElementById(id) { return document.body.querySelector(`#${id}`); },
+    querySelector(selector) { return document.body.querySelector(selector); },
+    querySelectorAll(selector) { return document.body.querySelectorAll(selector); },
+    body: null
+  };
+  document.body = new TestElement('body', document);
+  return { document, TestElement };
+}
+
+const previousDocumentForWizard = global.document;
+const previousCssForWizard = global.CSS;
+const wizardDom = createWizardDom();
+global.document = wizardDom.document;
+global.CSS = { escape: (value) => value };
+['wizard-step-title', 'wizard-step-counter', 'wizard-step-desc', 'btn-prev', 'btn-next'].forEach((id) => {
+  const element = wizardDom.document.createElement('div');
+  element.id = id;
+  wizardDom.document.body.appendChild(element);
+});
+const wizardSteps = wizardDom.document.createElement('div');
+wizardSteps.id = 'wizard-steps';
+wizardDom.document.body.appendChild(wizardSteps);
+const wizardTimeline = wizardDom.document.createElement('nav');
+wizardTimeline.id = 'wizard-timeline';
+wizardDom.document.body.appendChild(wizardTimeline);
+
+loadScript('js/screens/wizard.js');
+const wizardState = {
   ...EuGeroConfig.createEmptyState(),
+  currentStep: 1,
+  enabledSections: ['personal', 'experiences'],
   experiences: [
     {
       title: '',
@@ -393,34 +536,45 @@ const experiencesWithFirstInvalidItem = {
     }
   ]
 };
-const experienceValidation = typeof EuGeroValidation.validateWizardStep === 'function'
-  ? EuGeroValidation.validateWizardStep(
-    'experiences',
-    experiencesWithFirstInvalidItem,
-    EuGeroConfig.SECTIONS
-  )
-  : { valid: true, errors: [] };
+const wizardSections = EuGeroConfig.getActiveSections(wizardState.enabledSections);
+EuGeroWizardScreen.init({
+  els: { wizardSteps, wizardTimeline },
+  getState: () => wizardState,
+  activeSections: () => wizardSections,
+  goToStep() {},
+  saveState() {},
+  showToast() {},
+  showPrompt() {},
+  debouncedUpdatePreviews() {},
+  escapeHtml: EuGeroUtils.escapeHtml,
+  escapeAttr: EuGeroUtils.escapeAttr
+});
+EuGeroWizardScreen.renderWizardStep();
+wizardSteps.querySelectorAll('.list-tab')[1].click();
+const experienceValidation = EuGeroWizardScreen.validateWizardStep('experiences');
+const firstInvalidInput = wizardDom.document.getElementById('field-experiences-0-title');
+const summaryLink = wizardSteps.querySelector('.validation-summary-list a');
 
-assert(experienceValidation.valid === false, 'Duas experiências com erro na primeira bloqueiam a etapa');
-assert(
-  experienceValidation.errors.length === 1
-    && experienceValidation.errors[0].itemId === 'experiences-0'
-    && experienceValidation.errors[0].field === 'title',
-  'Erro da primeira experiência identifica o item e o campo inválido'
-);
-assert(
-  experienceValidation.errors[0]?.message === 'Cargo ou função e obrigatorio.',
-  'Erro da lista preserva a mensagem de validação em português'
-);
-const firstExperienceErrorTarget = typeof EuGeroValidation.getWizardErrorTarget === 'function'
-  ? EuGeroValidation.getWizardErrorTarget(experienceValidation.errors[0])
-  : {};
-assert(
-  firstExperienceErrorTarget.itemIndex === 0
-    && firstExperienceErrorTarget.fieldId === 'field-experiences-0-title'
-    && firstExperienceErrorTarget.summaryHref === '#field-experiences-0-title',
-  'Resumo aponta para o primeiro campo inválido e permite mover o foco para ele'
-);
+assert(experienceValidation.valid === false && experienceValidation.errors[0].itemId === 'experiences-0',
+  'validateWizardStep(stepId) valida o estado atual e identifica a primeira experiência');
+assert(wizardSteps.querySelector('.list-tab.active')?.textContent === '1',
+  'Validação troca para a aba da primeira experiência inválida');
+assert(wizardDom.document.activeElement === firstInvalidInput && firstInvalidInput.scrolledIntoView === true,
+  'Validação move o foco para o primeiro campo inválido');
+assert(firstInvalidInput.getAttribute('aria-invalid') === 'true'
+  && firstInvalidInput.getAttribute('aria-describedby') === 'error-field-experiences-0-title',
+  'Campo inválido expõe aria-invalid e aria-describedby');
+assert(summaryLink?.href === '#field-experiences-0-title' && summaryLink.textContent.includes('Cargo ou função'),
+  'Resumo acessível contém link para o campo inválido');
+summaryLink.click();
+assert(wizardDom.document.activeElement === wizardDom.document.getElementById('field-experiences-0-title'),
+  'Link do resumo mantém o foco no campo associado');
+assert(wizardSteps.querySelectorAll('[role="alert"]').length === 1
+  && wizardSteps.querySelector('.field-error')?.getAttribute('role') === null,
+  'Resumo é o único canal role=alert e o erro de campo fica associado por aria-describedby');
+
+global.document = previousDocumentForWizard;
+global.CSS = previousCssForWizard;
 
 // --- Datas ---
 console.log('\nDatas estruturadas:');

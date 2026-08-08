@@ -105,21 +105,6 @@ const EuGeroValidation = (function () {
     return { valid: issues.length === 0, issues };
   }
 
-  function validateWizardStep(stepId, state, sections) {
-    const availableSections = sections
-      || (typeof EuGeroConfig !== 'undefined' ? EuGeroConfig.SECTIONS : []);
-    const section = availableSections.find((candidate) => candidate.id === stepId);
-    if (!section) return { valid: true, errors: [] };
-
-    const errors = validateSectionIssues(state, section).map((issue) => ({
-      itemId: issue.itemIndex == null ? section.id : `${section.id}-${issue.itemIndex}`,
-      field: issue.fieldKey,
-      message: issue.message
-    }));
-
-    return { valid: errors.length === 0, errors };
-  }
-
   function getWizardErrorTarget(error) {
     const itemMatch = String(error?.itemId || '').match(/^(.*)-(\d+)$/);
     const itemIndex = itemMatch ? Number(itemMatch[2]) : null;
@@ -146,7 +131,6 @@ const EuGeroValidation = (function () {
     validateUrl,
     validateField,
     validateSection,
-    validateWizardStep,
     getWizardErrorTarget,
     isEmpty,
     resolveStepAdvance
