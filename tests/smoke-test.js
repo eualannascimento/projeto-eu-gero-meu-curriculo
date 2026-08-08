@@ -199,6 +199,34 @@ assert(EuGeroRouter.canGoToReview(emptyReviewState) === false, 'Revisão bloquei
 assert(EuGeroRouter.canGoToReview(resumableDraft) === true, 'Revisão permite currículo com conteúdo');
 assert(EuGeroRouter.canGoToReview(unknownPersonalDraft) === false, 'Revisão ignora campo pessoal desconhecido');
 
+const listSectionFixtures = {
+  experiences: { label: 'Experiência', item: { title: 'Analista' } },
+  education: { label: 'Formação', item: { degree: 'Administração' } },
+  skills: { label: 'Habilidades', item: { name: 'Excel' } },
+  languages: { label: 'Idiomas', item: { language: 'Inglês' } },
+  certifications: { label: 'Certificações', item: { name: 'Curso de Excel' } },
+  projects: { label: 'Projetos', item: { name: 'Projeto de dados' } }
+};
+Object.entries(listSectionFixtures).forEach(([sectionId, { label, item }]) => {
+  const unknownListDraft = {
+    ...EuGeroConfig.createEmptyState(),
+    personal: {},
+    [sectionId]: [{ ignored: 'não faz parte do currículo' }]
+  };
+  draftValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(unknownListDraft));
+  assert(EuGeroStorage.hasDraft() === false, `${label} com campo desconhecido não torna o rascunho retomável`);
+  assert(EuGeroRouter.canGoToReview(unknownListDraft) === false, `${label} com campo desconhecido não libera a revisão`);
+
+  const knownListDraft = {
+    ...EuGeroConfig.createEmptyState(),
+    personal: {},
+    [sectionId]: [item]
+  };
+  draftValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(knownListDraft));
+  assert(EuGeroStorage.hasDraft() === true, `${label} com campo conhecido torna o rascunho retomável`);
+  assert(EuGeroRouter.canGoToReview(knownListDraft) === true, `${label} com campo conhecido libera a revisão`);
+});
+
 if (previousLocalStorage === undefined) delete global.localStorage;
 else global.localStorage = previousLocalStorage;
 

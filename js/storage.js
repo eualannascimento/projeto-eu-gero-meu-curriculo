@@ -36,23 +36,25 @@ const EuGeroStorage = (function () {
   function hasContent(data) {
     if (!data || typeof data !== 'object') return false;
 
-    const containsValue = (value) => {
-      if (typeof value === 'string') return value.trim().length > 0;
-      if (Array.isArray(value)) return value.some(containsValue);
-      if (value && typeof value === 'object') return Object.values(value).some(containsValue);
-      return false;
-    };
+    const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+    const hasKnownItemContent = (item, fields) => item && typeof item === 'object'
+      && fields.some((field) => hasText(item[field.key]));
 
     const personalKeys = Object.keys(createEmptyState().personal);
-    if (personalKeys.some((key) => containsValue(data.personal?.[key]))) return true;
+    if (personalKeys.some((key) => hasText(data.personal?.[key]))) return true;
 
-    const contentKeys = [
-      'summary', 'skillsText', 'experiences', 'education', 'skills',
-      'languages', 'certifications', 'projects', 'volunteering', 'publications',
-      'awards', 'organizations', 'courses'
-    ];
+    if (hasText(data.summary) || hasText(data.skillsText)) return true;
 
-    return contentKeys.some((key) => containsValue(data[key]));
+    const hasLegacySkill = Array.isArray(data.skills) && data.skills.some((skill) => {
+      if (typeof skill === 'string') return hasText(skill);
+      return hasText(skill?.name);
+    });
+    if (hasLegacySkill) return true;
+
+    return EuGeroConfig.SECTIONS
+      .filter((section) => section.list)
+      .some((section) => Array.isArray(data[section.id])
+        && data[section.id].some((item) => hasKnownItemContent(item, section.itemFields)));
   }
 
   function load() {
@@ -98,7 +100,10 @@ const EuGeroStorage = (function () {
     if (data.skillsText) {
       merged.skillsText = data.skillsText;
     } else if (merged.skills?.length && !merged.skillsText) {
-      merged.skillsText = merged.skills.map(s => s.name || s).filter(Boolean).join('; ');
+      merged.skillsText = merged.skills.map((skill) => {
+        if (typeof skill === 'string') return skill.trim();
+        return typeof skill?.name === 'string' ? skill.name.trim() : '';
+      }).filter(Boolean).join('; ');
     }
 
     return merged;
