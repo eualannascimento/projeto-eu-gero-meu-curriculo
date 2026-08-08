@@ -163,6 +163,38 @@ assert(invalidResult.valid === false, 'JSON inválido rejeitado');
 const corrupted = EuGeroStorage.validateImportData(null);
 assert(corrupted.valid === false, 'Dados nulos rejeitados');
 
+// --- Rascunho local e entrada na revisão ---
+console.log('\nRascunho local e revisão:');
+
+const previousLocalStorage = global.localStorage;
+const draftValues = new Map();
+global.localStorage = {
+  getItem(key) { return draftValues.has(key) ? draftValues.get(key) : null; },
+  setItem(key, value) { draftValues.set(key, String(value)); },
+  removeItem(key) { draftValues.delete(key); }
+};
+
+const resumableDraft = {
+  ...EuGeroConfig.createEmptyState(),
+  personal: {
+    ...EuGeroConfig.createEmptyState().personal,
+    fullName: 'Ana Retomada'
+  }
+};
+
+assert(EuGeroStorage.hasDraft() === false, 'Sem conteúdo salvo não há rascunho para retomar');
+draftValues.set(EuGeroConfig.STORAGE_KEY, JSON.stringify(resumableDraft));
+assert(EuGeroStorage.hasDraft() === true, 'Rascunho local com conteúdo pode ser retomado');
+assert(EuGeroStorage.clear() === true, 'Limpar rascunho confirma a remoção local');
+assert(EuGeroStorage.hasDraft() === false, 'Rascunho removido deixa de estar disponível');
+
+const emptyReviewState = EuGeroConfig.createEmptyState();
+assert(EuGeroRouter.canGoToReview(emptyReviewState) === false, 'Revisão bloqueia currículo vazio');
+assert(EuGeroRouter.canGoToReview(resumableDraft) === true, 'Revisão permite currículo com conteúdo');
+
+if (previousLocalStorage === undefined) delete global.localStorage;
+else global.localStorage = previousLocalStorage;
+
 // --- Template switch (data preservation) ---
 console.log('\nTroca de template:');
 

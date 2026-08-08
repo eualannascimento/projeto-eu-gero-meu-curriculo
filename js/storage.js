@@ -33,6 +33,25 @@ const EuGeroStorage = (function () {
     return createEmptyState();
   }
 
+  function hasContent(data) {
+    if (!data || typeof data !== 'object') return false;
+
+    const containsValue = (value) => {
+      if (typeof value === 'string') return value.trim().length > 0;
+      if (Array.isArray(value)) return value.some(containsValue);
+      if (value && typeof value === 'object') return Object.values(value).some(containsValue);
+      return false;
+    };
+
+    const contentKeys = [
+      'personal', 'summary', 'skillsText', 'experiences', 'education', 'skills',
+      'languages', 'certifications', 'projects', 'volunteering', 'publications',
+      'awards', 'organizations', 'courses'
+    ];
+
+    return contentKeys.some((key) => containsValue(data[key]));
+  }
+
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -42,6 +61,16 @@ const EuGeroStorage = (function () {
     } catch (e) {
       console.warn('Erro ao carregar localStorage:', e);
       return initialState();
+    }
+  }
+
+  function hasDraft() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      return hasContent(mergeWithDefaults(migrate(JSON.parse(raw))));
+    } catch (e) {
+      return false;
     }
   }
 
@@ -114,7 +143,13 @@ const EuGeroStorage = (function () {
   }
 
   function clear() {
-    localStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      return true;
+    } catch (e) {
+      console.warn('Erro ao remover o rascunho local:', e);
+      return false;
+    }
   }
 
   return {
@@ -122,6 +157,8 @@ const EuGeroStorage = (function () {
     migrate,
     save,
     load,
+    hasContent,
+    hasDraft,
     mergeWithDefaults,
     validateImportData,
     serialize,

@@ -144,9 +144,18 @@
 
   function applyRouteState(route) {
     currentView = route.view || 'characters';
+    if (currentView === 'review' && !EuGeroRouter.canGoToReview(state)) {
+      state.currentStep = 0;
+      const sectionId = resolveWizardSectionId(null);
+      currentView = 'wizard';
+      EuGeroRouter.setHash('wizard', sectionId, { replace: true });
+      showToast('Preencha ao menos um dado do currículo antes de revisar.', { error: true });
+      return false;
+    }
     if (currentView === 'wizard') {
       resolveWizardSectionId(route.sectionId);
     }
+    return true;
   }
 
   function navigateTo(view, sectionId, { replace = false } = {}) {
@@ -183,9 +192,16 @@
     navigateTo('wizard', sections[state.currentStep]?.id || null);
   }
 
-  function goToReview() {
+  function goToReview({ validate = false } = {}) {
+    if (validate && !EuGeroRouter.canGoToReview(state)) {
+      state.currentStep = 0;
+      navigateTo('wizard', activeSections()[0]?.id || null, { replace: true });
+      showToast('Preencha ao menos um dado do currículo antes de revisar.', { error: true });
+      return false;
+    }
     EuGeroReviewScreen.syncGalleryToTemplate();
     navigateTo('review');
+    return true;
   }
 
   function goToGuide() {
@@ -208,7 +224,7 @@
     document.getElementById('btn-next-template')?.addEventListener('click', () => cycleTemplate(1));
     document.getElementById('btn-prev')?.addEventListener('click', prevStep);
     document.getElementById('btn-next')?.addEventListener('click', nextStep);
-    document.getElementById('btn-finish')?.addEventListener('click', goToReview);
+    document.getElementById('btn-finish')?.addEventListener('click', () => goToReview({ validate: true }));
     document.getElementById('btn-back-wizard')?.addEventListener('click', () => goToWizard());
     document.getElementById('btn-wizard-to-start')?.addEventListener('click', goToStart);
     document.getElementById('btn-gal-prev')?.addEventListener('click', () => EuGeroReviewScreen.galleryStep(-1));
@@ -431,7 +447,7 @@
     if (decision.action === 'advance') {
       goToStep(decision.step);
     } else if (decision.action === 'review') {
-      goToReview();
+      goToReview({ validate: true });
     }
   }
 
@@ -648,6 +664,7 @@
     getActiveSections: () => activeSections(),
     getCurrentView: () => currentView,
     navigateTo,
+    goToReview,
     render,
     saveState,
     showToast,

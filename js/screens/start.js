@@ -30,8 +30,17 @@ const EuGeroStartScreen = (function () {
         <span class="character-cta">Escolher →</span>
       </button>
     `);
-    // "Continuar de onde parei" entra logo ao lado do card "Em branco" (índice 0).
-    cards.splice(1, 0, `
+    const resumeDraftCard = EuGeroStorage.hasDraft() ? `
+      <button type="button" class="character-card character-card-blank" id="btn-resume-draft">
+        ${corners}
+        <span class="character-avatar" aria-hidden="true">↺</span>
+        <span class="character-kicker">Rascunho neste dispositivo</span>
+        <span class="character-name">Continuar de onde parei</span>
+        <span class="character-role">Retome o currículo salvo neste navegador.</span>
+        <span class="character-cta">Continuar →</span>
+      </button>
+    ` : '';
+    const importDraftCard = `
       <button type="button" class="character-card character-card-blank" id="btn-import-characters">
         ${corners}
         <span class="character-avatar" aria-hidden="true">↑</span>
@@ -40,7 +49,8 @@ const EuGeroStartScreen = (function () {
         <span class="character-role">Carregue um rascunho salvo (.json) e continue de onde parou.</span>
         <span class="character-cta">Carregar arquivo →</span>
       </button>
-    `);
+    `;
+    cards.splice(1, 0, resumeDraftCard, importDraftCard);
     grid.innerHTML = cards.join('');
     grid.querySelectorAll('[data-avatar-color]').forEach((el) => {
       el.style.background = el.dataset.avatarColor;
@@ -48,6 +58,7 @@ const EuGeroStartScreen = (function () {
     grid.querySelectorAll('.character-card[data-character]').forEach((card) => {
       card.addEventListener('click', () => pickCharacter(card.dataset.character));
     });
+    grid.querySelector('#btn-resume-draft')?.addEventListener('click', () => ctx.goToWizard());
   }
 
   function pickCharacter(id) {
