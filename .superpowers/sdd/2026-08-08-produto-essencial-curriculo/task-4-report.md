@@ -9,8 +9,9 @@ O exportador agora define o limite pelo estado: uma página no modo compacto e d
 1. `EuGeroPdfExport.getPageLimit(state)` retorna 1 ou 2.
 2. `EuGeroPdfExport.measureExport(state)` gera o PDF final, conta as páginas e devolve `{ pages, issues }`.
 3. `downloadPdf(state)` mede antes de salvar, repassa `pageMode` ao gerador e retorna `Promise<boolean>`.
-4. A prévia e o indicador mobile respeitam o modo de uma ou duas páginas.
-5. A revisão oferece ações para reduzir resumo, experiências ou projetos quando a estimativa aponta conteúdo extenso.
+4. A prévia desktop expande a moldura para duas folhas A4 no modo detalhado; o indicador marca a separação e o limite final.
+5. A revisão carrega o jsPDF sob demanda, mede o PDF real e exibe a quantidade confirmada de páginas antes do download.
+6. A revisão oferece ações para reduzir as seções relevantes quando a estimativa ou a medição identifica conteúdo extenso.
 
 ## TDD e validação
 
@@ -18,19 +19,17 @@ O exportador agora define o limite pelo estado: uma página no modo compacto e d
 2. Red da prévia: 297 testes aprovados e 1 falha para a segunda página no modo detalhado.
 3. Red do download: 298 testes aprovados e 2 falhas para o bloqueio e a mensagem de orientação ausentes.
 4. Red do nome do arquivo com estado explícito: 300 testes aprovados e 1 falha.
-5. Green final: `node tests/smoke-test.js` terminou com 301 testes aprovados e 0 falhas.
+5. Green final: `node tests/smoke-test.js` terminou com 302 testes aprovados e 0 falhas.
 6. Sintaxe: `node --check js/pdf-export.js`, `node --check js/app.js`, `node --check js/screens/review.js`, `node --check js/preview.js` e `node --check tests/smoke-test.js` concluíram sem erro.
 7. Qualidade do diff: `git diff --check` concluiu sem erro.
 
 ## PDFs reais
 
-Foram gerados em diretório temporário com o jsPDF vendorizado e fontes Barlow locais. `pdfinfo` confirmou uma página A4 nos layouts centered, left, banner, sidebar e creative. `pdftotext` extraiu nome, cargo e contatos em todos os cinco arquivos.
+O harness executável `node tests/pdf-layout-validation.js` gera os PDFs em diretório temporário com o jsPDF vendorizado e fontes Barlow locais. `pdfinfo` confirma uma página A4 nos layouts centered, left, banner, sidebar e creative. `pdftotext` confirma nome e cargo extraíveis em todos os cinco arquivos.
 
 Também foram validados os cenários detalhados: duas páginas sem issue e três páginas com uma issue de bloqueio. Os comandos usados foram `pdfinfo <arquivo.pdf>` e `pdftotext <arquivo.pdf> -`.
 
 ## Limitações conhecidas
 
-1. A tela de revisão ainda mostra a estimativa de caracteres antes do clique. A contagem autoritativa ocorre no fluxo de download, depois do carregamento sob demanda do jsPDF.
-2. Na prévia desktop, a moldura A4 atual pode cortar a segunda página no modo detalhado. A exportação mede e permite as duas páginas corretamente, mas a moldura precisa ser expandida ou renderizada em duas folhas para refletir isso visualmente.
-3. O Poppler exibiu avisos de coleção de caracteres `Adobe-Identity-H` em alguns PDFs com fonte incorporada. A extração de texto solicitada retornou o conteúdo esperado.
-4. A suíte smoke cobre as contagens de página com jsPDF real; a verificação dos cinco layouts com `pdfinfo` e `pdftotext` foi executada manualmente nesta task.
+1. `tests/pdf-layout-validation.js` requer os executáveis `pdfinfo` e `pdftotext` do Poppler no ambiente de execução.
+2. A validação dos cinco layouts verifica estrutura A4, páginas e texto extraível. A inspeção visual de tipografia e espaçamentos continua sendo uma etapa manual.

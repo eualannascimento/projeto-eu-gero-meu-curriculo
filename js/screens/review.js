@@ -9,6 +9,7 @@ const EuGeroReviewScreen = (function () {
 
   let ctx = null;
   let reviewGalleryIndex = 0;
+  let pageMeasurementRequest = 0;
 
   function init(context) {
     ctx = context;
@@ -121,16 +122,20 @@ const EuGeroReviewScreen = (function () {
         : pageLimit === 1
           ? 'Prefira cortar repetições e conteúdo pouco relevante. Se tudo for necessário, escolha "Até 2 páginas".'
           : 'Reduza repetições e conteúdo pouco relevante. O PDF será bloqueado acima de duas páginas.';
-    const reductionActions = pageFit.level === 'ok' ? '' : sections
-      .filter((section) => ['summary', 'experiences', 'projects'].includes(section.id))
+    const reductionLabels = {
+      summary: 'Reduzir resumo',
+      experiences: 'Revisar experiências',
+      education: 'Revisar formação',
+      skills: 'Revisar habilidades',
+      languages: 'Revisar idiomas',
+      certifications: 'Revisar certificações',
+      projects: 'Revisar projetos'
+    };
+    const reductionActions = sections
+      .filter((section) => reductionLabels[section.id])
       .map((section) => {
         const stepIndex = sections.findIndex((item) => item.id === section.id);
-        const label = section.id === 'summary'
-          ? 'Reduzir resumo'
-          : section.id === 'experiences'
-            ? 'Revisar experiências'
-            : 'Revisar projetos';
-        return `<button type="button" class="rf-tip link-btn" data-step="${stepIndex}">${label}</button>`;
+        return `<button type="button" class="rf-tip link-btn" data-step="${stepIndex}">${reductionLabels[section.id]}</button>`;
       }).join('');
     const checklist = [
       state.personal.email ? 'E-mail preenchido' : 'Revise o e-mail de contato',
@@ -142,8 +147,9 @@ const EuGeroReviewScreen = (function () {
     html += `<div class="review-block">
       <p class="review-block-title-tight">Extensão e checagem final</p>
       <p class="review-block-text">${ctx.escapeHtml(pageText)}</p>
+      <p class="review-block-text" data-pdf-page-measure>Calculando páginas do PDF...</p>
       <ul class="review-block-list">${checklist.map((item) => `<li>${ctx.escapeHtml(item)}</li>`).join('')}</ul>
-      ${reductionActions ? `<div class="rf-tips">${reductionActions}</div>` : ''}
+      ${reductionActions ? `<div class="rf-tips" data-page-reduction-actions${pageFit.level === 'ok' ? ' hidden' : ''}>${reductionActions}</div>` : ''}
     </div>`;
 
     // Painel de leitura por ATS: considera apenas a estrutura do modelo escolhido.
@@ -196,8 +202,36 @@ const EuGeroReviewScreen = (function () {
       });
     });
 
+    measureReviewExport(state);
     renderReviewGallery();
     syncPrintCv();
+  }
+
+  function measureReviewExport(state) {
+    const request = ++pageMeasurementRequest;
+    const status = ctx.els.reviewContent?.querySelector('[data-pdf-page-measure]');
+    if (!status) return;
+
+    loadPdfVendor().then(() => {
+      if (request !== pageMeasurementRequest) return;
+      const measurement = EuGeroPdfExport.measureExport(state);
+      const currentStatus = ctx.els.reviewContent?.querySelector('[data-pdf-page-measure]');
+      if (!currentStatus) return;
+      if (measurement.issues.length > 0) {
+        currentStatus.textContent = measurement.issues[0];
+        currentStatus.setAttribute('role', 'alert');
+        const actions = ctx.els.reviewContent.querySelector('[data-page-reduction-actions]');
+        if (actions) actions.hidden = false;
+        return;
+      }
+      const pageLabel = measurement.pages === 1 ? 'página' : 'páginas';
+      currentStatus.textContent = `PDF confirmado com ${measurement.pages} ${pageLabel}.`;
+    }).catch(() => {
+      if (request !== pageMeasurementRequest) return;
+      const currentStatus = ctx.els.reviewContent?.querySelector('[data-pdf-page-measure]');
+      if (!currentStatus) return;
+      currentStatus.textContent = 'Não foi possível confirmar as páginas agora. O limite será verificado antes do download.';
+    });
   }
 
   /** Mantém a área de impressão idêntica ao conteúdo da prévia. */

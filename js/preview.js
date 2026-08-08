@@ -323,6 +323,10 @@ const EuGeroPreview = (function () {
     const sections = enabledSections || getActiveSections(state.enabledSections);
     const pageLimit = getPreviewPageLimit(state);
     const pageLabel = pageLimit === 1 ? 'página' : 'páginas';
+    const mainPreview = measuresRealPage(container);
+    if (mainPreview) {
+      container.parentElement.classList.toggle('preview-a4-wrap-two-pages', pageLimit === 2);
+    }
     const inner = render(state, templateId, sections);
     container.innerHTML = `
       <div class="preview-a4-body">${inner}</div>
@@ -330,7 +334,7 @@ const EuGeroPreview = (function () {
     `;
     const margin = state.margin || 'padrao';
     const density = state.density || 'normal';
-    container.className = `preview-content preview-paper template-${templateId} cv-margin-${margin} cv-density-${density}`;
+    container.className = `preview-content preview-paper template-${templateId} cv-margin-${margin} cv-density-${density} cv-page-limit-${pageLimit}`;
 
     const overflows = isOverflowing(container, state, sections);
     const body = container.querySelector('.preview-a4-body');

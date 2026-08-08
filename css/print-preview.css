@@ -74,6 +74,29 @@
 }
 .cv-page-limit { display: none; }
 
+.preview-a4-wrap.preview-a4-wrap-two-pages {
+  aspect-ratio: 1 / 2.828;
+}
+.preview-a4-wrap.preview-a4-wrap-two-pages > .preview-content {
+  min-height: 594mm;
+}
+.preview-a4-wrap > .preview-content.cv-page-limit-2 .cv-page-limit {
+  display: block;
+  top: 594mm;
+}
+.preview-a4-wrap > .preview-content.cv-page-limit-2 .preview-a4-body::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 297mm;
+  border-top: 1px dashed var(--color-divider);
+  pointer-events: none;
+}
+.preview-a4-wrap > .preview-content.cv-page-limit-2 .preview-a4-body.preview-overflow::after {
+  top: 594mm;
+}
+
 /* ---- Chips de habilidade (modelo) ---- */
 .skills-tags-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .skills-tag-chip {

@@ -1269,12 +1269,21 @@ const overflowExport = measureResumeExport(overflowResume);
 assert(overflowExport.pages > 2 && overflowExport.issues.length > 0, 'PDF acima de duas páginas é identificado para bloqueio');
 
 function createPreviewContainer(scrollHeight) {
+  const parentClasses = new Set(['preview-a4-wrap']);
   const body = {
     overflow: null,
     classList: { toggle(_name, force) { body.overflow = force; } }
   };
   return {
-    parentElement: { classList: { contains: (name) => name === 'preview-a4-wrap' } },
+    parentElement: {
+      classList: {
+        contains: (name) => parentClasses.has(name),
+        toggle(name, force) {
+          if (force) parentClasses.add(name);
+          else parentClasses.delete(name);
+        }
+      }
+    },
     style: {},
     scrollHeight,
     innerHTML: '',
@@ -1293,6 +1302,8 @@ const detailedPreview = createPreviewContainer(1200);
 EuGeroPreview.updatePreview(detailedPreview, secondPageResume, 'classic');
 assert(detailedPreview.body.overflow === false && detailedPreview.innerHTML.includes('Limite de 2'),
   'Prévia detalhada permite conteúdo até a segunda página');
+assert(detailedPreview.parentElement.classList.contains('preview-a4-wrap-two-pages'),
+  'Prévia detalhada expande a moldura para exibir a segunda página');
 
 // --- PDF: fidelidade visual (fake doc para testar desenho sem jsPDF real) ---
 console.log('\nPDF - fake doc:');
@@ -1605,6 +1616,41 @@ pendingAsyncTests = (async () => {
     assert(downloaded === false, 'Download retorna false quando o PDF ultrapassa duas páginas');
     assert(reviewToastMessages.some((message) => message.includes('ultrapassa o limite de 2')),
       'Download bloqueado informa como reduzir o conteúdo');
+
+    const reviewMeasureStatus = {
+      textContent: '',
+      attributes: {},
+      setAttribute(name, value) { this.attributes[name] = value; }
+    };
+    const reviewMeasureActions = { hidden: true };
+    const reviewMeasureContent = {
+      innerHTML: '',
+      querySelector(selector) {
+        if (selector === '[data-pdf-page-measure]') return reviewMeasureStatus;
+        if (selector === '[data-page-reduction-actions]') return reviewMeasureActions;
+        return null;
+      },
+      querySelectorAll() { return []; }
+    };
+    EuGeroReviewScreen.init({
+      getState: () => overflowResume,
+      activeSections: () => EuGeroConfig.getActiveSections(overflowResume.enabledSections),
+      showToast() {},
+      goToWizard() {},
+      escapeHtml: EuGeroUtils.escapeHtml,
+      saveState() {},
+      updateTemplateIndicators() {},
+      debouncedUpdatePreviews() {},
+      scaleReviewPreviews() {},
+      els: { reviewContent: reviewMeasureContent }
+    });
+    EuGeroReviewScreen.renderReview();
+    await Promise.resolve();
+    await Promise.resolve();
+    assert(
+      reviewMeasureStatus.textContent.includes('ultrapassa o limite de 2') && reviewMeasureActions.hidden === false,
+      'Revisão exibe a medição real e libera ações antes do download'
+    );
   } finally {
     global.document = previousReviewDocument;
   }
