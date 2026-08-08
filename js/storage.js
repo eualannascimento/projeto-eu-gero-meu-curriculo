@@ -8,6 +8,17 @@ const EuGeroStorage = (function () {
   // corromperia silenciosamente o rascunho de quem ja usa a ferramenta.
   const SCHEMA_VERSION = 1;
 
+  function normalizeUrls(state) {
+    if (!state || typeof state !== 'object') return state;
+    return {
+      ...state,
+      personal: {
+        ...(state.personal || {}),
+        linkedinUrl: EuGeroUtils.safeUrl(state.personal?.linkedinUrl)
+      }
+    };
+  }
+
   /** Traz um rascunho de versao anterior para o formato atual. */
   function migrate(data) {
     if (!data || typeof data !== 'object') return data;
@@ -20,7 +31,7 @@ const EuGeroStorage = (function () {
 
   function save(state) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, schemaVersion: SCHEMA_VERSION }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...normalizeUrls(state), schemaVersion: SCHEMA_VERSION }));
       return true;
     } catch (e) {
       console.warn('Erro ao salvar no localStorage:', e);
@@ -87,6 +98,7 @@ const EuGeroStorage = (function () {
 
     const merged = { ...defaults, ...data };
     merged.personal = { ...defaults.personal, ...(data.personal || {}) };
+    merged.personal.linkedinUrl = EuGeroUtils.safeUrl(merged.personal.linkedinUrl);
 
     const listKeys = ['experiences', 'education', 'skills', 'languages', 'certifications',
       'projects', 'volunteering', 'publications', 'awards', 'organizations', 'courses'];
@@ -129,7 +141,7 @@ const EuGeroStorage = (function () {
 
   function serialize(state) {
     return JSON.stringify({
-      ...state,
+      ...normalizeUrls(state),
       version: APP_VERSION,
       exportedAt: new Date().toISOString()
     }, null, 2);

@@ -255,7 +255,7 @@ const EuGeroPdfExport = (function () {
   function contactLineParts(personal) {
     return {
       base: [personal.email, personal.phone, personal.location].filter(Boolean).join('   ·   '),
-      linkedinUrl: personal.linkedinUrl || ''
+      linkedinUrl: EuGeroUtils.safeUrl(personal.linkedinUrl)
     };
   }
 
@@ -410,11 +410,12 @@ const EuGeroPdfExport = (function () {
     [personal.email, personal.phone, personal.location].filter(Boolean).forEach((line) => {
       drawWrappedText(doc, sideCursor, line, sideCursor.x, sideCursor.colWidth, density.fontPt - 1, 1.3, [58, 60, 62], desenharFundo);
     });
-    if (personal.linkedinUrl) {
+    const linkedinUrl = EuGeroUtils.safeUrl(personal.linkedinUrl);
+    if (linkedinUrl) {
       ensureSpace(doc, sideCursor, 6, desenharFundo);
       setFont(doc, 'Barlow', 'normal', density.fontPt - 1, hasFonts);
       doc.setTextColor(58, 60, 62);
-      doc.textWithLink(truncateLinkedinDisplay(personal.linkedinUrl), sideCursor.x, sideCursor.y + (density.fontPt - 1) * PT_TO_MM * 0.8, { url: personal.linkedinUrl });
+      doc.textWithLink(truncateLinkedinDisplay(linkedinUrl), sideCursor.x, sideCursor.y + (density.fontPt - 1) * PT_TO_MM * 0.8, { url: linkedinUrl });
       sideCursor.y += (density.fontPt - 1) * PT_TO_MM * 1.3;
     }
     sideCursor.y += 4;

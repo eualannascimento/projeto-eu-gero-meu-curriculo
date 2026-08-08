@@ -1110,6 +1110,36 @@ assert(
 );
 assert(EuGeroUtils.safeUrl('') === '' && EuGeroUtils.safeUrl(null) === '', 'safeUrl trata vazio e nulo');
 
+const importedUnsafeUrl = EuGeroStorage.mergeWithDefaults({
+  personal: { linkedinUrl: 'javascript:alert(1)' }
+});
+assert(
+  importedUnsafeUrl.personal.linkedinUrl === '',
+  'Import normaliza URL executável antes de mantê-la no estado'
+);
+const serializedUnsafeUrl = JSON.parse(EuGeroStorage.serialize({
+  ...EuGeroConfig.createEmptyState(),
+  personal: { ...EuGeroConfig.createEmptyState().personal, linkedinUrl: 'data:text/html,alert(1)' }
+}));
+assert(
+  serializedUnsafeUrl.personal.linkedinUrl === '',
+  'Backup JSON não preserva URL executável'
+);
+const storageBeforeUrlTest = global.localStorage;
+let storedUnsafeUrl = '';
+global.localStorage = {
+  setItem(_key, value) { storedUnsafeUrl = value; }
+};
+assert(
+  EuGeroStorage.save({
+    ...EuGeroConfig.createEmptyState(),
+    personal: { ...EuGeroConfig.createEmptyState().personal, linkedinUrl: 'vbscript:msgbox(1)' }
+  }) === true && JSON.parse(storedUnsafeUrl).personal.linkedinUrl === '',
+  'Autosave não persiste URL executável'
+);
+if (storageBeforeUrlTest === undefined) delete global.localStorage;
+else global.localStorage = storageBeforeUrlTest;
+
 // --- Utilitários compartilhados (EuGeroUtils) ---
 console.log('\nUtilitários compartilhados:');
 
@@ -1197,6 +1227,48 @@ assert(responsiveCss.includes('bottom: max(5.25rem'), 'Toast mobile fica acima d
 console.log('\nPDF - limite real de páginas:');
 
 global.jspdf = require(path.join(__dirname, '..', 'js/vendor/jspdf.umd.min.js'));
+
+const unsafePdfState = {
+  ...EuGeroConfig.createEmptyState(),
+  personal: {
+    ...EuGeroConfig.createEmptyState().personal,
+    fullName: 'Maria da Silva',
+    headline: 'Analista de Dados',
+    linkedinUrl: ''
+  }
+};
+['javascript:alert(1)', 'data:text/html,alert(1)', 'vbscript:msgbox(1)'].forEach((unsafeUrl) => {
+  const unsafePdf = EuGeroPdfExport.generatePdf(
+    { ...unsafePdfState, personal: { ...unsafePdfState.personal, linkedinUrl: unsafeUrl } },
+    EuGeroConfig.getActiveSections(unsafePdfState.enabledSections),
+    'classic'
+  );
+  const unsafePdfBytes = Buffer.from(unsafePdf.output('arraybuffer')).toString('latin1');
+  assert(!unsafePdfBytes.includes('/URI'), `PDF real não escreve anotação para ${unsafeUrl.split(':')[0]}:`);
+});
+
+const schemelessPdf = EuGeroPdfExport.generatePdf(
+  { ...unsafePdfState, personal: { ...unsafePdfState.personal, linkedinUrl: 'linkedin.com/in/maria-da-silva' } },
+  EuGeroConfig.getActiveSections(unsafePdfState.enabledSections),
+  'classic'
+);
+const schemelessPdfBytes = Buffer.from(schemelessPdf.output('arraybuffer')).toString('latin1');
+assert(
+  schemelessPdfBytes.includes('/URI') && schemelessPdfBytes.includes('https://linkedin.com/in/maria-da-silva'),
+  'PDF real normaliza anotação de URL sem esquema para HTTPS'
+);
+
+const httpsPdfState = {
+  ...unsafePdfState,
+  personal: { ...unsafePdfState.personal, linkedinUrl: 'https://linkedin.com/in/maria-da-silva' }
+};
+const httpsPdf = EuGeroPdfExport.generatePdf(
+  httpsPdfState,
+  EuGeroConfig.getActiveSections(httpsPdfState.enabledSections),
+  'classic'
+);
+const httpsPdfBytes = Buffer.from(httpsPdf.output('arraybuffer')).toString('latin1');
+assert(httpsPdfBytes.includes('/URI'), 'PDF real preserva anotação para URL HTTPS válida');
 
 const resumeLimitBase = {
   ...EuGeroConfig.createEmptyState(),
