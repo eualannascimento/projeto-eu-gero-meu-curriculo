@@ -30,8 +30,7 @@ async function openExperiencesStep(page) {
   await page.getByLabel('Um parágrafo curto sobre você').fill(
     'Analista de dados com experiência em relatórios, automação e melhoria de processos para equipes de produto.'
   );
-  await page.getByRole('button', { name: 'Próximo', exact: true }).click();
-  await expect(page.locator('.wizard-step[data-section-id="experiences"]')).toBeVisible();
+  await advanceToStep(page, 'experiences');
   const addExperience = page.getByRole('button', { name: 'Adicionar experiência' });
   try {
     await expect(addExperience).toBeVisible({ timeout: 2000 });
@@ -41,6 +40,38 @@ async function openExperiencesStep(page) {
     await expect(page.locator('.wizard-step[data-section-id="experiences"]')).toBeVisible();
     await expect(addExperience).toBeVisible();
   }
+}
+
+/**
+ * Clica em "Próximo" até chegar ao passo pedido, e falha dizendo onde parou.
+ *
+ * O avanço do wizard é síncrono (`nextStep` valida e renderiza na mesma
+ * chamada), então uma espera maior não explicaria a falha vista no CI em
+ * 23/08: o passo simplesmente não estava lá. A causa não foi reproduzida
+ * localmente, nem com 18 execuções em 8 workers.
+ *
+ * Enquanto isso, o que dá para garantir é que a próxima ocorrência diga o que
+ * aconteceu: se o clique não surtiu efeito, ele é repetido; se o wizard parou
+ * em outro passo, a mensagem diz qual, em vez de apenas "element(s) not
+ * found". Um clique repetido não pula etapa, porque a verificação do passo
+ * atual acontece antes.
+ */
+async function advanceToStep(page, sectionId) {
+  const alvo = page.locator(`.wizard-step[data-section-id="${sectionId}"]`);
+
+  await expect(async () => {
+    if (await alvo.isVisible()) return;
+
+    const passoAtual = await page.locator('.wizard-step[data-section-id]').first()
+      .getAttribute('data-section-id').catch(() => null);
+
+    await page.getByRole('button', { name: 'Próximo', exact: true }).click();
+
+    await expect(
+      alvo,
+      `wizard nao chegou ao passo "${sectionId}"; passo visivel: ${passoAtual ?? 'nenhum'}`,
+    ).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 15000 });
 }
 
 async function fillExperience(page, { title, company, description }) {
