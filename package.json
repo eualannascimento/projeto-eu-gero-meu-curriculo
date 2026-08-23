@@ -9,9 +9,12 @@
     "pdf": "node tests/pdf-layout-validation.js",
     "e2e": "node scripts/run-e2e.js",
     "postdeploy-check": "node scripts/check-published-site.js",
-    "ci": "npm run syntax && npm run smoke && npm run pdf && npm run e2e"
+    "ci": "npm run lint && npm run syntax && npm run smoke && npm run pdf && npm run e2e",
+    "lint": "eslint ."
   },
   "devDependencies": {
-    "@playwright/test": "1.57.0"
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.57.0",
+    "eslint": "^10.8.0"
   }
 }

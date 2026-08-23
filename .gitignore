@@ -7,6 +7,9 @@ Thumbs.db
 *.log
 *.tmp
 
+# Dependencias de desenvolvimento (ESLint, Playwright)
+node_modules/
+
 # Editores
 .idea/
 .vscode/

@@ -68,19 +68,28 @@ O currículo, a prévia, o PDF e o backup JSON são processados no navegador. O 
 ## Testes
 
 ```bash
+npm run lint
 npm run syntax
 npm run smoke
 npm run pdf
 npm run e2e
 ```
 
-`npm run ci` executa os quatro comandos na mesma ordem. O smoke cobre regras de preenchimento, validação, datas, rotas, PDF, JSON, persistência local, cinco famílias estruturais e dados de exemplo. O teste de PDF requer `pdfinfo` e `pdftotext`, fornecidos pelo Poppler.
+`npm run ci` executa os cinco comandos na mesma ordem. O smoke cobre regras de preenchimento, validação, datas, rotas, PDF, JSON, persistência local, cinco famílias estruturais e dados de exemplo. O teste de PDF requer `pdfinfo` e `pdftotext`, fornecidos pelo Poppler.
 
 Os E2E cobrem a jornada de começar em branco, retomar o rascunho, validar, revisar e exportar o PDF, além dos cenários responsivos em 320 CSS px. Eles dependem de `@playwright/test` e do Chromium do Playwright. `npm run e2e` encerra com uma mensagem explícita quando um deles não está instalado. Para preparar o ambiente local, execute `npm install --no-package-lock` e `npx playwright install chromium`.
 
 O Playwright é uma dependência apenas de desenvolvimento, sob a licença Apache-2.0. Ele foi escolhido porque os testes precisam de um Chromium real para verificar foco, downloads, persistência entre recargas, medidas de alvos de toque e o layout em 320 CSS px. O pacote e os binários de navegador não integram os arquivos publicados da aplicação.
 
 O repositório ainda não possui `package-lock.json`. A CI instala a versão exata declarada de `@playwright/test` sem criar lockfile no checkout temporário. Antes de uma publicação estável, gere e versione o lockfile para fixar dependências transitivas.
+
+### Lint
+
+`npm run lint` roda o ESLint com a mesma configuração que o repositório do site aplica a `resume/**`. Ele existe por um motivo específico: o site não versiona `resume/`, e sim copia este repositório no momento do build. Em 31/07/2026 arquivos novos daqui chegaram lá e quebraram o deploy do site por 23 dias, sem que nada tivesse mudado naquele repositório. Quem fez a mudança não tinha como saber.
+
+Com o lint aqui, a quebra aparece no PR que a causa. Por isso `eslint.config.js` precisa continuar dizendo o mesmo que o do site: divergir para mais rigoroso é seguro, porque o que passa aqui passa lá; divergir para menos rigoroso devolve o problema. A versão do ESLint acompanha a de lá pelo mesmo motivo.
+
+O único ponto em que os dois diferem hoje é `preserve-caught-error`, desligada lá e ligada aqui: o site não pode consertar código que não versiona, porque a próxima sincronização sobrescreveria o arquivo.
 
 ### Verificação pós-deploy
 
@@ -96,7 +105,7 @@ A workflow aceita a URL pelo input manual `postdeploy_url` ou pela variável de 
 
 ## Deploy (GitHub Pages)
 
-1. Abra uma Pull Request. A workflow `.github/workflows/ci.yml` instala Poppler e executa sintaxe, smoke, PDF e E2E em Chromium.
+1. Abra uma Pull Request. A workflow `.github/workflows/ci.yml` instala Poppler e executa lint, sintaxe, smoke, PDF e E2E em Chromium.
 2. Faça o deploy aprovado em `main` pelo repositório do site.
 3. Execute a workflow manual com `postdeploy_url` ou configure `POST_DEPLOY_URL` para validar a URL publicada.
 4. URL de produção: https://classificavagas.com/resume/ (o repositório do site sincroniza este conteúdo no deploy; ver `scripts/sync-resume.py` lá).

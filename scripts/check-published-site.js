@@ -39,7 +39,7 @@ async function fetchPublishedFile(url) {
     if (!content.trim()) throw new Error('resposta vazia');
     return content;
   } catch (error) {
-    if (error.name === 'AbortError') throw new Error(`tempo esgotado após ${timeoutMs / 1000} s`);
+    if (error.name === 'AbortError') throw new Error(`tempo esgotado após ${timeoutMs / 1000} s`, { cause: error });
     throw error;
   } finally {
     clearTimeout(timeout);
