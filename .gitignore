@@ -10,6 +10,10 @@ Thumbs.db
 # Dependencias de desenvolvimento (ESLint, Playwright)
 node_modules/
 
+# Saida do Playwright
+test-results/
+playwright-report/
+
 # Editores
 .idea/
 .vscode/
